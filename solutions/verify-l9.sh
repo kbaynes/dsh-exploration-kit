@@ -352,13 +352,161 @@ fi
 rm -f "$TOOLCALL_MODEL_PATCH"
 
 echo
+echo "== 10. a SIGNED webhook delivery creates one Session - and a duplicate runs the rule again =="
+# Lesson 9's last claim, and the one the ledger called credential-bound. It is not: the GitHub
+# adapter takes a credential REFERENCE, and credential resolution reads the inherited process
+# environment first, so the check supplies its own secret and signs its own payload. Nothing
+# external is involved - no GitHub account, no tunnel, no network.
+#
+# The rule is registered by a probe, because `ctx.webhookRuntime` is a registry of TRUSTED
+# PROGRAMMATIC rules; returning a `WebhookSessionRequest` makes the runtime perform its one
+# built-in action, creating an ordinary root Session in a Web Workspace.
+#
+# The claim has two halves, and the second is the interesting one: `deliveryId` is recorded but is
+# NEVER used for built-in deduplication, so a repeated delivery runs the rules AGAIN. The check
+# therefore posts the same delivery id twice and asserts the session count goes 1, then 2.
+# A FREE port, chosen at run time. A fixed port turns any stray harness from an earlier aborted run
+# into `EADDRINUSE` on the next one, which reads like a webhook fault and is not one; and a stray
+# that outlives SIGKILL (ADR-0036) cannot be cleaned up by hand.
+WEBHOOK_PORT="$(node -e 'const s=require("node:net").createServer();s.listen(0,"127.0.0.1",()=>{process.stdout.write(String(s.address().port));s.close()})')"
+WEBHOOK_WS="$(mktemp -d)"
+export L9_WEBHOOK_SECRET="l9-local-secret-$RANDOM"
+export L9_WEBHOOK_WORKSPACE="$WEBHOOK_WS"
+WEBHOOK_MODEL_PATCH="$(mktemp)"
+cat > "$WEBHOOK_MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+
+# The latest count the probe reported. It counts DELIVERED sessions created since the probe started,
+# so earlier runs sharing this home cannot inflate it.
+webhook_count() {
+  grep -o 'delivered sessions created since the probe started: [0-9]*' "$1" | tail -1 | grep -o '[0-9]*$'
+}
+
+# Wait for the count to reach an expected value, and PRINT how long it took. A POST returns 202 as
+# soon as the delivery is ACCEPTED; the rule then creates the Session asynchronously, so a fixed
+# sleep either flakes or wastes time - the same lesson as ADR-0032.
+#
+# The first delivery is slow for a reason worth knowing: creating a delivered Session needs the
+# host's workspace and storage infrastructure, which is still initialising just after the route
+# appears. In this composition the first Session took ~35s to become visible while later ones took
+# under 5s, so the first wait is given a longer bound than the rest.
+webhook_wait_for_count() { # webhook_wait_for_count <log> <expected> <timeout-seconds>
+  local log="$1" expected="$2" timeout="${3:-30}" waited=0 count=""
+  while (( waited < timeout )); do
+    count="$(webhook_count "$log")"
+    [[ "$count" == "$expected" ]] && break
+    sleep 1
+    waited=$((waited + 1))
+  done
+  echo "${count:-}"
+}
+
+if start_mock_llm "$DSH_CHECKOUT" 8146 success; then
+  WH_LOG="$(mktemp)"
+  export DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key
+  # A fixed port is required here, and boot_and_wait cannot be used: this phase must POST to the
+  # running server BETWEEN readiness and teardown. `exec` plus a bounded reap, for the reasons in
+  # ADR-0035 and ADR-0036.
+  ( cd "$DSH_CHECKOUT" && exec dsh --profile "$PROFILE" \
+      --patch "$KIT/solutions/l9.patch.yml" --patch "$KIT/solutions/l9.webhook.patch.yml" \
+      --patch "$WEBHOOK_MODEL_PATCH" --port "$WEBHOOK_PORT" --no-open ) >>"$WH_LOG" 2>&1 &
+  wh_pid=$!
+  # The teardown below is at the END of the phase, so anything that aborts earlier - `set -u` on a
+  # typo did exactly this - leaves the harness holding a FIXED port, and the next run then fails
+  # with `EADDRINUSE`, which reads like a webhook problem and is not one. Reap on ANY exit.
+  trap 'kill -9 "$wh_pid" 2>/dev/null' EXIT
+  waited=0
+  while (( waited < 90 )); do grep -q '\[l9-webhook\] ACTIVE' "$WH_LOG" 2>/dev/null && break; sleep 1; waited=$((waited + 1)); done
+  waited=0
+  while (( waited < 30 )); do grep -q "127.0.0.1:$WEBHOOK_PORT" "$WH_LOG" 2>/dev/null && break; sleep 1; waited=$((waited + 1)); done
+
+  check "the webhook adapter registered a route on the web server" "127.0.0.1:$WEBHOOK_PORT" "$(cat "$WH_LOG")"
+  check "the trusted rule registered" 'rule registered for kind=github' "$(cat "$WH_LOG")"
+
+  BODY='{"action":"opened","issue":{"number":1,"title":"l9 webhook delivery"}}'
+  SIG="sha256=$(SECRET="$L9_WEBHOOK_SECRET" BODY="$BODY" node -e \
+    'const c=require("node:crypto");process.stdout.write(c.createHmac("sha256",process.env.SECRET).update(process.env.BODY).digest("hex"))')"
+  post_delivery() { # post_delivery <signature> <delivery-id> <outfile>
+    curl -s -o "$3" -w '%{http_code}' -X POST "http://127.0.0.1:$WEBHOOK_PORT/hooks/l9-github" \
+      -H 'content-type: application/json' -H "x-hub-signature-256: $1" \
+      -H "x-github-delivery: $2" -H 'x-github-event: issues' --data "$BODY"
+  }
+
+  # Refusals are specific, and the difference is worth asserting rather than blurring: a request
+  # with NO signature header is malformed (400), while a request that carries a WRONG signature is
+  # authenticated-and-rejected (401). Provider authentication belongs to the adapter, not the rule.
+  unsigned_status="$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://127.0.0.1:$WEBHOOK_PORT/hooks/l9-github" \
+      -H 'content-type: application/json' -H 'x-github-delivery: l9-unsigned' -H 'x-github-event: issues' --data "$BODY")"
+  check "a delivery with NO signature is refused as malformed" '400' "$unsigned_status"
+  forged_status="$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://127.0.0.1:$WEBHOOK_PORT/hooks/l9-github" \
+      -H 'content-type: application/json' -H 'x-hub-signature-256: sha256=0000' -H 'x-github-delivery: l9-forged' -H 'x-github-event: issues' --data "$BODY")"
+  check "a delivery with a WRONG signature is refused as unauthenticated" '401' "$forged_status"
+
+  # Let the host finish initialising before the first delivery: the route is registered before the
+  # workspace and storage services are ready, and a delivery arriving too early waits on all of it.
+  settle=0
+  while (( settle < 60 )); do
+    [[ "$(grep -c 'created since the probe started' "$WH_LOG" 2>/dev/null)" -ge 3 ]] && break
+    sleep 1; settle=$((settle + 1))
+  done
+
+  first_status="$(post_delivery "$SIG" 'l9-delivery-1' /dev/null)"
+  check "a signed delivery is accepted" '202' "$first_status"
+  wait_started="$(date +%s)"
+  after_first="$(webhook_wait_for_count "$WH_LOG" 1 75)"
+  echo "      (the first delivered Session became visible after $(( $(date +%s) - wait_started ))s)"
+  if [[ "$after_first" == "1" ]]; then
+    echo "PASS  the first delivery created exactly one Session"
+  else
+    echo "FAIL  expected 1 delivered Session after the first delivery; saw ${after_first:-none}"
+    echo "      probe reported:"; grep '\[l9-webhook\]' "$WH_LOG" | tail -4 | sed 's/^/        /'
+    echo "      response bodies:"; tail -2 "$WH_LOG" | sed 's/^/        /'
+    failures=$((failures + 1))
+  fi
+
+  second_status="$(post_delivery "$SIG" 'l9-delivery-1' /dev/null)"
+  check "the duplicate delivery is also accepted" '202' "$second_status"
+  wait_started="$(date +%s)"
+  after_second="$(webhook_wait_for_count "$WH_LOG" 2 30)"
+  echo "      (the duplicate's Session became visible after $(( $(date +%s) - wait_started ))s)"
+  if [[ "$after_second" == "2" ]]; then
+    echo "PASS  a REPEATED delivery id runs the rule AGAIN (not deduplicated): 2 Sessions"
+  else
+    echo "FAIL  expected 2 delivered Sessions after the duplicate; saw ${after_second:-none}"
+    echo "      probe reported:"; grep '\[l9-webhook\]' "$WH_LOG" | tail -4 | sed 's/^/        /'
+    failures=$((failures + 1))
+  fi
+  check "and the rule reports both runs" 'rule ran for delivery=l9-delivery-1 source=l9-primary total=2' "$(cat "$WH_LOG")"
+
+  # Teardown, bounded.
+  kill "$wh_pid" 2>/dev/null
+  grace=0
+  while kill -0 "$wh_pid" 2>/dev/null && (( grace < 20 )); do sleep 0.5; grace=$((grace + 1)); done
+  kill -9 "$wh_pid" 2>/dev/null
+  reap=0
+  while kill -0 "$wh_pid" 2>/dev/null && (( reap < 10 )); do sleep 0.5; reap=$((reap + 1)); done
+  kill -0 "$wh_pid" 2>/dev/null && echo "      (webhook harness $wh_pid survived SIGKILL; continuing)" >&2
+  trap - EXIT
+  stop_mock_llm
+  rm -f "$WH_LOG"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+unset DEEPSEEK_BASE_URL DEEPSEEK_API_KEY L9_WEBHOOK_SECRET L9_WEBHOOK_WORKSPACE
+rm -rf "$WEBHOOK_WS"; rm -f "$WEBHOOK_MODEL_PATCH"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 9 verified: opt-in activation, schedule durability, DELIVERY (a due task resumes the"
   echo "session, the receipt is recorded, and the agent completes the scheduled work), a real headless"
   echo "turn (exit codes, stdout/stderr separation, the --json event stream including a real tool"
-  echo "call and its correlated result) and a real SDK round trip that loads a PATCHES FILE and"
-  echo "executes an earlier lesson's tool - all keyless."
-  echo "Still needs a credential: a webhook delivery, which is a different transport."
+  echo "call and its correlated result), a real SDK round trip that loads a PATCHES FILE and"
+  echo "executes an earlier lesson's tool, and a SIGNED webhook delivery that creates one Session per"
+  echo "delivery while a repeated delivery id runs the rule again - all keyless."
 else
   echo "$failures check(s) failed."; exit 1
 fi

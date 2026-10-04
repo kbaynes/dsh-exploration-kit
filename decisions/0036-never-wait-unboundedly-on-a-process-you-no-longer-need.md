@@ -69,6 +69,15 @@ fi
 - A residual, invisible cost remains: such a process may still hold the harness home. The suite cannot fix that, so the rule stands that the home is owned by one run at a time and a survivor must be found by hand.
 - The cause of the uninterruptible stall is **not** established. It has been seen once, on a resumed-session boot, in a nested-sandboxed environment. What is fixed is the consequence; the cause is recorded here as open.
 
+## Follow-up — a survivor answers the NEXT run, which is worse than a port error
+
+A verification that had been aborted mid-phase left a harness holding a fixed port. The next run failed with `EADDRINUSE`, which at least names the problem. Then the same thing happened again and the symptom changed: the POSTs **were answered**, by the stray, which had its own session baseline — so the new run's delivery count lagged by exactly one delivery and the phase looked like it was measuring asynchronously.
+
+Two rules came out of it, both now in the L9 webhook phase:
+
+- **Pick a free port at run time.** A fixed port converts any survivor from an earlier run into a failure of the *next* run, and a survivor that outlives `SIGKILL` cannot be cleaned up by hand.
+- **Reap on ANY exit.** The teardown lived at the end of the phase, so an abort earlier — a `set -u` violation on a typo did it — skipped it entirely. A trap on `EXIT` covers the paths you did not plan for.
+
 ## Evidence
 
 The reproduction, run by hand rather than through the suite:

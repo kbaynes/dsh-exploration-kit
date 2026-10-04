@@ -1,0 +1,26 @@
+# Lesson 9's webhook verification: a SIGNED GitHub delivery, handled by a trusted rule.
+#
+# The adapter package declares no `dsh.bundle`, so it is a plain dependency that must be INSERTED
+# as a row (`dsh plugin --profile web add @deepseek-ai/dsh-webhook-github@<dsh version>`).
+#
+# Its `secretEnv` is a credential REFERENCE, and credential resolution reads the inherited process
+# environment first. So this verification supplies its own secret with an environment variable and
+# signs the payload with the same value - no external credential and no network. The workspace and
+# the presets come from the environment too, so the rule points at a temporary workspace whose
+# Sessions can be counted by `cwd`.
+- insert:
+    - id: webhook-github
+      name: '@deepseek-ai/dsh-webhook-github'
+      config:
+        source: l9-primary
+        path: /hooks/l9-github
+        secretEnv: L9_WEBHOOK_SECRET
+        maxBodyBytes: 65536
+
+- id: l9-webhook-probe
+  disabled: false
+  config:
+    enabled: true
+    workspacePath: !!js "process.env.L9_WEBHOOK_WORKSPACE"
+    agentPreset: !!js "process.env.L9_WEBHOOK_AGENT_PRESET || 'cordis'"
+    permissionPreset: !!js "process.env.L9_WEBHOOK_PERMISSION_PRESET || 'workspace-write'"

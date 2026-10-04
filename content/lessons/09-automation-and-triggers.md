@@ -234,7 +234,7 @@ It needs even more of the web bundle than `schedule` does; on a base profile it 
 Contract points that shape your design:
 
 - **Provider authentication belongs to adapter packages, not the rule.** The rule receives a `VerifiedWebhookDelivery` — provider kind, source id, delivery id, normalized lossless JSON, and receipt time — already snapshotted and frozen.
-- **`deliveryId` records the provider's identifier only; a repeated delivery runs the rules again.** Idempotency is your responsibility, not the runtime's.
+- **`deliveryId` records the provider's identifier only; a repeated delivery runs the rules again.** Idempotency is your responsibility, not the runtime's. That is asserted, not assumed: the verification posts the same delivery id twice and watches the Session count go 1, then 2.
 - **`WebhookSessionRequest` requires `workspacePath`, `title`, `prompt`, `agentPreset`, and `permissionPreset`.** Presets are validated before any mutation, and presets are your policy lever — this is where L4's work becomes the blast radius control.
 - **`Agent.followup()` is the commit point.** The runtime does not wait for idle or inspect the reply; ordinary agent behavior owns everything after.
 - **Registration is an effect**, and its disposer hides the rule then aborts and drains active callbacks. Callbacks must observe the supplied signal.
@@ -283,7 +283,9 @@ Items 4, 5, 6, and 7 are executed and recorded in [VERIFIED.md](https://github.c
 
 Item 6 is executed too: an SDK run **loads a patches file and executes an earlier lesson's tool**. The patch is Lesson 2's own override (`defaultUnit: chars`), the mock scripts a `word_count` call that omits `unit`, and the result reads `11681 chars` — the real character count of the kit README. Two independent things are therefore proven at once: the patched unit shows the **patches file was loaded**, and the count shows the **tool read the file** rather than echoing a string.
 
-Item 8 is not executed: a webhook delivery needs a credential, which is a different transport from everything above.
+Item 8 is executed too, and it never needed a credential: the GitHub adapter takes a credential **reference**, and credential resolution reads the inherited process environment first, so a check can supply its own secret and sign its own payload. `solutions/verify-l9.sh` phase 10 asserts that a signed delivery is accepted (202) and creates exactly one Session, that an unsigned request is refused as malformed (400) and a wrongly signed one as unauthenticated (401), and that a **repeated delivery id runs the rule again** — the documented behaviour, since `deliveryId` is recorded but never used for built-in deduplication.
+
+All eight items are executed, and every one of them is keyless.
 
 ## Exit check — you should now be able to explain
 

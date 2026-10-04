@@ -37,6 +37,7 @@ echo "== pinned opt-in packages, at dsh $VERSION =="
 assert_pin "$BASE_PROFILE" "@deepseek-ai/dsh-tool-session-query" "$VERSION"
 assert_pin "$WEB_PROFILE"  "@deepseek-ai/dsh-schedule" "$VERSION"
 assert_pin "$WEB_PROFILE"  "@deepseek-ai/dsh-webhook" "$VERSION"
+assert_pin "$WEB_PROFILE"  "@deepseek-ai/dsh-webhook-github" "$VERSION"
 
 echo
 echo "== the kit bundle is installed and linked, not copied =="

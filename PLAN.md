@@ -240,8 +240,7 @@ The substance of the project. Repeat this block for each lesson. **Order is inde
       turn ends `{"kind":"completed"}` with a second assistant message. Delivery restores the
       model from the session's logged request header, so the probe talks to the model once
       before scheduling.
-- [ ] Confirm a webhook rule creates exactly one Session per delivery and record
-      the duplicate-delivery behavior
+- [x] Confirm a webhook rule creates exactly one Session per delivery and record the duplicate-delivery behavior — `solutions/verify-l9.sh` phase 10, and it needed **no credential**: the GitHub adapter's `secretEnv` is a credential *reference*, and credential resolution reads the process environment first, so the check supplies its own secret and signs its own payload. Asserted: a signed delivery is accepted (202) and creates exactly one Session; an unsigned request is refused as malformed (400) and a wrongly signed one as unauthenticated (401); and a **repeated delivery id runs the rule again** (2 Sessions), which is documented behavior rather than a bug, since `deliveryId` is never used for built-in deduplication. The phase picks a free port at run time and reaps on any exit, because a stray harness from an aborted run answers the next run's requests.
 - [ ] Confirm the hook adapters' described role
 - [ ] Add the exact files to `examples/l9/`
 - [ ] Review the explanation for clarity

@@ -130,6 +130,27 @@ for (const check of checks) {
   }
 }
 
+// Report harness processes left behind. This is exactly the defect ADR-0035 hid for the project's
+// whole life: the suite passed while leaking one harness per boot, and only a stalled machine made
+// it visible. A count is cheap, and it is the only place that failure would have shown up early.
+//
+// A WARN rather than a failure: a user may legitimately have another dsh running, and this check
+// cannot tell that apart from a leak. It names the count so the difference is easy to judge.
+function leakedHarnessProcesses() {
+  const found = spawnSync('pgrep', ['-f', 'apps/cli/lib/bin.js'], { encoding: 'utf8' })
+  const lines = (found.stdout ?? '').split('\n').filter(line => line.trim() !== '')
+  // This suite's own process is not a harness; neither is the GUI, which does not match the
+  // pattern. Anything here started during the run and outlived it.
+  return lines.length
+}
+
+const leaked = leakedHarnessProcesses()
+if (leaked > 0) {
+  console.log(`\nWARN  ${leaked} harness process(es) are still running after the suite.`)
+  console.log('      Each boot should reap the harness it started; see ADR-0035 and ADR-0036.')
+  console.log('      (Another dsh session of your own would also show up here.)')
+}
+
 const count = outcome => results.filter(r => r.outcome === outcome).length
 console.log(
   `\n${count('pass')} passed, ${count('warn')} warned, ${count('fail')} failed, ${count('skip')} skipped`,

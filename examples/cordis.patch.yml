@@ -65,6 +65,13 @@
       name: dsh-exploration-kit-plugins/l9/fire-probe.js
       disabled: true
 
+    # Opt-in diagnostic: registers a TRUSTED webhook rule and counts the Sessions each signed
+    # delivery creates, so Lesson 9's webhook claim is testable without an external service.
+    # See solutions/l9.webhook.patch.yml.
+    - id: l9-webhook-probe
+      name: dsh-exploration-kit-plugins/l9/webhook-probe.js
+      disabled: true
+
     - id: l9-probe
       name: dsh-exploration-kit-plugins/l9/schedule-probe.js
       disabled: true

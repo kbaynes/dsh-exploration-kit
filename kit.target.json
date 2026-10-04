@@ -16,6 +16,7 @@
   "pinnedPackages": {
     "@deepseek-ai/dsh-schedule": "0.2.0-rc.2",
     "@deepseek-ai/dsh-webhook": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-webhook-github": "0.2.0-rc.2",
     "@deepseek-ai/dsh-tool-session-query": "0.2.0-rc.2"
   },
   "toolchain": {

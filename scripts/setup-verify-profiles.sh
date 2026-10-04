@@ -52,6 +52,10 @@ echo
 echo "== pinned opt-in packages for lesson 9, into the web-backed profile '$WEB_PROFILE' =="
 dsh plugin --profile "$WEB_PROFILE" add "@deepseek-ai/dsh-schedule@$VERSION"
 dsh plugin --profile "$WEB_PROFILE" add "@deepseek-ai/dsh-webhook@$VERSION"
+# Lesson 9's webhook phase verifies a SIGNED delivery, so it needs the provider adapter as well.
+# It declares no `dsh.bundle`, which is why it is installed as a plain dependency and inserted as a
+# row by solutions/l9.webhook.patch.yml.
+dsh plugin --profile "$WEB_PROFILE" add "@deepseek-ai/dsh-webhook-github@$VERSION"
 
 echo
 echo "NOTE  the kit bundle is deliberately NOT installed into the 'headless' profile."
