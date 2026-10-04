@@ -99,7 +99,7 @@ row that admits it has not been checked yet.
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. **Not** executed: the model-visible skill catalogue, which only exists once a request is assembled. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
-| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no activation warnings; the pinned package installs; and the **query service itself** is exercised without a model — `listSessions` finds the created session, `readSession` returns its log, `filterEvents` matches by type, and all five lesson tools register in a live root Agent's scope (5/5). Two limits documented and asserted: an uninterpretable session breaks search corpus-wide, and an invented event type is invisible to filters. **Not** executed: the workspace-authority refusal, token deltas, `/compact`, and the invariant findings. |
+| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted **with self-cleanup** (an unknown event type is invisible to both filters and search); and against the repository's mock provider a **real turn** is searchable by its own assistant text, the token-accounting projection is exposed with its documented shape, and `/compact` settles. **Not** executed: the workspace-authority refusal (needs a model-driven tool call) and the invariant findings. |
 | L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (this lesson adds no plugin); the workflow's pure core passes 7 unit tests with a fake engine; and **fork heredity is verified without a model** — a child seeded from its parent's log reports the exact inherited prefix, the `isSeeded` marker, the parent lineage, and its L6 projection already reflects the inherited event. **Not** executed: any real delegation or fan-out (a subagent turn), and the monolith-versus-fan-out cost comparison. |
 | L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are confirmed opt-in; the overlay composes and activates on a web-backed profile with no warnings while a base-backed one strands both in `PENDING`; both install pinned; a scheduled task **survives a restart**; and the **headless contract is executed keyless** against the repository's scriptable mock provider — exit 0 with the answer on stdout, exit 1 with the diagnostic on stderr, and a `--json` stream carrying `turn_start`, `turn_end`, a `text` event and a closing `final`. **Not** executed: an SDK round trip, a webhook delivery, and a task firing. |
 
@@ -364,6 +364,30 @@ standalone repository. Both now use `<kit>/content/...`.
 
 **Deliberately unverified:** any real delegation, fork, or fan-out, and the
 monolith-versus-fan-out cost comparison. Every one needs a provider.
+
+## Evidence: L7 a real turn, keyless, and the caveat
+
+Against `dsh-llm-mock-server` (ADR-0027), so the loop, log and accounting are real while the model's
+output is scripted:
+
+```
+[l7-turn] tokenUsage: {"totals":{"uncachedInputTokens":0,…,},"last":null}
+[l7-turn] sessionStats (web-only): not mounted in this profile
+[l7-turn] searchSessions('mock response'): 13 hit(s)
+[l7-turn] /compact outcome: {"kind":"success","text":"No compactable history yet."}
+```
+
+`13 hit(s)` is the claim that matters: the text the **assistant** produced is findable in the
+trajectory. The accounting projection is asserted for its shape, not its numbers — the mock reports
+no usage for scripted text, which is a limitation of the mock rather than of the harness.
+
+**The caveat is asserted with cleanup.** A second phase appends an invented event type and shows it
+is invisible to a type filter, a text filter, and full-text search — then removes the session it
+created, because an unreadable session breaks search for the whole home. That cleanup is not
+politeness: 37 such sessions had accumulated in the verification home during development, which is
+what made the search assertions fail with a confusing error.
+
+`solutions/verify-l7.sh` runs all of it.
 
 ## Evidence: L7 composes and activates
 

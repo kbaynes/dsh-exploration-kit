@@ -6,8 +6,17 @@ export const inject = ['agents', 'sessionQuery']
 export const Config = Schema.object({
   /** Off by default: this creates a session and queries history. */
   enabled: Schema.boolean().default(false),
-  /** 'write' creates and appends; 'read' only re-reads a fixed session id. */
+  /** 'query' probes the service; 'write' creates and appends; 'read' re-reads a fixed id. */
   mode: Schema.union(['query', 'write', 'read']).default('query'),
+  /**
+   * Append an INVENTED event type as well, to demonstrate the query layer's limits.
+   *
+   * Off by default because the append is contagious: a session carrying an event type the
+   * harness does not know breaks full-text search for the WHOLE home (ADR-0024), so a probe that
+   * did it on every run would poison the home it verifies in - which is exactly what happened
+   * here before this flag existed, leaving 37 unreadable sessions behind.
+   */
+  appendInvented: Schema.boolean().default(false),
   /** The fixed session id used by the write/read modes. */
   sessionId: Schema.string().default('session-l7-durability'),
   delayMs: Schema.number().default(1800),
@@ -55,46 +64,55 @@ export function apply(ctx, config) {
 
       const marker = `l7-probe-marker-${Date.now()}`
       const useFixed = config.mode === 'write'
-      handle = await ctx.agents.create({
-        sessionId: useFixed ? config.sessionId : `session-l7-probe-${Date.now()}`,
-        meta: { cwd: process.cwd() },
-      })
+      // The session id carries the marker, so "is the marker in the log?" is answerable in both
+      // modes - the invented branch appends it in an event payload, and the clean branch relies on
+      // the id itself appearing in the header and events.
+      const sessionId = useFixed
+        ? config.sessionId
+        : `session-l7-probe-${marker}`
+      handle = await ctx.agents.create({ sessionId, meta: { cwd: process.cwd() } })
       const session = handle.agent.session
-      session.append('l6/step', { label: marker, count: 1 })
-      console.log(`[l7-probe] created ${session.id} with a distinctive marker`)
+
+      // `appendInvented` chooses an event type the harness does NOT know, to demonstrate the query
+      // layer's limits. The default appends a first-party log-only event, so a normal run leaves
+      // the home readable.
+      const appendedType = config.appendInvented ? 'l6/step' : 'sandbox/mode'
+      session.append(appendedType, config.appendInvented
+        ? { label: marker, count: 1 }
+        : { mode: 'read-only' })
+      console.log(`[l7-probe] created ${session.id}, appending '${appendedType}'`)
 
       const sessions = await ctx.sessionQuery.listSessions()
-      // The record shape is not the session id at the top level, so find it by scanning
-      // the serialized record rather than guessing a field name.
       const mine = sessions.find(record => JSON.stringify(record).includes(String(session.id)))
       console.log(`[l7-probe] listSessions: ${sessions.length} total; mine found: ${Boolean(mine)}`)
-      if (mine) console.log(`[l7-probe] my record: ${JSON.stringify(mine).slice(0, 200)}`)
-      else if (sessions.length) console.log(`[l7-probe] a record looks like: ${JSON.stringify(sessions[0]).slice(0, 200)}`)
 
       const log = await ctx.sessionQuery.readSession(session.id)
       const events = log?.events ?? []
-      console.log(`[l7-probe] readSession: ${events.length} event(s); marker present: ${JSON.stringify(events).includes(marker)}`)
+      const whole = JSON.stringify(log ?? {})
+      console.log(`[l7-probe] readSession: ${events.length} event(s); marker present: ${whole.includes(session.id)}`)
 
+      // Filters are ANDed clauses in an ARRAY, and each clause carries a `kind`. Filtering by the
+      // type just appended is the positive case; filtering by an invented type is the caveat.
+      // Each query is contained: one failing call must not skip the checks after it, which is how
+      // a leftover poisoned session silently removed the tool-scope assertion from this probe.
       try {
-        // Filter clauses are ANDed, in an ARRAY, and each clause carries a `kind`.
-        // A bare `{ text }` is rejected with "session unknown filter kind (missing)".
-        const byType = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'type', values: ['l6/step'] }])
-        console.log(`[l7-probe] filterEvents by type: ${Array.isArray(byType) ? byType.length : typeof byType} match(es)`)
-
-        // Literal-text filtering searches SEMANTIC text, which the harness derives only
-        // from event types it knows. A plugin-declared type contributes none, so its
-        // payload is invisible to text search even though the event is in the log.
-        const byText = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'text', text: marker }])
-        console.log(`[l7-probe] filterEvents by text: ${Array.isArray(byText) ? byText.length : typeof byText} match(es) for an invented type's payload`)
+        const byType = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'type', values: [appendedType] }])
+        console.log(`[l7-probe] filterEvents by type '${appendedType}': ${(byType ?? []).length} match(es)`)
       } catch (error) {
-        console.log(`[l7-probe] filterEvents unavailable: ${error.message}`)
+        console.log(`[l7-probe] filterEvents by type threw: ${error.message}`)
       }
 
       try {
-        // The search request field is `query`; `text` is the *filter* field.
-        const page = await ctx.sessionQuery.searchSessions({ query: marker })
-        const hits = page?.results ?? page?.sessions ?? page
-        console.log(`[l7-probe] searchSessions: ${Array.isArray(hits) ? hits.length : typeof hits} hit(s)`)
+        const byText = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'text', text: session.id }])
+        console.log(`[l7-probe] filterEvents by text: ${(byText ?? []).length} match(es)`)
+      } catch (error) {
+        console.log(`[l7-probe] filterEvents by text threw: ${error.message}`)
+      }
+
+      try {
+        // The search request field is `query`; a page is `{ items, nextCursor? }`.
+        const page = await ctx.sessionQuery.searchSessions({ query: session.id })
+        console.log(`[l7-probe] searchSessions: ${(page?.items ?? []).length} hit(s)`)
       } catch (error) {
         console.log(`[l7-probe] searchSessions failed: ${error.message}`)
       }

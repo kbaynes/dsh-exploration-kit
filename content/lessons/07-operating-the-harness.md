@@ -253,9 +253,21 @@ Observable without a session:
 4. The profile manifest shows `@deepseek-ai/dsh-tool-session-query` pinned to your dsh
    version — not to npm's stale `latest` tag, which dsh rejects as incompatible.
 
-Requires a session, and therefore a provider:
+Executed keyless, against the repository's scriptable mock provider (ADR-0027) — a real turn,
+with the model's *output* scripted:
 
-5. `session_event_read` returns events as JSON with neighbours.
+5. A real turn records an assistant answer that **full-text search then finds** from the
+   trajectory, and the accounting projection is exposed with its documented shape
+   (`totals` + `last`). The numbers are zero here because the mock reports no usage for scripted
+   text; a real provider fills them.
+6. `/compact` settles as a command (`{"kind":"success","text":"No compactable history yet."}` on
+   a fresh session).
+7. `sessionStats` is *absent* on a base-backed profile, which is why step 3 above tells you to
+   use a web-backed one for statistics.
+
+Still requiring a model-driven tool call:
+
+8. `session_event_read` returns events as JSON with neighbours.
 6. A deliberate cross-workspace query is refused, and a missing target is
    indistinguishable from an unauthorized one.
 7. You can state the token delta caused by mounting `tool-session-query`.

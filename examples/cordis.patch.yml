@@ -115,6 +115,12 @@
 
     # Opt-in diagnostic: queries session history through ctx.sessionQuery, verifying
     # Lesson 7's substance without a model. See solutions/l7.probe.patch.yml.
+    # Opt-in diagnostic: runs a real turn against the mock provider so Lesson 7's accounting,
+    # statistics, search and /compact claims are testable without a key. See solutions/l7.turn.patch.yml
+    - id: l7-turn-probe
+      name: dsh-exploration-kit-plugins/l7/turn-probe.js
+      disabled: true
+
     - id: l7-probe
       name: dsh-exploration-kit-plugins/l7/query-probe.js
       disabled: true

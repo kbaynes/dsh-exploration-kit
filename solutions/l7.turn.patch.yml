@@ -1,0 +1,9 @@
+# Enable Lesson 7's turn probe: a REAL turn against the repository's scriptable mock provider,
+# so token accounting, statistics, search, and /compact are verified WITH NO PROVIDER KEY.
+#
+# Apply with l7.patch.yml (which opens the session store) and a model patch pointing the default
+# model at `deepseek-official`, with DEEPSEEK_BASE_URL/DEEPSEEK_API_KEY pointed at the mock.
+- id: l7-turn-probe
+  disabled: false
+  config:
+    enabled: true

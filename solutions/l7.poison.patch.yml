@@ -1,0 +1,14 @@
+# Lesson 7's CAVEAT demonstration: the probe appends an event type the harness does not know, so
+# the query layer's limits can be asserted — an invented type is invisible to filters, and a
+# session carrying one breaks full-text search for the whole home (ADR-0024).
+#
+# This overlay is deliberately not part of the normal run. The session it creates is unreadable,
+# so whoever uses this must remove it afterwards; solutions/verify-l7.sh does.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
+#       --patch <kit>/solutions/l7.poison.patch.yml --port 0 --no-open
+- id: l7-probe
+  disabled: false
+  config:
+    enabled: true
+    appendInvented: true
