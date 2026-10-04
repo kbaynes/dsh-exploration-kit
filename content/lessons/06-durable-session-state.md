@@ -36,12 +36,12 @@ and the [persistence catalog](https://github.com/deepseek-ai/deepseek-harness/bl
 
 ## Prerequisites
 
-L1–L5 complete. You need the inbox of concepts from L5 — particularly that the log
-is the source of truth — plus your reload loop.
+L1–L5 complete. You need L5's central claim — the log is the source of truth — plus
+your reload loop.
 
 ## Step 1 — Declare a new event
 
-Create `<kit>/plugins/l6/types.ts`:
+Create `<kit>/kit-plugins/l6/types.js`:
 
 ```ts
 declare module '@deepseek-ai/dsh-session/types' {
@@ -73,32 +73,33 @@ replayable:
 
 ## Step 2 — Append durably
 
-Create `<kit>/plugins/l6/counter.ts`:
+Open `<kit>/kit-plugins/l6/counter.js`:
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import type { Session } from '@deepseek-ai/dsh-session'
-import './types.ts'
-
 export const name = 'l6-counter'
 export const inject = ['agents']
 
-const counts = new WeakMap<Session, number>()
+/** Per-session running count, kept in memory and mirrored into the log. */
+const counts = new WeakMap()
 
-export function apply(ctx: Context) {
+export function apply(ctx) {
   ctx.on('agent/created', (agent) => {
-    const session = agent.session
-    counts.set(session, 0)
+    counts.set(agent.session, 0)
+    console.log('[l6-counter] tracking a new session')
   })
 
-  // Watch committed events: a log-only event reaches the model never,
-  // but every registered observer sees it.
+  // `session/event` sees every committed event. A log-only event never reaches the
+  // model, but every registered observer sees it.
   ctx.on('session/event', (session, event) => {
     if (event.type !== 'tool/result') return
     const next = (counts.get(session) ?? 0) + 1
     counts.set(session, next)
+    // The event carries the COMPLETE post-change state, never a bare delta:
+    // replay has no reliable "previous" to accumulate against.
     session.append('l6/step', { label: 'tool-result', count: next })
   })
+
+  console.log('[l6-counter] ACTIVE — appends l6/step on each tool result')
 }
 ```
 
@@ -113,48 +114,62 @@ Note the shape: the event carries `count`, the **complete** post-change state.
 The projection doc is explicit that a state-carrying log event must never carry a
 bare delta, because replay has no reliable "previous" otherwise.
 
-Mount `<kit>/plugins/l6.patch.yml` as usual and turn on HMR for the plugin
-directory.
+The row is already in the bundle, so the plugin loads with the rest. Turn on HMR for
+the plugin directory (L3, step 4) if you want edits to take effect live.
 
 ## Step 3 — Fold it into a projection
 
 Reading raw events everywhere does not scale. Register a projection unit so any
 reader gets current state without re-deriving it:
 
-```ts
-import type { Context } from '@deepseek-ai/cordis'
+The kit splits this in two so the interesting part is testable without a session:
+`<kit>/kit-plugins/l6/fold.js` holds the pure definition, and
+`<kit>/kit-plugins/l6/projection.js` registers it.
+
+```js
+// fold.js — the pure core
 import { z } from 'zod'
 
-// A projection key is typed against a merge-extensible table, so declare yours.
-declare module '@deepseek-ai/dsh-session-projection/types' {
-  interface SessionProjectionStateMap {
-    l6Steps: { total: number }
-  }
-  interface SessionProjectionMap {
-    l6Steps: { total: number }
-  }
+export const stateSchema = z.object({ total: z.number() })
+
+export const projection = {
+  key: 'l6Steps',
+  stateSchema,
+  stateVersion: 1,
+  init: () => ({ total: 0 }),
+  apply: (state, event) =>
+    event.type === 'l6/step' ? { total: event.data.count } : state,
+  wire: {
+    viewSchema: stateSchema,
+    view: state => ({ total: state.total }),
+  },
 }
+```
+
+```js
+// projection.js — registration
+import { projection } from './fold.js'
 
 export const name = 'l6-projection'
 export const inject = ['sessionProjections']
 
-const stateSchema = z.object({ total: z.number() })
-
-export function apply(ctx: Context) {
-  ctx.sessionProjections.register({
-    key: 'l6Steps',
-    stateSchema,
-    stateVersion: 1,
-    init: () => ({ total: 0 }),
-    apply: (state, event) =>
-      event.type === 'l6/step' ? { total: event.data.count } : state,
-    wire: {
-      viewSchema: stateSchema,
-      view: state => ({ total: state.total }),
-    },
-  })
+export function apply(ctx) {
+  ctx.sessionProjections.register(projection)
+  console.log('[l6-projection] ACTIVE — registered the l6Steps unit')
 }
 ```
+
+In a TypeScript project, a projection key must also be declared against a
+merge-extensible table:
+
+```ts
+declare module '@deepseek-ai/dsh-session-projection/types' {
+  interface SessionProjectionStateMap { l6Steps: { total: number } }
+  interface SessionProjectionMap { l6Steps: { total: number } }
+}
+```
+
+Without it, `key: 'l6Steps'` fails to typecheck — the key is not a free string.
 
 Both schemas are **Zod** schemas, not raw JSON Schema objects: the registry calls
 `.parse()` on them (`packages/llm/token-meter/src/usage-projection.ts` is a real
@@ -211,12 +226,30 @@ the concrete failure the "complete post-change state" rule prevents. Revert.
 
 ## Verification
 
-1. `l6/step` rows are visible in the session's JSONL file.
-2. `stateOf(session, 'l6Steps').total` matches the number of appended events.
-3. After a full restart, the same key still reports the correct total.
-4. Removing the projection plugin and re-reading shows the fold is the only thing
+Testable without a session, and tested in CI:
+
+```sh
+pnpm run check:units     # runs kit-plugins/l6/fold.test.mjs
+```
+
+1. Folding `l6/step` events yields the reported total.
+2. An unrelated event returns the **same state reference** — the contract that keeps
+   a projection from recomputing on every event.
+3. A relevant event returns a new reference.
+4. A delta-shaped event produces a wrong total, which is *why* producers must send
+   complete post-change state.
+
+Requires a session, and therefore a provider:
+
+5. `l6/step` rows are visible in the session's JSONL file.
+6. `stateOf(session, 'l6Steps').total` matches the number of appended events.
+7. After a full restart, the same key still reports the correct total.
+8. Removing the projection plugin and re-reading shows the fold is the only thing
    producing state — the events remain.
-5. A delta-carrying event demonstrably breaks the replay total.
+
+The split between `fold.js` and `projection.js` exists so items 1–4 are real tests
+rather than assertions about code nobody ran. Items 5–8 are recorded as unverified
+in [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
 
 ## Exit check — you should now be able to explain
 

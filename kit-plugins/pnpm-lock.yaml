@@ -26,6 +26,9 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: ^3.18.4
         version: 3.18.4
+      zod:
+        specifier: ^4
+        version: 4.6.5
 
 packages:
 

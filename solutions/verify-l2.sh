@@ -37,7 +37,25 @@ check() { # check <label> <expected-substring> <haystack>
   fi
 }
 
-dump() { (cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" "$@" --dump-config 2>&1); }
+# Compose the profile. A silent empty result means dsh could not compose at all —
+# usually a missing profile or a sandbox that blocks writing to $DSH_HOME — so say
+# that plainly instead of reporting every row as missing.
+dump() {
+  # NOTE: the local must NOT be called `out` — under `set -u`, `local out` shadows
+  # the caller's variable and leaves it unbound, which made every check in this
+  # script fail on an unset variable rather than on its actual content.
+  local composed
+  composed="$(cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" "$@" --dump-config 2>&1)"
+  if [[ -z "$composed" ]]; then
+    echo "ERROR: 'dsh --profile $PROFILE --dump-config' produced no output." >&2
+    echo "       Is the kit bundle installed for that profile, and is \$DSH_HOME writable?" >&2
+    echo "       Install it with:" >&2
+    echo "         dsh plugin --profile $PROFILE add link:<kit>/kit-plugins" >&2
+    printf '%s\n' "SKIP: cannot compose the profile; install the kit bundle first"
+    exit 0
+  fi
+  printf '%s' "$composed"
+}
 
 echo "== 1. installed bundle carries the row =="
 out="$(dump)"

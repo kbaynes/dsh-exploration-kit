@@ -52,3 +52,10 @@
 
     - id: l5-inject
       name: dsh-exploration-kit-plugins/l5/inject.js
+
+    # Lesson 6: a durable session event and the projection that folds it.
+    - id: l6-counter
+      name: dsh-exploration-kit-plugins/l6/counter.js
+
+    - id: l6-projection
+      name: dsh-exploration-kit-plugins/l6/projection.js

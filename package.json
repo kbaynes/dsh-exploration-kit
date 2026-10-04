@@ -39,7 +39,9 @@
     "sync:site": "node scripts/sync-site-docs.mjs",
     "sync:examples": "node scripts/sync-examples.mjs",
     "check:examples": "node scripts/sync-examples.mjs --check",
-    "check:decisions": "node scripts/check-decisions.mjs"
+    "check:decisions": "node scripts/check-decisions.mjs",
+    "check:units": "cd kit-plugins && node --test l6/fold.test.mjs",
+    "check:kit": "node scripts/check-kit.mjs"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",

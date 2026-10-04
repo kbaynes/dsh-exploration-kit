@@ -28,6 +28,11 @@ check() {
 }
 
 out="$(cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" --dump-config 2>&1)"
+if [[ -z "$out" ]]; then
+  echo "ERROR: dsh --profile $PROFILE --dump-config produced no output." >&2
+  echo "       Install the kit bundle: dsh plugin --profile $PROFILE add link:<kit>/kit-plugins" >&2
+  exit 3
+fi
 
 echo "== 1. bundle carries the L4 rows =="
 check "waterfall gate row" "id: l4-write-scope" "$out"

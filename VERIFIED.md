@@ -37,7 +37,7 @@ version, expect to adjust commands and package import paths.
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
 | L4 — Build a policy gate | **Partly executed** | Executed: both policy plugins load (`l4-write-scope` reports its confinement root, `l4-guard` registers its monotonic guard), and the missing-`inject` failure was reproduced. **Not** executed: any allow/deny decision, which needs a model tool call. |
 | L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
-| L6 — Give the session durable state | **Documented** | `SessionEventMap` merge shape and `session.append` signature verified against `packages/deliverables/tool-present/src/types.ts` and `packages/core/session/src/index.ts`; projection rules from `packages/session/session-projection/README.md`. The JSONL replay experiment has **not** been run. |
+| L6 — Give the session durable state | **Partly executed** | Executed: both plugins load on the real composition; the projection's fold is **unit-tested** (`kit-plugins/l6/fold.test.mjs`, 4 tests, in CI) including the same-reference contract and the delta-corruption hazard. **Not** executed: appending to a real session, JSONL inspection, and restart replay — each needs a session. |
 | L7 — Operate the harness | **Documented** | Bundle rows, `tool-session-query` contract, and telemetry env vars verified against the bundle patches and package READMEs. Query authorization and cost measurement not run; needs a model. |
 | L8 — Orchestrate multiple agents | **Documented** | Subagent provider rows verified against `packages/bundle/base/cordis.patch.yml`; agent-team caps verified against `packages/experimental/agent-team-profile/cordis.patch.yml`. Needs a model. |
 | L9 — Automate the harness | **Documented** | Headless CLI contract, SDK usage, schedule and webhook contracts read from package READMEs. **The Python snippet in step 3 is a placeholder** and must be replaced or removed before publication. Needs a model. |
@@ -137,6 +137,34 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L6 plugins load, and the fold is unit-tested
+
+Both plugins activate:
+
+```
+[l6-counter] ACTIVE — appends l6/step on each tool result
+[l6-projection] ACTIVE — registered the l6Steps unit
+```
+
+The projection's pure core was extracted into `l6/fold.js` precisely so its two
+subtle contracts are testable without a session. `pnpm run check:units` runs four
+tests, all passing:
+
+1. Folding `l6/step` events yields the reported total.
+2. An unrelated event returns the **same state reference** — the contract that stops
+   a projection recomputing on every committed event.
+3. A relevant event returns a new reference.
+4. A delta-shaped event yields a wrong total, which is the evidence for the
+   "complete post-change state" rule rather than an assertion of it.
+
+**A dependency was declared rather than inherited.** `zod` resolved transitively
+before this lesson, but a plugin importing it directly must declare it — ADR-0005's
+exception for a package whose *teaching is the point*. It is now in the bundle's
+`peerDependencies` and `devDependencies`.
+
+**Deliberately unverified:** appending to a real session, reading `l6/step` rows from
+JSONL, and confirming the total survives a restart. Each needs a session.
 
 ## Evidence: L5 plugins load (session-dependent claims unverified)
 

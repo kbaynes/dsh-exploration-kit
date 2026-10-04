@@ -110,8 +110,12 @@ booting code is exactly the bug this project exists to avoid.
 ```sh
 # from the repository root
 pnpm install          # see README on the required hoisting setting
-pnpm run check:links
-pnpm run build
+
+# everything that needs no DSH checkout:
+pnpm run check:kit
+
+# add the upstream-link and per-lesson checks by pointing at a checkout:
+DSH_CHECKOUT=/path/to/deepseek-harness pnpm run check:kit
 
 # validate the OKF bundle, if okflint is installed
 okflint validate --manifest okf-base.yaml
