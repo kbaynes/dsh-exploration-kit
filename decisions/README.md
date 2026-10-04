@@ -44,3 +44,4 @@ without re-running the experiment.
 - [ADR-0011 — Load `.ts` lesson plugins only for type-only imports](0011-typescript-erasure-limits.md)
 - [ADR-0012 — The curriculum, the bundle, and examples are one source of truth](0012-single-source-of-truth.md)
 - [ADR-0013 — Pin optional DSH package versions; npm's `latest` tag is stale](0013-pin-optional-package-versions.md)
+- [ADR-0014 — Tag each release to the DeepSeek Harness commit it was verified against](0014-tag-releases-to-a-harness-commit.md)

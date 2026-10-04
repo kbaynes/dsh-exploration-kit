@@ -3,6 +3,12 @@
 A fast status view. The detailed task list with checkboxes lives in
 [PLAN.md](PLAN.md); this file is what you read in five seconds.
 
+**Verified harness state:** DSH `0.2.0-rc.2` at
+`639ed015397290b3745d163aafe02ffee4aa3f84` (tag `dsh-v0.2.0-rc.2`), captured
+2026-10-01. Kit releases are tagged against this so the relationship survives; see
+[VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets) and
+[PLAN Phase 4.5](PLAN.md).
+
 **Current phase: 1 — Building lessons.** Lessons 1–2 built and verified; nothing is published yet.
 
 | Phase | Goal | Status |
@@ -13,6 +19,7 @@ A fast status view. The detailed task list with checkboxes lives in
 | 2 | Test infrastructure — automated verification in CI | 🔄 `check:kit` runner + unit tests landed |
 | 3 | Whole-kit review — editorial and technical pass | ⬜ Not started |
 | 4 | Publication readiness — placeholders, licensing, metadata | ⬜ Not started |
+| 4.5 | Tag the release against a harness state | ⬜ Not started |
 | 5 | Publish and promote | ⬜ Not started |
 | 6 | After publication — maintenance and contributions | ⬜ Not started |
 

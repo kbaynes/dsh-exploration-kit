@@ -47,7 +47,7 @@ against it.
 - [x] Verify `pnpm install --frozen-lockfile && pnpm run build` succeeds from a clean
       export of the committed tree (no inherited `node_modules`); links and OKF
       validation pass there too
-- [ ] Decide and record the versioning/compatibility policy (deferred to Phase 4)
+- [ ] Decide and record the versioning/compatibility policy (see Phase 4.5)
 - [ ] Confirm `content/log.md` is the right home for curriculum history, or move
       development history to `CHANGELOG.md` and keep `log.md` OKF-only
       *(tracked as an open decision below)*
@@ -278,6 +278,43 @@ Turn the verified lessons into something CI can defend.
 - [ ] Confirm `examples/` and `solutions/` are populated and accurate
 - [ ] Decide on a support/feedback channel and state it in `README.md`
 - [ ] Review the issue/PR templates for usefulness
+
+## Phase 4.5 — Tag the release against a harness state
+
+**The kit is verified against one DeepSeek Harness commit, and a release must say
+which.** Without this, "the lessons work" is a claim about a moving target, and a
+reader on a different harness state has no way to tell whether a failure is theirs or
+upstream's. The policy and tag format are in
+[VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets).
+
+- [ ] Confirm the upstream checkout was **clean** when the verification was captured.
+      Debris in the harness tree invalidates the commit as an identifier of what was
+      exercised. (During development, `packages/dsh-exploration-kit/` test files were
+      found left in the checkout and removed — check for exactly this.)
+- [ ] Confirm the tested-against table carries the **full** commit, its upstream tag,
+      the branch, and the capture date.
+- [ ] Confirm the kit's `packageManager`, lockfiles, and pinned optional package
+      versions all match that release (see
+      [ADR-0013](decisions/0013-pin-optional-package-versions.md)).
+- [ ] Decide the kit version for the release and record it in `package.json`.
+- [ ] Create the annotated tag in the agreed format:
+      `v<kit-version>+dsh.<dsh-version>.g<short-dsh-sha>` — for the state verified
+      here, `v0.1.0+dsh.0.2.0-rc.2.g639ed01539`.
+- [ ] Put the harness commit, tag, and capture date in the tag message, so the claim
+      travels with the tag rather than only living in a file.
+- [ ] Add the harness state to the release notes and to `README.md`'s compatibility
+      section, so a reader sees it without opening the ledger.
+- [ ] Record the tagged harness state in [ROADMAP.md](ROADMAP.md) as the baseline for
+      the next round of verification.
+
+### When upstream moves
+
+- [ ] Re-run `pnpm run check:kit` against the new checkout.
+- [ ] Re-verify the lessons the change touches; **demote** any `VERIFIED.md` row whose
+      claims no longer hold, rather than leaving a stale claim in place.
+- [ ] Update the harness-state table, the pinned versions, and the tag naming
+      together, so none of them can disagree.
+- [ ] Tag a new release at the new commit. Retagging is re-verification, not an edit.
 
 ## Phase 5 — Publish and promote
 

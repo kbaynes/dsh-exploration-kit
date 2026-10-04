@@ -143,10 +143,17 @@ For a user/org root site or a custom domain, change `base` to `/`.
 
 ## Compatibility
 
-Authored and verified against **DeepSeek Harness `0.2.0-rc.2`** (commit
-`639ed01539`). DSH is a developer preview and will change. [VERIFIED.md](VERIFIED.md)
-records exactly which steps have been executed against that version and which are
-documented but unverified — read it before trusting a lesson's stronger claims.
+Authored and verified against **DeepSeek Harness `0.2.0-rc.2`**, upstream tag
+`dsh-v0.2.0-rc.2`, commit `639ed015397290b3745d163aafe02ffee4aa3f84`.
+
+Releases are tagged for the harness state they target —
+`v<kit-version>+dsh.<dsh-version>.g<short-dsh-sha>` — so you can tell at a glance
+whether a lesson was verified against the harness you have. See
+[VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets) for the policy.
+
+DSH is a developer preview and will change. [VERIFIED.md](VERIFIED.md) records exactly
+which steps have been executed against that commit and which are documented but
+unverified — read it before trusting a lesson's stronger claims.
 
 ## Project status and plan
 

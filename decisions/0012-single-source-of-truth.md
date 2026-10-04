@@ -48,6 +48,27 @@ rather than duplicated.
 That last point is the kind of rule that is obvious once stated and invisible three
 times in practice, which is why it is written down here instead of being rediscovered.
 
+### Self-referencing absolute URLs are links too
+
+Making synced documents use absolute repository URLs created a blind spot: every check
+treated `https://github.com/<owner>/<repo>/blob/main/...` as external and skipped it, so
+a self-link to a file that does not exist checked green. Two further gaps surfaced while
+fixing that:
+
+- `check-links.mjs` only scanned `content/`, so **root-level documents were never
+  checked at all** — `README.md` could link anywhere.
+- Its path resolution mixed a relative `root` with an absolute `import.meta.dirname`,
+  so the repository identity was read from the wrong directory and self-URL detection
+  never ran.
+
+Now: the checker scans root documents as well as the bundle, resolves a self-URL to its
+local path, and reports it like any other link — *scoped to this repository's identity*
+from `package.json`'s `kit` field. Scoping matters: an unscoped pattern makes every
+upstream DSH vendor link look broken, which is exactly what the first attempt did.
+
+The publication step is therefore a single edit to `kit.repositoryOwner`, not a
+find-and-replace across the repository.
+
 Rejected alternative: hand-maintaining `examples/`. It is the kind of copy that looks
 fine for a month and then quietly lies.
 

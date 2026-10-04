@@ -12,13 +12,74 @@ Harness version, so readers know how much weight each lesson's claims carry.
 | Field | Value |
 |---|---|
 | DeepSeek Harness version | `0.2.0-rc.2` |
-| Source commit | `639ed01539` |
+| Upstream tag | `dsh-v0.2.0-rc.2` |
+| Source commit (full) | `639ed015397290b3745d163aafe02ffee4aa3f84` |
+| Upstream branch at capture | `master` |
+| Upstream tree | clean (no local modifications) |
+| Captured on | 2026-10-01 |
+| Kit commit at capture | see `git log -1` in this repository |
 | Platform | macOS (darwin), Node.js 22.23.1 |
+| pnpm | 11.7.0 |
 | Verifier | Kit author |
+
+Record the **full** commit, not an abbreviation: a short hash is not a stable
+identifier for reproducing the state these lessons were verified against.
 
 DSH is a developer preview with explicitly breaking changes. On a different
 version, expect to adjust commands and package import paths.
 
+## Harness state this kit targets
+
+Every verification in this file is a statement about **one harness state**, identified
+by the upstream commit above. The kit is not versioned against a moving target.
+
+### Release-time gate
+
+Before a kit release is tagged, all of the following must hold:
+
+- [ ] Every lesson is **Implemented** and **Tested** in [ROADMAP.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/ROADMAP.md).
+- [ ] The upstream tree used for verification was **clean** at capture, so the commit
+      identifies exactly what was exercised. Debris in the harness checkout invalidates
+      the record.
+- [ ] The table above carries the full upstream commit, its tag, and the capture date.
+- [ ] `package.json`'s `packageManager`, the kit lockfiles, and the pinned optional
+      package versions all match the release under test (see
+      [ADR-0013](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0013-pin-optional-package-versions.md)).
+- [ ] No pre-publication placeholder remains: `pnpm run check:placeholders` passes.
+- [ ] `pnpm run check:kit` passes in full.
+
+### Tag naming
+
+A kit release tag records the harness state it targets, so the relationship survives
+without reading prose:
+
+```
+v<kit-version>+dsh.<dsh-version>.g<short-dsh-sha>
+```
+
+For the state verified here that would be, for a kit version of `0.1.0`:
+
+```
+v0.1.0+dsh.0.2.0-rc.2.g639ed01539
+```
+
+The tag is a claim: everything in it was verified against that commit. Retagging to a
+newer harness commit means re-running the verification, not editing the record.
+
+### When upstream moves
+
+DSH is a developer preview with explicitly breaking changes. On each upstream release:
+
+1. Re-run `pnpm run check:kit` against the new checkout.
+2. Re-verify the lessons the change touches; re-promote each `VERIFIED.md` row with its
+   new evidence, and demote any whose claims no longer hold.
+3. Update the table above and the pinned versions in one pass, so no two of them can
+   disagree.
+4. Tag a new kit release at the new commit.
+
+**Demoting a row is the honest outcome of an upstream break, not a failure.** A row
+that claims verification against a commit where the behaviour changed is worse than a
+row that admits it has not been checked yet.
 ## Status legend
 
 | Status | Meaning |
