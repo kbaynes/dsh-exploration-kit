@@ -18,8 +18,8 @@ held until more hardening is done.
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
 | 0.5 | Rewrite lessons for the verified bundle mechanism | ✅ All nine rewritten |
 | 1 | Build, test, and review each lesson | ✅ All nine built and executed |
-| 2 | Test infrastructure — automated verification in CI | ✅ 16 checks, version gate, full CI run |
-| 3 | Whole-kit review — editorial and technical pass | ✅ Independent review triaged and fixed |
+| 2 | Test infrastructure — automated verification in CI | ✅ 19 checks, version gate, full CI run (~1m45s) |
+| 3 | Whole-kit review — editorial and technical pass | ✅ Two independent audits triaged and fixed |
 | 4 | Publication readiness — placeholders, licensing, metadata | 🔄 runbook + gate done; needs the owner |
 | 4.5 | Tag the release against a harness state | ⬜ Pending publication |
 | 5 | Publish and promote | ⬜ Not started |
