@@ -405,6 +405,29 @@ fixed and re-verified.
 - [x] `scripts/sync-site-docs.mjs` — copies root docs into the VitePress source
       root, because VitePress refuses links that escape it
 
+## Decision records (ADRs)
+
+The durable engineering lessons of this project are recorded in
+[`decisions/`](decisions/README.md) as ADRs, each with Status, Context, Decision,
+Consequences, and Evidence. They exist so a future agent or contributor reads the
+reason *before* acting and does not repeat a mistake that cost real debugging time.
+
+`AGENTS.md` requires reading them first, `CONTRIBUTING.md` requires adding one when
+a new lesson is learned, and `scripts/check-decisions.mjs` (wired into CI) keeps the
+corpus well-formed and indexed.
+
+The relationship between the records:
+
+| Record | Answers | Role |
+|---|---|---|
+| `decisions/` (ADRs) | Why is it built this way? What should I not try? | Prevent repeats, before acting |
+| `VERIFIED.md` | What has actually been executed? | Prevent overclaiming, at claim time |
+| `PLAN.md` | What is left to do? | Track the work |
+
+A defect found while building a lesson belongs in both: the ADR records the durable
+decision; the lesson and `VERIFIED.md` record what was observed. The PLAN audit
+register is the task-level view and links to the ADRs where they exist.
+
 ## Open decisions
 
 Record decisions here as they are made, with the reason — a decision without a

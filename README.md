@@ -154,6 +154,8 @@ This kit is **not finished**. Only Lesson 1 has been executed end to end; the
 remaining lessons are written but unverified.
 
 - [ROADMAP.md](ROADMAP.md) — status at a glance, phase by phase and lesson by lesson.
+- [decisions/](decisions/README.md) — the engineering decisions behind the kit, each
+  one earned by getting it wrong first. Worth reading before contributing.
 - [PLAN.md](PLAN.md) — the detailed, checkbox-driven implementation plan covering
   build, test, review, publication readiness, and promotion.
 

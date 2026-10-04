@@ -4,6 +4,31 @@ This repository is a publishable curriculum for learning DeepSeek Harness (`dsh`
 Before answering architecture or plugin questions about DSH, read the capability
 map and the relevant lesson rather than reasoning from memory.
 
+## Read the decision records first
+
+**[decisions/](decisions/README.md) holds the engineering decisions behind this
+repository, and each one exists because someone already got it wrong.** Before you
+change a plugin, a config row, an install instruction, or a lesson mechanism, read
+the relevant ADR. They are short, and they are the difference between building on
+this project and repeating its mistakes.
+
+Highest-value starting points:
+
+- [ADR-0003 — Lesson plugins ship as a dsh bundle](decisions/0003-plugins-ship-as-a-bundle.md):
+  a plugin that imports dsh packages **cannot** be loaded from a loose file by a
+  `--patch` overlay. This invalidated the kit's original design.
+- [ADR-0004 — Install with `link:`, never `file:`](decisions/0004-link-not-file-install.md):
+  `file:` copies, so the reader's edits silently do nothing.
+- [ADR-0001 — Verify by running before teaching](decisions/0001-verify-by-running.md):
+  the rule that caught the two above.
+- [ADR-0002 — Never cite upstream paths unchecked](decisions/0002-verify-upstream-links.md):
+  a workspace knowledge bundle's paths are not the upstream repository's paths.
+
+**Add an ADR when you learn something a future contributor could re-learn the hard
+way** — a mechanism that does not work, a tool that behaves differently than
+documented, a design constraint that is not obvious. One decision, with the evidence
+that forced it. `pnpm run check:decisions` enforces the format and the index.
+
 ## Source of truth
 
 - **[PLAN.md](PLAN.md)** is the working plan — detailed, checkbox-driven, covering
@@ -48,10 +73,11 @@ map and the relevant lesson rather than reasoning from memory.
 ## Validation
 
 ```sh
-pnpm install           # required once; see README on hoisting
-pnpm run check:links   # every relative link inside content/ must resolve
-pnpm run validate      # OKF conformance (needs okflint on PATH)
-pnpm run build         # the VitePress site must build
+pnpm install             # required once; see README on hoisting
+pnpm run check:links      # every relative link inside content/ must resolve
+pnpm run check:decisions  # ADRs are well-formed and indexed
+pnpm run validate         # OKF conformance (needs okflint on PATH)
+pnpm run build            # the VitePress site must build
 ```
 
 `okf-base.yaml` declares the OKF types and required fields for this bundle, with

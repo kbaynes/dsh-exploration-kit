@@ -39,6 +39,10 @@ profile:
     Attribution:
       required: [type, title, description]
       optional: [resource, tags, timestamp]
+    # Decision records under decisions/ (ADR corpus).
+    ADR:
+      required: [type, title, description, status]
+      optional: [resource, tags, timestamp]
   date_fields: [timestamp]
 
 hygiene:

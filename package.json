@@ -38,7 +38,8 @@
     "check:upstream": "node scripts/check-upstream-links.mjs",
     "sync:site": "node scripts/sync-site-docs.mjs",
     "sync:examples": "node scripts/sync-examples.mjs",
-    "check:examples": "node scripts/sync-examples.mjs --check"
+    "check:examples": "node scripts/sync-examples.mjs --check",
+    "check:decisions": "node scripts/check-decisions.mjs"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",
