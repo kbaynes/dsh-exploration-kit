@@ -33,7 +33,7 @@ version, expect to adjust commands and package import paths.
 | Lesson | Status | Notes |
 |---|---|---|
 | L1 — Mount your first plugin | **Mostly executed** | Lifecycle cycle verified twice: originally via a patch overlay, and again after the bundle pivot (`dsh --profile kitdemo`), which is what the lesson now teaches. Both the `FAILED` throw and the `PENDING` inject experiments **are** executed, and their real output corrected two draft assumptions. See evidence below. |
-| L2 — Register a tool, compose with config | **Mostly executed** | Overlay composition, module-resolution path, config carry-through, closed-union Schemastery declaration, and last-write-wins across stacked `--patch` overlays **executed** via `solutions/verify-l2.sh`. Runtime tool registration **is** executed: the plugin mounts via the installed bundle and logs `ACTIVE — defaultUnit=lines`. Still **not** executed: an actual model tool call, and rejection of an invalid config value. See evidence below. |
+| L2 — Register a tool, compose with config | **Mostly executed** | Executed: the plugin loads through the installed bundle and logs `ACTIVE — defaultUnit=lines`; the Schemastery schema rejects `paragraphs` with a field-naming error; an overlay patch on the *installed* row changes the value to `chars`. Still **not** executed: an actual model tool call (needs a provider). See evidence below. |
 | L3 — Services, isolation, and hot reload | **Partly executed** | `PENDING` semantics and the fiber state machine read from `docs/cordis-tutorial/02..03`; the `diagnose.ts` registry walk and the HMR reload observation are **documented, not run**. |
 | L4 — Build a policy gate | **Partly executed** | The `PreToolDecision` union and pipeline order are verified against `packages/core/tools/src/index.ts` and `packages/core/tools/README.md`. The example gate plugin has **not** been executed. |
 | L5 — Assemble context deliberately | **Documented** | Verified against `docs/architecture.md`, `docs/cookbook/adding-a-tool.md` (`agent.inject()` semantics), `packages/skill/skill-filesystem/README.md`, and `packages/interaction/commands/README.md`. Not run; needs a model. |
@@ -138,7 +138,36 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
 
-## Evidence: L2 partly executed
+## Evidence: L2 executed (except the model call)
+
+All three behavioural claims were executed against the running harness.
+
+**The plugin loads through the bundle**, proving its `@deepseek-ai/dsh-tools` and
+`@deepseek-ai/schemastery` imports resolve and its config reaches `apply`:
+
+```
+[l1-hello] apply() ran — plugin is ACTIVE
+[l2-wordcount] ACTIVE — defaultUnit=lines
+```
+
+**An invalid value is rejected before `apply` runs:**
+
+```
+dsh: warning: 1 entry did not activate
+l2-wordcount (dsh-exploration-kit-plugins/l2/wordcount.js): ValidationError: invalid config:
+  - $.defaultUnit expected "words" | "lines" | "chars" but got "paragraphs" (at defaultUnit)
+    at resolveConfig (file:///<checkout>/vendor/cordis/lib/index.js:960:27)
+```
+
+This corrected an earlier draft that paraphrased the error and omitted the `$`
+prefix Cordis supplies.
+
+**An overlay patch overrides the installed row:**
+
+```
+$ dsh --profile kitdemo --patch <kit>/solutions/l2.override.patch.yml
+[l2-wordcount] ACTIVE — defaultUnit=chars
+```
 
 `solutions/verify-l2.sh <checkout>` was run against the real harness and passes:
 
@@ -203,6 +232,8 @@ environment fact, not a DSH defect.
 - **Model-call-dependent outcomes** in L5, L7, L8, and L9 — these require a
   configured provider and have not been run by the author.
 - The L9 **Python SDK** snippet — now a real upstream example, still unrun.
+- **An actual model tool call** for L2's `word_count` (and every other tool the kit
+  registers). Needs a configured provider.
 - **Runtime behavior of every example plugin** (L2's tool registration, L3's
   service and HMR loop, L4's gate denying a real call, L5's injection and skill
   catalog, L6's projection replay) — the mechanisms are verified against source

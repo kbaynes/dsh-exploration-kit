@@ -72,8 +72,9 @@ by package name. Lesson 2's plugin loads and mounts its tool through it.
 - [x] Verify L1's rewritten `FAILED` and `PENDING` experiments — the observed output
       corrected two assumptions in the draft (the boot warns and continues rather
       than exiting; `PENDING` does name the missing service at startup)
-- [ ] Rewrite **Lesson 2** the same way, and re-express last-write-wins as
-      overriding an *installed* row's config
+- [x] Rewrite **Lesson 2** for the bundle, re-expressing last-write-wins as
+      overriding an *installed* row's config, with the observed validation error
+      quoted verbatim
 - [x] Establish `link:` (not `file:`) as the documented install, verified: `file:`
       copies so edits do not propagate, which defeats every "edit and observe" step
 - [ ] Rewrite steps 2–4 of **every remaining lesson** before building it
@@ -114,10 +115,11 @@ or via PTC; 5 and 7–9 need a configured provider.
 - [x] Fix the `output.schema` blocker: it used raw JSON Schema, but `defineTool`
       takes the value-schema DSL (`additionalProperties: false`, per-property
       `required: true`)
-- [ ] Confirm the tool registers at load and its schema reaches prompt assembly
-- [ ] Execute a tool call and confirm the canonical value and render path
-- [ ] Confirm an invalid enum makes the load fail with a field-naming error
-      (**not** observable via `--dump-config`, which does not run validation)
+- [x] Confirm the tool registers at load and its schema reaches prompt assembly
+      (executed: the plugin logs ACTIVE through the installed bundle)
+- [ ] Execute a tool call and confirm the canonical value and render path (needs a provider)
+- [x] Confirm an invalid enum stops the load with a field-naming error (executed;
+      `--dump-config` cannot show this because it does not run validation)
 - [ ] Confirm `!!js` interpolates in `config` and `disabled`
 - [ ] Add the exact files to `examples/l2/`
 - [ ] Review the explanation for clarity

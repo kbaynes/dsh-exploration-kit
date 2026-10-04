@@ -26,7 +26,7 @@ lesson uses to vary behavior per deployment.
 | Schema-driven validation | Args are validated against the spec *before* `execute` runs |
 | Effect-scoped registration | Disposing the plugin fiber unregisters the tool |
 | Schemastery config | Config is validated before `apply` runs, so a plugin never runs half-configured |
-| Patch layers | Override a row's config from your own overlay, last write wins |
+| Config override | Patch an already-installed row in place, whole-`config` replacement |
 | `!!js` | Compute config or `disabled` at load time |
 
 Reference: the repository's
@@ -37,7 +37,8 @@ Production-grade reference implementation: `packages/shell/tool-bash`.
 
 ## Prerequisites
 
-L1 complete: you can mount a plugin from a patch file and read its boot output.
+L1 complete: the kit's bundle is installed in a `link:` profile (`kitdemo`), and
+you can read a plugin's boot output.
 
 ## Step 1 — A tool with a real contract
 
@@ -109,33 +110,58 @@ later lessons obeys them:
 
 ## Step 2 — Mount it
 
-`<kit>/plugins/l2.patch.yml`:
-
-> **Watch the specifier.** Your plugin lives beside the patch file
-> (`<kit>/plugins/l2/wordcount.ts`), so the entry's `name` is `'./l2/wordcount.ts'`.
-> If you place the patch *inside* the plugin directory instead, the correct
-> specifier is `'./wordcount.ts'` — never `'./l2/wordcount.ts'`, which resolves to
-> a nested `l2/l2/` path and fails to load.
+Open `<kit>/kit-plugins/cordis.patch.yml`. It already has a row for this lesson:
 
 ```yaml
 - insert:
     - id: l2-wordcount
-      name: './l2/wordcount.ts'
+      name: dsh-exploration-kit-plugins/l2/wordcount.ts
+      config:
+        defaultUnit: lines
 ```
 
-Boot it (random port, no browser):
+Nothing to install — L1's bundle is already linked, so this row is live. Confirm
+the row composed:
 
 ```sh
-dsh --profile web --patch ./<kit>/plugins/l2.patch.yml --port 0 --no-open
+cd <path/to/deepseek-harness>
+dsh --profile kitdemo --dump-config | grep -A4 'id: l2-wordcount'
 ```
 
-Then open the printed URL, start a session, and ask: *"Use word_count on
-`<some file path>`."* The model now sees the tool because registration flows into
-prompt assembly automatically.
+Then boot it (random port, no browser):
 
-**No API key?** You can still complete this lesson's verification path: the tool's
-schema is registered at load, so an invalid config (step 3) and a patch override
-(step 4) are observable without a model call.
+```sh
+dsh --profile kitdemo --port 0 --no-open
+```
+
+You should see the plugin's own confirmation line among the startup output:
+
+```
+[l2-wordcount] ACTIVE — defaultUnit=lines
+```
+
+That line is worth pausing on: it proves three separate things worked. The module
+**loaded** (so its `@deepseek-ai/dsh-tools` and `@deepseek-ai/schemastery` imports
+resolved), your **`Config` schema validated**, and the value reaching `apply` is
+`lines` — the value the row's `config` block supplied, not the schema default.
+
+Two traps worth knowing, both encountered while building this lesson:
+
+- **New rows go under `insert:`.** A top-level `- id: ...` entry targets an
+  *existing* row for override. Targeting a new id does **not** fail the boot — it
+  prints `patch: entry "<id>" not found` as a warning and silently skips the patch.
+  The symptom is a missing row in `--dump-config`, not an error.
+- **A row named by a relative file path cannot import dsh packages.** Rows in this
+  bundle are named by *package* (`dsh-exploration-kit-plugins/...`) precisely so
+  Node resolves them through the profile's installation. See L1 step 2.
+
+Now open the printed URL, start a session, and ask: *"Use word_count on
+`<some file path>`."* The model sees the tool because registration flows into prompt
+assembly automatically.
+
+**No API key?** Everything except that last sentence is still verifiable without a
+model: the plugin loads, the schema validates, and the config value changes. Those
+are steps 3 and 4.
 
 ## Step 3 — Break the config on purpose
 
@@ -149,35 +175,36 @@ Schemastery block carrying `defaultUnit`. Two properties of that pattern matter:
 Cordis accepts any [Standard Schema](https://standardschema.dev/) validator, but a
 plain object exported as `Config` will not work.
 
-Supply it from the patch:
-
-```yaml
-- insert:
-    - id: l2-wordcount
-      name: './l2/wordcount.ts'
-      config:
-        defaultUnit: lines
-```
-
-Now break it on purpose — set `defaultUnit: paragraphs` and boot. The plugin fails
-to load with a precise error naming the field, because the schema rejects the value
-before `apply` ever sees it:
+The bundle row supplies it. Now break it on purpose: edit the row in
+`<kit>/kit-plugins/cordis.patch.yml` to `defaultUnit: paragraphs` and boot again.
+This time the plugin never activates, and the startup summary tells you why:
 
 ```
-ValidationError: invalid config:
-  - $.defaultUnit ... (at defaultUnit)
+dsh: warning: 1 entry did not activate
+l2-wordcount (dsh-exploration-kit-plugins/l2/wordcount.js): ValidationError: invalid config:
+  - $.defaultUnit expected "words" | "lines" | "chars" but got "paragraphs" (at defaultUnit)
+    at resolveConfig (file:///<checkout>/vendor/cordis/lib/index.js:960:27)
+    ...
 ```
 
-The fiber goes to `FAILED`. This is the guarantee that a plugin never runs
-half-configured. Revert to a valid value.
+The schema rejects the value **before `apply` ever sees it**, which is the guarantee
+that a plugin never runs half-configured. Because you installed with `link:`, a save
+is enough — no reinstall.
 
-Do not remove the import or the pattern to "simplify" — a schema-valid config that
-names an unavailable resource should still be rejected as early as the plugin can
-resolve that reference. Early loud rejection is the house style.
+Note what is *not* here: no partial startup, no `defaultUnit` silently falling back,
+no log line from your `apply`. Restore `lines` before continuing.
 
-## Step 4 — Override from your own layer
+Do not remove the schema to "simplify" — a schema-valid config that names an
+unavailable resource should still be rejected as early as the plugin can resolve
+that reference. Early loud rejection is the house style.
 
-Without editing the file above, create `<kit>/plugins/l2.override.patch.yml`:
+## Step 4 — Override an installed row's config
+
+This is the everyday use of the overlay mechanism, and the reason L1 did not
+declare it dead: you often need to change a row's config **without forking the
+bundle that owns it**.
+
+Create `<kit>/plugins/l2.override.patch.yml`:
 
 ```yaml
 - id: l2-wordcount
@@ -185,18 +212,23 @@ Without editing the file above, create `<kit>/plugins/l2.override.patch.yml`:
     defaultUnit: chars
 ```
 
-Boot with both overlays, patch order matters:
+Note the shape: no `insert`, and no `name`. A top-level `- id:` entry *patches an
+existing row in place* — which is exactly why L1 warned that this form silently
+does nothing when the id does not exist yet.
+
+Boot with your overlay applied on top of the profile:
 
 ```sh
-dsh --profile web \
-  --patch ./<kit>/plugins/l2.patch.yml \
-  --patch ./<kit>/plugins/l2.override.patch.yml \
-  --port 0 --no-open
+dsh --profile kitdemo --patch <kit>/plugins/l2.override.patch.yml --port 0 --no-open
 ```
 
-A patch **replaces the targeted row's whole `config`** rather than merging into
-it — which is why the base bundle's comments insist a row with mode-specific
-values belongs to each mode bundle. Confirm with `--dump-config` that `chars` won.
+Watch the startup line: it now reads `defaultUnit=chars`. Confirm with
+`--dump-config` that `chars` won.
+
+A patch **replaces the targeted row's whole `config`** rather than merging into it.
+That is why the shipped bundles' comments insist a row whose value differs by mode
+belongs to each mode bundle: one `config` block is the whole story, and a patch
+overwrites it entirely.
 
 ## Step 5 — `!!js` for load-time values
 
@@ -209,8 +241,12 @@ Patch config values may be computed at load time:
 ```
 
 `!!js` is interpolated inside an entry's `config` and its `disabled` field only;
-other entry metadata stays literal. Try it, then move on — you will use `!!js`
-seriously in L3 for conditional mounting.
+other entry metadata stays literal. Try it in your override file, then move on — you
+will use `!!js` seriously in L3 for conditional mounting.
+
+One caution learned the hard way: `--dump-config` prints `!!js` expressions
+**verbatim, unevaluated**. So the dump shows you the expression, not the value it
+produced. To see the evaluated value, read the plugin's own startup line.
 
 ## Verification
 
@@ -228,6 +264,8 @@ seriously in L3 for conditional mounting.
 - Why registration is described as an effect, and what unregisters the tool.
 - Why a patch replacing a whole config block is a feature, not an oversight.
 - What `!!js` is allowed to touch.
+- Why an override entry has no `insert` and no `name`, and what happens if its `id`
+  does not match an installed row.
 
 ## Further exploration
 
