@@ -65,8 +65,10 @@ echo
 echo "== 3. the composition activates cleanly =="
 # `timeout` is GNU coreutils and absent on macOS, so bound the boot by hand.
 BOOTLOG="$(mktemp)"
-# Readiness here is the web app's URL line: this boot has no probe to wait for.
-boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:' 60 "$PATCH" || true
+# Readiness for a composition boot with no probe: the web app prints its URL, and a base-backed
+# profile prints the kit plugin's own apply line instead. Waiting for only the former made this
+# boot sit out the full 60s timeout on kitdemo — and then assert on a half-started log.
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:|\[l1-hello\] apply' 60 "$PATCH" || true
 log="$(cat "$BOOTLOG")"
 rm -f "$BOOTLOG"
 if grep -qE 'warning: [0-9]+ entr(y|ies) did not activate' <<<"$log"; then
@@ -75,6 +77,18 @@ if grep -qE 'warning: [0-9]+ entr(y|ies) did not activate' <<<"$log"; then
   failures=$((failures + 1))
 else
   echo "PASS  no activation warnings"
+fi
+
+# The overlay inserts the two invariant rows, so this boot ran the checks. A VIOLATION THROWS an
+# InvariantError rather than logging one, so "no violation" is the absence of that error - the
+# strongest claim available, since the service exposes `register` and no way to enumerate or run
+# checks on demand.
+if grep -q 'InvariantError' <<<"$log"; then
+  echo "FAIL  the invariant checks reported a violation:"
+  grep -B1 -A3 'InvariantError' <<<"$log" | head -6
+  failures=$((failures + 1))
+else
+  echo "PASS  the invariant checks ran and reported no violation"
 fi
 
 echo

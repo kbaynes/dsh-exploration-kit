@@ -53,8 +53,9 @@ fi
 echo
 echo "== 3. the composition activates cleanly on a web-backed profile =="
 BOOTLOG="$(mktemp)"
-# No probe on this boot: the web app's URL line is readiness.
-boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:' 60 "$PATCH" || true
+# No probe on this boot. Accept either readiness signal, so the pattern survives a profile change:
+# the web app prints its URL, and a base-backed profile prints the kit plugin's apply line.
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:|\[l1-hello\] apply' 60 "$PATCH" || true
 if grep -qE 'did not activate' "$BOOTLOG"; then
   echo "FAIL  an entry did not activate:"
   grep -A3 'did not activate' "$BOOTLOG" | head -5

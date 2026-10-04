@@ -99,7 +99,7 @@ row that admits it has not been checked yet.
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. **Not** executed: the model-visible skill catalogue, which only exists once a request is assembled. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
-| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted **with self-cleanup** (an unknown event type is invisible to both filters and search); and against the repository's mock provider a **real turn** is searchable by its own assistant text, the token-accounting projection is exposed with its documented shape, and `/compact` settles. **Not** executed: the workspace-authority refusal (needs a model-driven tool call) and the invariant findings. |
+| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider the **token-accounting projection shape** and `/compact` are exercised. **NOT executed: a COMPLETED turn** — turns in this composition end inside the harness's settings plugin with `cannot get property "toJSON" without inject` (an upstream finding; the kit's 119 entry Configs were audited and are all valid schemas). An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it has been replaced by a pinned assertion. Also not executed: the workspace-authority refusal, which needs a completed model-driven tool call. |
 | L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. **Not** executed: the monolith-versus-fan-out cost comparison, which needs real token usage. |
 | L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; the **headless contract** (exit codes, stdout/stderr, `--json` phases) runs keyless; and a **real SDK round trip** runs keyless too — the SDK drives a turn, receives the model's answer, reports the session, and observes 15 notifications. Delivery is **partly** verified: a due task splices its reminder and opens a turn, which then fails inside the harness's settings plugin (an upstream finding, shared with L7). **Not** executed: a webhook delivery, and the scheduled work completing. |
 
@@ -426,6 +426,25 @@ standalone repository. Both now use `<kit>/content/...`.
 
 **Deliberately unverified:** any real delegation, fork, or fan-out, and the
 monolith-versus-fan-out cost comparison. Every one needs a provider.
+
+## Evidence: L7 the invariant checks run clean
+
+The overlay inserts both invariant rows, and a violation **throws** `InvariantError` rather than logging
+one — so the check is that this boot mounts them and reports none:
+
+```
+PASS  no activation warnings
+PASS  the invariant checks ran and reported no violation
+```
+
+That is the strongest claim available: `ctx.invariants` exposes `register(packageName, installer)` and no
+way to enumerate or run checks on demand, so "no violation was reported" is honest where "the checks
+found nothing" would not be.
+
+**A cost bug found while adding it:** that boot's readiness pattern waited for `dsh web:`, which a
+base-backed profile never prints — so it sat out the full 60-second timeout and then asserted on a
+half-started log. Accepting either the web URL or the kit plugin's own apply line cut verify-l7 from
+about 75 seconds to 15.
 
 ## Evidence: L7 the turn does not complete, and an earlier check measured the wrong thing
 
