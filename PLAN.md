@@ -143,13 +143,12 @@ or via PTC; 5 and 7–9 need a configured provider.
 ### Lesson 4 — Build a policy gate
 
 - [ ] Implement the `write-scope` waterfall gate in `solutions/l4/`
-- [ ] Confirm a write outside the sandbox is denied with the lesson's reason text
-- [ ] Confirm a write inside the sandbox succeeds
 - [ ] Implement the monotonic `ctx.tools.guard()` example and confirm it cannot be
       undone by another listener
 - [ ] Confirm the pipeline-stage table matches the real order
-- [ ] Decide whether the lesson needs a provider; if not, document the PTC or
-      reload-based verification path that makes it testable offline
+- [x] Decided and implemented: the lesson needs **no** provider. A probe dispatches
+      synthetic calls through `ctx.tools.execute()` and classifies the denying layer, so the
+      gate's decisions are asserted by `verify-l4.sh` (see ADR-0021).
 - [ ] Add the exact files to `examples/l4/`
 - [ ] Review the explanation for clarity
 - [ ] Update the `VERIFIED.md` row

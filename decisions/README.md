@@ -51,3 +51,4 @@ without re-running the experiment.
 - [ADR-0018 — A pristine install must exit 0, and pnpm 11 requires build approval for that](0018-a-pristine-install-must-succeed.md)
 - [ADR-0019 — A row resolves against the installation; only missing packages need installing](0019-what-must-be-installed-vs-what-resolves.md)
 - [ADR-0020 — Full verification runs against the pinned commit, on a schedule](0020-verify-against-the-pinned-commit.md)
+- [ADR-0021 — Policy decisions are verifiable without a model, and the denying layer must be identified](0021-exercise-the-tool-pipeline-without-a-model.md)

@@ -42,6 +42,12 @@
     - id: l4-guard
       name: dsh-exploration-kit-plugins/l4/guard.js
 
+    # Opt-in diagnostic: dispatches synthetic tool calls so Lesson 4's policy decisions
+    # can be verified without a model. Enable with solutions/l4.probe.patch.yml.
+    - id: l4-probe
+      name: dsh-exploration-kit-plugins/l4/policy-probe.js
+      disabled: true
+
     # Lesson 5: a human command that needs no model turn.
     - id: l5-commands
       name: dsh-exploration-kit-plugins/l5/commands.js

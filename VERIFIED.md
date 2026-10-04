@@ -96,7 +96,7 @@ row that admits it has not been checked yet.
 | L1 — Mount your first plugin | **Mostly executed** | Lifecycle cycle verified twice: originally via a patch overlay, and again after the bundle pivot (`dsh --profile kitdemo`), which is what the lesson now teaches. Both the `FAILED` throw and the `PENDING` inject experiments **are** executed, and their real output corrected two draft assumptions. See evidence below. |
 | L2 — Register a tool, compose with config | **Mostly executed** | Executed: the plugin loads through the installed bundle and logs `ACTIVE — defaultUnit=lines`; the Schemastery schema rejects `paragraphs` with a field-naming error; an overlay patch on the *installed* row changes the value to `chars`. Still **not** executed: an actual model tool call (needs a provider). See evidence below. |
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
-| L4 — Build a policy gate | **Partly executed** | Executed: both policy plugins load (`l4-write-scope` reports its confinement root, `l4-guard` registers its monotonic guard), and the missing-`inject` failure was reproduced. **Not** executed: any allow/deny decision, which needs a model tool call. |
+| L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
 | L6 — Give the session durable state | **Partly executed** | Executed: both plugins load on the real composition; the projection's fold is **unit-tested** (`kit-plugins/l6/fold.test.mjs`, 4 tests, in CI) including the same-reference contract and the delta-corruption hazard. **Not** executed: appending to a real session, JSONL inspection, and restart replay — each needs a session. |
 | L7 — Operate the harness | **Partly executed** | Executed: the overlay composes as one override plus three inserts, and a boot applies it with **zero activation warnings**; the optional tool package is installed pinned to the dsh version. **Not** executed: any query, the authority refusal, token deltas, `/compact`, and the invariant findings — each needs a session. |
@@ -233,6 +233,29 @@ dump is evidence.
 
 **Deliberately unverified:** any headless run and its exit codes, `--json` events, an
 SDK round trip, a schedule firing, and a webhook delivery.
+
+## Evidence: L4's gate decisions executed
+
+Lesson 4's central claim was recorded as needing a provider. It does not:
+`ctx.tools.execute()` runs the same pipeline a model-direct call runs, so
+`kit-plugins/l4/policy-probe.js` dispatches synthetic calls and classifies the denying
+layer by its reason string.
+
+```
+[l4-probe] write-outside: GATE-DENIED  {"isError":true,"error":{"message":"writes are confined to <kit>/l4-sandbox"}}
+[l4-probe] write-inside:  OTHER-DENIED {"isError":true,"error":{"message":"[sandbox: file access denied under workspace-write mode]"}}
+```
+
+Two things are proven at once: the gate **enforces** (outside is denied with its own
+reason), and it **discriminates** (inside is not denied by it — a second, independent
+policy layer stops it, because the target is outside the agent's workspace). Enforcement
+alone would be satisfied by a gate that blocks everything.
+
+Also recorded: two traps. dsh's filesystem tools take `file_path`, not `path`, and the
+wrong key is rejected by argument validation *before* policy runs — easy to misread as the
+gate working. And `ctx.tools.execute()` requires a `signal`.
+
+`bash solutions/verify-l4.sh` asserts both verdicts.
 
 ## Evidence: L8 orchestration primitives are mounted, and its logic is unit-tested
 

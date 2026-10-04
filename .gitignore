@@ -30,3 +30,7 @@ kit-plugins/node_modules/
 # Local reproductions of the full verification (see .github/workflows/verify-against-dsh.yml)
 .dsh-checkout/
 .dsh-bin/
+
+# Written by Lesson 4's policy probe and by following the lesson's allow case.
+l4-sandbox/
+l4-sandbox-outside/

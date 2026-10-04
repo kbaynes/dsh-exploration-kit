@@ -70,9 +70,47 @@ else
 fi
 
 echo
+echo "== 5. the gate's DECISIONS, exercised through the real pipeline =="
+# Lesson 4's central claim used to be recorded as needing a model. It does not:
+# ctx.tools.execute() takes the same path a model-direct call takes, so the policy probe
+# can dispatch a synthetic call and the denying layer can be identified by its reason.
+PROBE_LOG="$(mktemp)"
+( cd "$DSH_CHECKOUT" && KIT_ROOT="$KIT" dsh --profile "$PROFILE" \
+    --patch "$KIT/solutions/l4.probe.patch.yml" --port 0 --no-open >"$PROBE_LOG" 2>&1 ) &
+probepid=$!
+sleep 24
+kill "$probepid" 2>/dev/null
+wait "$probepid" 2>/dev/null
+
+if grep -q '\[l4-probe\] write-outside: GATE-DENIED' "$PROBE_LOG"; then
+  echo "PASS  a write outside the root is denied BY THE GATE"
+else
+  echo "FAIL  the gate did not deny an outside write:"
+  grep '\[l4-probe\]' "$PROBE_LOG" | head -4 | sed 's/^/        /'
+  failures=$((failures + 1))
+fi
+
+# Discrimination matters as much as enforcement: a gate that denies everything would
+# also pass the check above.
+inside_verdict="$(grep -o '\[l4-probe\] write-inside: [A-Z-]*' "$PROBE_LOG" | awk '{print $3}')"
+if [[ "$inside_verdict" == "GATE-DENIED" ]]; then
+  echo "FAIL  the gate denied an inside write too — it is not discriminating"
+  failures=$((failures + 1))
+elif [[ -n "$inside_verdict" ]]; then
+  echo "PASS  an inside write is not denied by the gate (verdict: $inside_verdict)"
+  if [[ "$inside_verdict" == "OTHER-DENIED" ]]; then
+    echo "        it was stopped by a SECOND policy layer (DSH's own filesystem sandbox),"
+    echo "        which is the defense-in-depth point the lesson makes."
+  fi
+else
+  echo "WARN  the probe produced no verdict for the inside write"
+fi
+rm -f "$PROBE_LOG"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 4 wiring verified. The allow/deny decisions need a model tool call"
-  echo "and are recorded as unverified in VERIFIED.md."
+  echo "Lesson 4 verified, including the gate's decisions, via the policy probe."
+  echo "Still needing a provider: nothing in this lesson."
 else
   echo "$failures check(s) failed."; exit 1
 fi

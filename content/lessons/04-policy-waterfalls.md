@@ -218,23 +218,43 @@ confine. Defense in depth means your gate is not the only thing standing.
 
 ## Verification
 
-Observable without a model:
+**This lesson's decisions do not need a model after all.** `ctx.tools.execute()` takes
+the same pipeline a model-direct call takes — pre-execute policy, guards, dispatch — so a
+probe can dispatch a synthetic call and observe the result. It is the technique
+[ADR-0021](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0021-exercise-the-tool-pipeline-without-a-model.md)
+records, and it ships as `<kit>/kit-plugins/l4/policy-probe.js`.
 
-1. The boot prints `[l4-write-scope] ACTIVE — writes confined to <your root>`, so the
-   configured root reached `apply`.
-2. Removing `inject = ['tools']` makes the load fail with
-   `cannot get property "tools" without inject` — proof the service is not ambient.
-3. `[l4-guard] ACTIVE — monotonic guard registered` confirms the guard's listener
-   installed on the same composition.
+Run it:
 
-Requires a tool call (needs a provider):
+```sh
+KIT_ROOT=<kit> dsh --profile kitdemo \
+  --patch <kit>/solutions/l4.probe.patch.yml --port 0 --no-open
+```
 
-4. A write outside the sandbox is denied with your exact reason string.
-5. A write inside the sandbox succeeds.
-6. A guard denial survives even with your waterfall listener returning `next()`.
+```
+[l4-probe] write-outside: GATE-DENIED  ...writes are confined to <kit>/l4-sandbox
+[l4-probe] write-inside:  OTHER-DENIED ...sandbox: file access denied under workspace-write mode
+```
 
-Do not treat 1–3 as evidence of 4–6. That distinction is the whole point of this
-project's verification rule.
+Read those two lines carefully — they are the lesson.
+
+1. **Outside the root is denied by your gate**, and the reason string is yours.
+2. **Inside the root is *not* denied by your gate.** It is stopped by a second,
+   independent policy: DSH's own filesystem sandbox, because the target sits outside the
+   agent's workspace. That is what defense in depth looks like, and it is the reason a
+   gate is not the only thing you rely on.
+3. **A gate that denied everything would also pass (1).** Only (2) proves it
+   discriminates. Always test the permitted case.
+
+Still needs a provider: `ask` decisions, which require a real approval flow, and the
+undo-ability of the guard against *another live listener*.
+
+Two argument-name traps this probe hit, both worth knowing:
+
+- dsh's filesystem tools take **`file_path`**, not `path`. The wrong key is rejected by
+  argument validation *before* any policy runs, so it looks like a denial when it is not.
+- `ctx.tools.execute()` requires a **`signal`**; omitting it fails with a bare
+  `Cannot read properties of undefined (reading 'aborted')`.
 
 ## Exit check — you should now be able to explain
 

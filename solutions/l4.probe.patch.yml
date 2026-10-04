@@ -1,0 +1,14 @@
+# Enable Lesson 4's policy probe, which dispatches real tool calls through the pipeline so
+# the gate's allow/deny decisions can be observed WITHOUT a model provider.
+#
+# The row already exists in the bundle as `disabled: true`; this turns it on.
+#
+# KIT_ROOT must be set when booting, because BOTH the gate (l4-write-scope) and this probe
+# derive their tree from it. Without it, the gate defends the process working directory —
+# the checkout — and the probe would be testing a different tree than the one enforced.
+#
+#   KIT_ROOT=<kit> dsh --profile kitdemo --patch <kit>/solutions/l4.probe.patch.yml --port 0 --no-open
+- id: l4-probe
+  disabled: false
+  config:
+    enabled: true
