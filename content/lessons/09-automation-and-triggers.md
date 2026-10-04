@@ -109,6 +109,25 @@ const result = await harness.run('say hi')
 console.log(result.finalResponse)
 ```
 
+**Verified keyless.** Against the mock provider the SDK drives a real turn and reports:
+
+```
+finalResponse="mock response recovered"
+sessionId=session-0f92550e57ce453688600f03413614a1
+notifications=15
+```
+
+`notifications=15` is worth having: a run whose final text arrived but whose event feed was empty
+would mean the stream is not wired, which the final text alone would not reveal.
+`solutions/sdk-roundtrip.mjs` is the script; `verify-l9.sh` runs it.
+
+> **The SDK needs its own harness home.** Its profile persists sessions **uncompressed**
+> (`session.v4.jsonl`), while the base and web profiles write `session.v4.jsonl.zstd`. Pointing the
+> SDK at a home another profile has written fails with *"uses .jsonl.zstd, but this backend is
+> configured for compression none; use a separate root or select the matching compression mode"*.
+> That is a property of sharing a `DSH_HOME` across profiles, not a bug, and it is the kind of thing
+> worth knowing before you point a second surface at a working home.
+
 Design points that matter more than the API shape:
 
 - **The subprocess starts lazily and is owned by the instance across `run()`

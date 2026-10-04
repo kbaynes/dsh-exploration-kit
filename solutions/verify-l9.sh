@@ -183,11 +183,52 @@ fi
 rm -f "$MODEL_PATCH"
 
 echo
+echo "== 7. a real turn through the TypeScript SDK, keyless =="
+# The SDK spawns its own runtime and drives a turn over JSON-RPC, so this exercises the integration
+# path L9's step 2 describes rather than the CLI's.
+#
+# It gets its OWN harness home, and that is not tidiness: the sdk-minimal profile's persistence
+# expects UNCOMPRESSED session logs, while the profiles the other checks use write `.jsonl.zstd`.
+# Reusing one home fails with "uses .jsonl.zstd, but this backend is configured for compression
+# none" - a real property of sharing a home across profiles, and a useful one for a reader to know.
+SDK_HOME="$(mktemp -d)"
+if start_mock_llm "$DSH_CHECKOUT" 8134 success; then
+  SDK_OUT="$(cd "$DSH_CHECKOUT" && DSH_HOME="$SDK_HOME" \
+      DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
+      node "$KIT/solutions/sdk-roundtrip.mjs" "$DSH_CHECKOUT" 2>&1)"
+  sdk_status=$?
+  stop_mock_llm
+
+  check "the SDK run exits 0" '0' "$sdk_status"
+  check "the SDK receives the model's answer" 'finalResponse="mock response recovered"' "$SDK_OUT"
+  check "the SDK reports the session it drove" 'sessionId=session-' "$SDK_OUT"
+  # Notifications are the SDK's event feed; a turn that produced none would mean the stream is not
+  # wired, even if the final text arrived.
+  notifications="$(grep -o 'notifications=[0-9]*' <<<"$SDK_OUT" | head -1 | cut -d= -f2)"
+  if [[ -n "$notifications" && "$notifications" -gt 0 ]]; then
+    echo "PASS  the SDK observed session notifications ($notifications)"
+  else
+    echo "FAIL  the SDK reported no notifications (got: ${notifications:-none})"
+    failures=$((failures + 1))
+  fi
+  # Its own home, so nothing here can disturb the shared verification home.
+  if find "$SDK_HOME/sessions" -name 'session.v*.jsonl' 2>/dev/null | grep -q .; then
+    echo "PASS  the SDK's home holds an UNCOMPRESSED session log (its profile's compression mode)"
+  else
+    echo "WARN  no uncompressed session log found in the SDK home"
+  fi
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+rm -rf "$SDK_HOME"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 9 verified: opt-in activation, schedule durability, and a real headless turn"
-  echo "including exit codes, stdout/stderr separation, and the --json event stream."
-  echo "Still needs a credential: an SDK round trip, a webhook delivery, and a task firing"
-  echo "against a real provider."
+  echo "Lesson 9 verified: opt-in activation, schedule durability, a real headless turn (exit"
+  echo "codes, stdout/stderr separation, the --json event stream) and a real SDK round trip - all"
+  echo "keyless."
+  echo "Still needs a credential: a webhook delivery, and the scheduled work completing (blocked by"
+  echo "the upstream settings-plugin error recorded in VERIFIED.md)."
 else
   echo "$failures check(s) failed."; exit 1
 fi

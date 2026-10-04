@@ -101,7 +101,7 @@ row that admits it has not been checked yet.
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
 | L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted **with self-cleanup** (an unknown event type is invisible to both filters and search); and against the repository's mock provider a **real turn** is searchable by its own assistant text, the token-accounting projection is exposed with its documented shape, and `/compact` settles. **Not** executed: the workspace-authority refusal (needs a model-driven tool call) and the invariant findings. |
 | L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. **Not** executed: the monolith-versus-fan-out cost comparison, which needs real token usage. |
-| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; the **headless contract** (exit codes, stdout/stderr, `--json` phases) runs keyless against the mock provider; and **delivery is partly verified** — a due task splices its reminder into the inbox and opens a turn, which then fails inside the harness's settings plugin (`cannot get property "toJSON" without inject`, not kit code). **Not** executed: an SDK round trip, a webhook delivery, and the scheduled work completing. |
+| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; the **headless contract** (exit codes, stdout/stderr, `--json` phases) runs keyless; and a **real SDK round trip** runs keyless too — the SDK drives a turn, receives the model's answer, reports the session, and observes 15 notifications. Delivery is **partly** verified: a due task splices its reminder and opens a turn, which then fails inside the harness's settings plugin (an upstream finding, shared with L7). **Not** executed: a webhook delivery, and the scheduled work completing. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
 
@@ -198,6 +198,26 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L9 the SDK round trip, keyless
+
+`solutions/sdk-roundtrip.mjs` imports the SDK by absolute path out of the checkout (pnpm does not hoist it,
+so a bare specifier fails) and drives one turn against the mock:
+
+```
+finalResponse="mock response recovered"
+sessionId=session-0f92550e57ce453688600f03413614a1
+notifications=15
+```
+
+Five assertions: exit 0, the answer, the session id, a non-empty notification feed, and that the SDK home
+holds an **uncompressed** session log.
+
+**Two findings came out of making it work.** The SDK needs its own `DSH_HOME`: its profile persists
+sessions uncompressed while the base and web profiles write `.jsonl.zstd`, and sharing a home fails with
+*"uses .jsonl.zstd, but this backend is configured for compression none"*. And the SDK's turn **succeeded**
+where a web/base turn fails — more attribution evidence that the `toJSON` error belongs to compositions
+mounting the settings plugin, not to the harness's turn machinery.
 
 ## Evidence: L9 delivery fires, then hits an upstream error
 
