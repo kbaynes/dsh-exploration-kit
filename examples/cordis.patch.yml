@@ -53,6 +53,12 @@
     # Opt-in diagnostic: creates a scheduled task so Lesson 9's persistence claim can be
     # verified without a model. Needs the web-backed profile (ADR-0016) and the opt-in
     # schedule package. See solutions/l9.probe.patch.yml.
+    # Opt-in diagnostic: seeds a child session from a parent's events, so Lesson 8's fork
+    # heredity can be tested without a model. See solutions/l8.probe.patch.yml.
+    - id: l8-probe
+      name: dsh-exploration-kit-plugins/l8/fork-probe.js
+      disabled: true
+
     - id: l9-probe
       name: dsh-exploration-kit-plugins/l9/schedule-probe.js
       disabled: true

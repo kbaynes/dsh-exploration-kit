@@ -53,8 +53,36 @@ check "exports a normalize step" "export function normalizeResults" "$(cat "$wf"
 check "schema forbids extra properties" "additionalProperties: false" "$(cat "$wf")"
 
 echo
+echo "== 4. fork heredity: a seeded child inherits the cut =="
+# Lesson 8 claims a forked child is seeded from its parent, records the lineage, and exposes
+# the exact inherited prefix so a projection reads the cut rather than inferring it. All of
+# that is testable WITHOUT a model - creating sessions is not a model call.
+#
+# l7.patch.yml is applied too: the probe reads the parent's log through ctx.sessionQuery, and
+# that overlay is what opens the store.
+FORK_LOG="$(mktemp)"
+( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" \
+    --patch "$KIT/solutions/l7.patch.yml" \
+    --patch "$KIT/solutions/l8.probe.patch.yml" --port 0 --no-open >"$FORK_LOG" 2>&1 ) &
+forkpid=$!
+sleep 26
+kill "$forkpid" 2>/dev/null
+wait "$forkpid" 2>/dev/null
+
+probe_out="$(grep '\[l8-probe\]' "$FORK_LOG")"
+check "the child records the exact inherited prefix" 'child inheritedEventCount: 5' "$probe_out"
+check "the child header marks it as seeded" 'child header isSeeded: true' "$probe_out"
+check "the child records its parent" 'child parentSession: session-l8-parent-' "$probe_out"
+# Heredity observed through DERIVED state, not just the header: Lesson 6's projection folds
+# `sandbox/mode`, and the child reports the mode carried by the inherited event.
+check "the child's projection reflects the inherited event" 'child projection: {"mode":"read-only"}' "$probe_out"
+rm -f "$FORK_LOG"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 8 wiring verified. Model-dependent claims are unverified; see VERIFIED.md."
+  echo "Lesson 8 verified, including fork heredity through derived state."
+  echo "Still needs a provider: any real delegation or fan-out (a subagent turn), and the"
+  echo "monolith-versus-fan-out cost comparison."
 else
   echo "$failures check(s) failed."; exit 1
 fi

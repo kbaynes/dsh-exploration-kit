@@ -1,0 +1,12 @@
+# Enable Lesson 8's fork probe, which seeds a child from a parent's log prefix so the
+# heredity claim can be tested WITHOUT a model.
+#
+# Apply l7.patch.yml too: the probe reads the parent's log through ctx.sessionQuery, and
+# that overlay is what opens the session store.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
+#       --patch <kit>/solutions/l8.probe.patch.yml --port 0 --no-open
+- id: l8-probe
+  disabled: false
+  config:
+    enabled: true

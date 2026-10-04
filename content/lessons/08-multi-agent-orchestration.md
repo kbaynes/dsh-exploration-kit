@@ -150,21 +150,41 @@ cost, and finding the boundary where it stops paying is the skill.
 
 ## Step 4 — Fork a session at a turn boundary
 
-Programmatic forking is the seam behind `subagent_fork`:
+Programmatic forking is the seam behind `subagent_fork`, and **it is testable without a
+model** — creating sessions is not a model call. The kit's probe creates a parent, seeds a
+child from the parent's log, and reports what the child inherited:
 
-```ts
-ctx.agents.create({
-  sessionId,
-  seed,
-  inheritedEventCount,
-  meta: { parentSession, isSeeded: true },
-})
+```sh
+dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
+    --patch <kit>/solutions/l8.probe.patch.yml --port 0 --no-open
 ```
 
-Only agent-loop-published sessions persist, and the forked header carries an
-`isSeeded` lineage bit plus the exact inherited cut — a projection's `init` receives
-that cut and must not infer it from `firstLiveSeq`. Re-read your L6 projection and
-confirm it uses the cut it was given. If it guesses, forks will misreport state.
+```
+[l8-probe] parent log prefix: 5 event(s), seqs 0,1,2,3,4
+[l8-probe] child inheritedEventCount: 5
+[l8-probe] child header isSeeded: true
+[l8-probe] child parentSession: session-l8-parent-…
+[l8-probe] child projection: {"mode":"read-only"}
+```
+
+That last line is the claim worth pausing on. The child's **L6 projection already reports the
+mode carried by the inherited event** — heredity observed through *derived state*, not merely
+through a header field. If your projection inferred the cut instead of reading it, this is
+where forks would start misreporting, and this is the check that catches it.
+
+Two contracts the probe hit, both precise:
+
+- **The seed must be contiguous from seq 0** — a prefix of the parent's log, which is what
+  "completed-turn seed" means. Passing one later event fails with
+  `seed event at index 0 has seq 4 (expected 0); seed must be contiguous from 0`. So read the
+  prefix from the log rather than assembling one by hand.
+- **`inheritedEventCount` is required whenever `meta.isSeeded` is set**, or creation fails
+  with `seeded session requires an inherited event count`. It is the exact inherited prefix
+  length, and the child's header then carries it so a projection's `init` can read the cut
+  instead of inferring it from `firstLiveSeq`.
+
+Only agent-loop-published sessions persist. `bash <kit>/solutions/verify-l8.sh` asserts all
+four lines above.
 
 ## Step 5 — Opt into agent teams (optional, deeper)
 
@@ -218,8 +238,9 @@ Observable without a model:
 Requires a provider:
 
 4. A spawned child completes a task while demonstrating it lacks the parent's context.
-5. A forked child inherits the cut, and your L6 projection consumes it rather than
-   inferring it.
+5. A forked child inherits the cut, and your L6 projection consumes it rather than inferring
+   it — **executed**: the probe asserts the inherited prefix length, the `isSeeded` marker,
+   the parent lineage, and that the projection reflects the inherited event.
 6. `send_message` reaches a live child and `interrupt_agent` stops it.
 7. A real fan-out returns schema-validated rows.
 8. You can produce the four-part audit for a monolithic run *and* a decomposed run of

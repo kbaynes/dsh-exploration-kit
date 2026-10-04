@@ -100,7 +100,7 @@ row that admits it has not been checked yet.
 | L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; the skills overlay composes; and injected context is proved **durable across a restart** in two processes — the text is re-read from the persisted log, carried by a first-party `agent/inbox/spliced` event. **Not** executed: what a model's skill catalog contains, and whether `/l5-facts` answers in a real composer. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
 | L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no activation warnings; the pinned package installs; and the **query service itself** is exercised without a model — `listSessions` finds the created session, `readSession` returns its log, `filterEvents` matches by type, and all five lesson tools register in a live root Agent's scope (5/5). Two limits documented and asserted: an uninterpretable session breaks search corpus-wide, and an invented event type is invisible to filters. **Not** executed: the workspace-authority refusal, token deltas, `/compact`, and the invariant findings. |
-| L8 — Orchestrate multiple agents | **Partly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (no kit plugin needed), and the workflow's pure core passes **7 unit tests with a fake engine** — pipeline drives every item, the schema passes through, and a partially failed fan-out still yields a dense array. **Not** executed: any real delegation, fork, or fan-out — each needs a provider. |
+| L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (this lesson adds no plugin); the workflow's pure core passes 7 unit tests with a fake engine; and **fork heredity is verified without a model** — a child seeded from its parent's log reports the exact inherited prefix, the `isSeeded` marker, the parent lineage, and its L6 projection already reflects the inherited event. **Not** executed: any real delegation or fan-out (a subagent turn), and the monolith-versus-fan-out cost comparison. |
 | L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are confirmed opt-in (no shipped bundle provides them); the overlay composes; a web-backed profile activates both with **no warnings** while a base-backed one strands them `PENDING` naming the missing services; both install pinned; and a **scheduled task survives a restart** in a fresh process, with the same task id, and deletes cleanly. The Python snippet is a real upstream example. **Not** executed: a task firing and the agent working on it, any headless run, `--json` events, an SDK round trip, and a webhook delivery. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
@@ -280,6 +280,39 @@ wrong key is rejected by argument validation *before* policy runs — easy to mi
 gate working. And `ctx.tools.execute()` requires a `signal`.
 
 `bash solutions/verify-l4.sh` asserts both verdicts.
+
+## Evidence: L8 fork heredity, verified through derived state
+
+Executed without a model — creating and seeding sessions is not a model call:
+
+```
+[l8-probe] parent log prefix: 5 event(s), seqs 0,1,2,3,4
+[l8-probe] child inheritedEventCount: 5
+[l8-probe] child header isSeeded: true
+[l8-probe] child parentSession: session-l8-parent-…
+[l8-probe] child projection: {"mode":"read-only"}
+```
+
+The last line is the substantive one: the child's **Lesson 6 projection already reflects the
+mode carried by the inherited event**, so heredity is observed through derived state rather
+than through a header field alone. A projection that inferred the cut instead of reading it
+would misreport forks, and this is the check that would catch it.
+`solutions/verify-l8.sh` asserts all four lines.
+
+**Two API contracts found by probing, both now in the lesson:**
+
+```
+seed event at index 0 has seq 4 (expected 0); seed must be contiguous from 0
+seeded session requires an inherited event count
+```
+
+The seed must be a **prefix** of the parent's log, and `inheritedEventCount` is **mandatory**
+whenever `meta.isSeeded` is set.
+
+**A near-miss worth recording:** a truncated `grep` made me believe
+`inheritedEventCount` was not on `CreateAgentOptions`, and I was one edit away from
+"fixing" a snippet that was correct. The rule added after round 13 — verify before you
+edit — applies to reading code as much as to writing it.
 
 ## Evidence: L8 orchestration primitives are mounted, and its logic is unit-tested
 
