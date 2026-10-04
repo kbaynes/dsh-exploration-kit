@@ -91,8 +91,20 @@ check "toggling such a row fails as an unknown target" '"application":"failed"' 
 rm -f "$MANAGER_LOG"
 
 echo
+echo "== 6. service ISOLATION: two groups, two instances of one service name =="
+# The lesson's last exploration. Two groups isolate `lessonEcho` and each mounts its own
+# provider and consumer; if isolation works each consumer sees its own provider.
+ISO_LOG="$(mktemp)"
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$ISO_LOG" '\[l3-echo\] group B' 60 \
+  "$KIT/solutions/l3.isolate.patch.yml" || failures=$((failures + 1))
+check "group A sees its own provider" 'group A sees its own provider' "$(cat "$ISO_LOG")"
+check "group B sees its own provider" 'group B sees its own provider' "$(cat "$ISO_LOG")"
+rm -f "$ISO_LOG"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 3 verified: services, PENDING, reload, and the plugin_manager layer boundary."
+  echo "Lesson 3 verified: services, PENDING, reload, isolation, and the plugin_manager"
+  echo "layer boundary. Nothing in this lesson needs a provider."
 else
   echo "$failures check(s) failed."; exit 1
 fi

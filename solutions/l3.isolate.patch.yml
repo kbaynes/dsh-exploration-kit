@@ -1,0 +1,39 @@
+# Lesson 3's service-isolation exploration, made executable.
+#
+# Two groups each isolate the SAME service name (`lessonEcho`) and mount their own provider
+# and consumer. If isolation works, each consumer sees its own provider's greeting; without
+# it, one provider would win and both consumers would print the same line.
+#
+# `@deepseek-ai/cordis-plugin-group` is a dependency of the running installation rather than
+# of this bundle, so the row resolves through the installation's package tree (ADR-0019).
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l3.isolate.patch.yml --port 0 --no-open
+
+# New rows go under `insert:` - a top-level `- id:` entry patches an EXISTING row, and
+# these ids do not exist yet. This is the first trap Lesson 1 teaches, met again here.
+- insert:
+    - id: l3-iso-a
+      name: '@deepseek-ai/cordis-plugin-group'
+      group: true
+      isolate:
+        lessonEcho: true
+      config:
+        - id: a-provider
+          name: dsh-exploration-kit-plugins/l3/echo-service.js
+          config:
+            greeting: 'group A sees its own provider'
+        - id: a-consumer
+          name: dsh-exploration-kit-plugins/l3/echo-consumer.js
+
+    - id: l3-iso-b
+      name: '@deepseek-ai/cordis-plugin-group'
+      group: true
+      isolate:
+        lessonEcho: true
+      config:
+        - id: b-provider
+          name: dsh-exploration-kit-plugins/l3/echo-service.js
+          config:
+            greeting: 'group B sees its own provider'
+        - id: b-consumer
+          name: dsh-exploration-kit-plugins/l3/echo-consumer.js

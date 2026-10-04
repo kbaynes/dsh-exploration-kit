@@ -360,6 +360,13 @@ two minutes: each boot ends when its probe reports completion rather than after 
       killed early used to leave an empty log, which a check asserting on a pattern's *absence*
       would still pass. The motivation was concrete — a fixed 18-second wait made L6's second
       phase fail while its "log is readable" check passed for the wrong reason.
+- [ ] **Investigate one observed flake.** A single full-suite run reported 18 passed / 1 failed,
+      and two subsequent runs reported 19/19; the failing run's output was not captured, so the
+      check is unknown. A verification suite that fails intermittently is worse than one that is
+      slow, because it trains people to re-run rather than to read. Next time: capture the whole
+      run to a file (`pnpm run check:kit > /tmp/suite.log`) so a flake leaves evidence, and
+      suspect the checks that depend on timing most — L6's preset switch and L9's schedule
+      phases.
 - [ ] Consider running the per-lesson checks in parallel. They use distinct session ids and
       distinct overlays, so they are independent; the only shared resource is the harness home.
       That would need a profile or home per worker.

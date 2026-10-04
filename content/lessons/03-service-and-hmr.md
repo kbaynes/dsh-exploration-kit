@@ -310,9 +310,28 @@ Observable without a model:
 - **Re-read the diagnose plugin's two traps.** Both were found by running it, and
   both contradict the upstream Cordis tutorial as written. Finding that a tutorial
   is stale is itself a skill worth practising.
-- **Service isolation.** Define a group with an `isolate` realm and mount two
-  differently configured providers of one service name. This is the mechanism
-  behind per-session capability sets, which L8 uses for agent presets.
+- **Service isolation — executable, not just described.** `<kit>/solutions/l3.isolate.patch.yml`
+  defines two groups that each isolate `lessonEcho` and mount their own provider and
+  consumer:
+
+  ```sh
+  dsh --profile kitdemo --patch <kit>/solutions/l3.isolate.patch.yml --port 0 --no-open
+  ```
+
+  ```
+  [l3-echo] group A sees its own provider
+  [l3-echo] group B sees its own provider
+  ```
+
+  Each consumer resolves the provider in its own group, which is the mechanism behind
+  per-session capability sets (L8's agent presets). Two details the demo made concrete:
+
+  - **A `Service` subclass is the plugin.** Exporting the class as `default` is how Cordis
+    constructs it with `(ctx, config)` — no `apply` wrapper. The harness's own services do
+    the same (`sandbox-policy` ends with `export default SandboxPolicyService`).
+  - **A group's rows go inside it, and the group row itself goes under `insert:`** — a
+    top-level `- id:` entry patches an existing row, which is the first trap L1 teaches.
+    Meeting it again here is a fair reminder of how easy it is to get wrong.
 - **Runtime-defined packages.** The `extensions/` packages (`tool-cordis`,
   `cordis-host-runner`, `cordis-client-runner`, `ui-cordis`) let a definition be
   evaluated into a live plugin, host-side and in the browser. It is the same model
