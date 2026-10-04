@@ -25,6 +25,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib-llm.sh"
 PATCH="$KIT/solutions/l9.patch.yml"
 failures=0
 check() {
@@ -105,10 +106,88 @@ check "deleting it works" 'after deleting: 0 task(s)' "$(cat "$OUT2")"
 rm -f "$OUT1" "$OUT2" "$LOG"
 
 echo
+echo "== 6. a REAL headless turn, with no provider key =="
+# Lesson 9's headless contract - exit codes, stdout vs stderr, and the --json stream - needs a
+# PROVIDER, not a model pack: the repository's scriptable mock endpoint runs the real agent
+# loop against scripted output.
+#
+# One behavior per mock instance, with `--repeat-last`: the mock consumes one scripted entry
+# per REQUEST, and a turn does not necessarily make exactly one, so sequencing entries across
+# runs couples the assertions to an implementation detail. A mock that always succeeds, then
+# one that always fails, is deterministic.
+MODEL_PATCH="$(mktemp)"
+cat > "$MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+
+run_headless() { # run_headless <outfile> <errfile> [extra args...]
+  local out="$1" err="$2"; shift 2
+  ( cd "$DSH_CHECKOUT" && DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
+      dsh --profile headless --patch "$MODEL_PATCH" "$@" "say hi" >"$out" 2>"$err" )
+}
+
+json_types_of() { # json_types_of <stream file>
+  python3 -c "
+import json,pathlib
+types=[]
+for line in pathlib.Path('$1').read_text().split(chr(10)):
+    line=line.strip()
+    if line:
+        try: types.append(json.loads(line).get('type'))
+        except Exception: pass
+print(','.join(types))
+"
+}
+
+echo
+echo "-- a mock that always succeeds --"
+if start_mock_llm "$DSH_CHECKOUT" 8129 success; then
+  HL_OUT="$(mktemp)"; HL_ERR="$(mktemp)"
+  run_headless "$HL_OUT" "$HL_ERR"; hl_status=$?
+  check "a successful turn exits 0" '0' "$hl_status"
+  check "the final answer reaches stdout" 'mock response recovered' "$(cat "$HL_OUT")"
+
+  HLJ_OUT="$(mktemp)"; HLJ_ERR="$(mktemp)"
+  run_headless "$HLJ_OUT" "$HLJ_ERR" --json; hlj_status=$?
+  json_types="$(json_types_of "$HLJ_OUT")"
+  check "a --json turn still exits 0" '0' "$hlj_status"
+  check "the --json stream opens with a session" 'session,' "$json_types,"
+  check "the model text arrives as a text event" 'text' "$json_types"
+  # `turn_end` is a PHASE inside a `status` event, not an event type — asserting on the type
+  # string tested nothing. The phases are the documented content of the stream.
+  check "the stream carries turn_start" '"phase":"turn_start"' "$(cat "$HLJ_OUT")"
+  check "the stream carries turn_end" '"phase":"turn_end"' "$(cat "$HLJ_OUT")"
+  check "the stream closes with final" 'final' "$json_types"
+  rm -f "$HL_OUT" "$HL_ERR" "$HLJ_OUT" "$HLJ_ERR"
+  stop_mock_llm
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+
+echo
+echo "-- a mock that always fails --"
+if start_mock_llm "$DSH_CHECKOUT" 8130 server_error; then
+  HLF_OUT="$(mktemp)"; HLF_ERR="$(mktemp)"
+  run_headless "$HLF_OUT" "$HLF_ERR" --json; hlf_status=$?
+  check "a failing turn exits 1" '1' "$hlf_status"
+  check "the failure is reported on stderr, not stdout" 'dsh:' "$(cat "$HLF_ERR")"
+  check "the --json stream still terminates with final" 'final' "$(json_types_of "$HLF_OUT")"
+  rm -f "$HLF_OUT" "$HLF_ERR"
+  stop_mock_llm
+else
+  echo "FAIL  could not start the failing mock LLM server"; failures=$((failures + 1))
+fi
+rm -f "$MODEL_PATCH"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 9 verified, including that a scheduled task survives a restart."
-  echo "Still needs a provider: a task actually FIRING and the agent working on it, a"
-  echo "headless run, --json events, an SDK round trip, and a webhook delivery."
+  echo "Lesson 9 verified: opt-in activation, schedule durability, and a real headless turn"
+  echo "including exit codes, stdout/stderr separation, and the --json event stream."
+  echo "Still needs a credential: an SDK round trip, a webhook delivery, and a task firing"
+  echo "against a real provider."
 else
   echo "$failures check(s) failed."; exit 1
 fi

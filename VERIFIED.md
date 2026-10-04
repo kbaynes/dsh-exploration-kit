@@ -101,7 +101,7 @@ row that admits it has not been checked yet.
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
 | L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no activation warnings; the pinned package installs; and the **query service itself** is exercised without a model — `listSessions` finds the created session, `readSession` returns its log, `filterEvents` matches by type, and all five lesson tools register in a live root Agent's scope (5/5). Two limits documented and asserted: an uninterpretable session breaks search corpus-wide, and an invented event type is invisible to filters. **Not** executed: the workspace-authority refusal, token deltas, `/compact`, and the invariant findings. |
 | L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (this lesson adds no plugin); the workflow's pure core passes 7 unit tests with a fake engine; and **fork heredity is verified without a model** — a child seeded from its parent's log reports the exact inherited prefix, the `isSeeded` marker, the parent lineage, and its L6 projection already reflects the inherited event. **Not** executed: any real delegation or fan-out (a subagent turn), and the monolith-versus-fan-out cost comparison. |
-| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are confirmed opt-in (no shipped bundle provides them); the overlay composes; a web-backed profile activates both with **no warnings** while a base-backed one strands them `PENDING` naming the missing services; both install pinned; and a **scheduled task survives a restart** in a fresh process, with the same task id, and deletes cleanly. The Python snippet is a real upstream example. **Not** executed: a task firing and the agent working on it, any headless run, `--json` events, an SDK round trip, and a webhook delivery. |
+| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are confirmed opt-in; the overlay composes and activates on a web-backed profile with no warnings while a base-backed one strands both in `PENDING`; both install pinned; a scheduled task **survives a restart**; and the **headless contract is executed keyless** against the repository's scriptable mock provider — exit 0 with the answer on stdout, exit 1 with the diagnostic on stderr, and a `--json` stream carrying `turn_start`, `turn_end`, a `text` event and a closing `final`. **Not** executed: an SDK round trip, a webhook delivery, and a task firing. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
 
@@ -198,6 +198,28 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L9 the headless contract, keyless
+
+The remaining "needs a model" claim turned out to need a *provider*, and the repository ships a
+scriptable one (`dsh-llm-mock-server`). Against it, with no API key:
+
+```
+$ DEEPSEEK_BASE_URL=$MOCK/v1 DEEPSEEK_API_KEY=mock-key dsh --profile headless ... "say hi"
+mock response recovered
+EXIT=0
+
+$ ... --json "say hi"            # stream types/phases observed
+session, status(turn_start), status(step_start), text, status(step_end), status(turn_end), final
+
+$ ... against a mock scripted to fail
+EXIT=1        stderr: dsh: SERVER: mock script failed
+```
+
+`solutions/verify-l9.sh` starts one mock that always succeeds and one that always fails, and
+asserts eight properties across them. Recorded as ADR-0027, including that the mock consumes one
+scripted entry per *request* (so one behavior per instance is deterministic) and that `turn_end`
+is a phase inside a `status` event rather than an event type.
 
 ## Evidence: L9 a scheduled task survives a restart
 

@@ -60,6 +60,23 @@ show that the same row activates differently per profile.
 { echo "Summarize these changes:"; git diff --stat; } | dsh --profile headless
 ```
 
+**This is testable without a provider key**, which took a while to notice: the repository ships
+`dsh-llm-mock-server`, a scriptable Messages-compatible endpoint, so pointing the DeepSeek
+adapter at it runs the *real* loop with scripted model output.
+
+```sh
+# terminal 1 — a mock provider that always succeeds
+pnpm run mock:llm --port 8129 --api-key mock-key --sequence success --repeat-last
+
+# terminal 2 — a real turn against it
+DEEPSEEK_BASE_URL=http://127.0.0.1:8129/v1 DEEPSEEK_API_KEY=mock-key \
+  dsh --profile headless --patch <model-patch> "say hi"
+```
+
+The model's *output* is scripted; the exit code, the stream, and the log are real. That is the
+right trade for contract-shaped claims, and the kit's `solutions/verify-l9.sh` uses it: one mock
+instance that always succeeds and one that always fails, asserting both halves of the contract.
+
 Contract details that scripts depend on:
 
 - **Exit codes are the automation surface.** `0` means the task completed; `1`
