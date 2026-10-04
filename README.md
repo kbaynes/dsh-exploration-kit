@@ -133,7 +133,7 @@ DSH is a developer preview and will change. [VERIFIED.md](VERIFIED.md) records e
 
 ## Project status and plan
 
-This kit is **not finished**. Only Lesson 1 has been executed end to end; the remaining lessons are written but unverified.
+All nine lessons are built, and **every exit-check item in them has been executed** against the pinned harness state — most of them keyless against the repository's scriptable mock provider, three against a real model. The exact evidence, and the short list of what is deliberately not claimed, is in [VERIFIED.md](VERIFIED.md).
 
 - [ROADMAP.md](ROADMAP.md) — status at a glance, phase by phase and lesson by lesson.
 - [decisions/](decisions/README.md) — the engineering decisions behind the kit, each one earned by getting it wrong first. Worth reading before contributing.

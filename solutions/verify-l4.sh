@@ -105,7 +105,11 @@ elif [[ -n "$inside_verdict" ]]; then
     echo "        which is the defense-in-depth point the lesson makes."
   fi
 else
-  echo "WARN  the probe produced no verdict for the inside write"
+  # A WARN here would let the lesson's own discrimination claim go unmeasured while the script
+  # still exits 0 — and discrimination is the half that matters: "a gate that denied everything
+  # would also pass" the outside-write check.
+  echo "FAIL  the probe produced no verdict for the inside write"
+  failures=$((failures + 1))
 fi
 rm -f "$PROBE_LOG"
 

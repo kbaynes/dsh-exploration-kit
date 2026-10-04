@@ -57,13 +57,21 @@ echo "== 3. the composition activates cleanly on a web-backed profile =="
 BOOTLOG="$(mktemp)"
 # No probe on this boot. Accept either readiness signal, so the pattern survives a profile change:
 # the web app prints its URL, and a base-backed profile prints the kit plugin's apply line.
-boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:|\[l1-hello\] apply' 60 "$PATCH" || true
+# Readiness is REQUIRED: this phase's only assertions are about absence, so a boot that never
+# started would pass them on an empty log (lib.sh names the hazard).
+boot_ok=true
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:|\[l1-hello\] apply' 60 "$PATCH" || boot_ok=false
+if [[ "$boot_ok" != "true" ]]; then
+  echo "FAIL  the web composition did not reach readiness, so an empty log proves nothing"
+  failures=$((failures + 1))
+fi
 if grep -qE 'did not activate' "$BOOTLOG"; then
   echo "FAIL  an entry did not activate:"
   grep -A3 'did not activate' "$BOOTLOG" | head -5
   echo "      A base-backed profile strands these in PENDING — apply to a web profile."
   failures=$((failures + 1))
-else
+elif [[ "$boot_ok" == "true" ]]; then
+  # Only claim the absence when the boot actually happened.
   echo "PASS  no activation warnings on the '$PROFILE' profile"
 fi
 rm -f "$BOOTLOG"
@@ -150,15 +158,17 @@ echo "-- a mock that always succeeds --"
 if start_mock_llm "$DSH_CHECKOUT" 8129 success; then
   HL_OUT="$(mktemp)"; HL_ERR="$(mktemp)"
   run_headless "$HL_OUT" "$HL_ERR"; hl_status=$?
-  check "a successful turn exits 0" '0' "$hl_status"
+  check_exit "a successful turn exits 0" 0 "$hl_status"
   check "the final answer reaches stdout" 'mock response recovered' "$(cat "$HL_OUT")"
 
   HLJ_OUT="$(mktemp)"; HLJ_ERR="$(mktemp)"
   run_headless "$HLJ_OUT" "$HLJ_ERR" --json; hlj_status=$?
   json_types="$(json_types_of "$HLJ_OUT")"
-  check "a --json turn still exits 0" '0' "$hlj_status"
+  check_exit "a --json turn still exits 0" 0 "$hlj_status"
   check "the --json stream opens with a session" 'session,' "$json_types,"
-  check "the model text arrives as a text event" 'text' "$json_types"
+  # `,text,` against `"$json_types,"`: a bare 'text' also matches a `context` type, so a stream
+  # with no text event could pass.
+  check "the model text arrives as a text event" ',text,' "$json_types,"
   # `turn_end` is a PHASE inside a `status` event, not an event type — asserting on the type
   # string tested nothing. The phases are the documented content of the stream.
   check "the stream carries turn_start" '"phase":"turn_start"' "$(cat "$HLJ_OUT")"
@@ -175,7 +185,7 @@ echo "-- a mock that always fails --"
 if start_mock_llm "$DSH_CHECKOUT" 8130 server_error; then
   HLF_OUT="$(mktemp)"; HLF_ERR="$(mktemp)"
   run_headless "$HLF_OUT" "$HLF_ERR" --json; hlf_status=$?
-  check "a failing turn exits 1" '1' "$hlf_status"
+  check_exit "a failing turn exits 1" 1 "$hlf_status"
   check "the failure is reported on stderr, not stdout" 'dsh:' "$(cat "$HLF_ERR")"
   check "the --json stream still terminates with final" 'final' "$(json_types_of "$HLF_OUT")"
   rm -f "$HLF_OUT" "$HLF_ERR"
@@ -202,7 +212,7 @@ if start_mock_llm "$DSH_CHECKOUT" 8134 success; then
   sdk_status=$?
   stop_mock_llm
 
-  check "the SDK run exits 0" '0' "$sdk_status"
+  check_exit "the SDK run exits 0" 0 "$sdk_status"
   check "the SDK receives the model's answer" 'finalResponse="mock response recovered"' "$SDK_OUT"
   check "the SDK reports the session it drove" 'sessionId=session-' "$SDK_OUT"
   # Notifications are the SDK's event feed; a turn that produced none would mean the stream is not
@@ -248,7 +258,7 @@ if DSH_HOME="$TOOL_HOME" dsh plugin --profile sdk-minimal add "link:$KIT/kit-plu
     tool_status=$?
     stop_mock_llm
 
-    check "the tool-calling SDK run exits 0" '0' "$tool_status"
+    check_exit "the tool-calling SDK run exits 0" 0 "$tool_status"
     check "the SDK reports that it loaded a patches file" 'patches=1' "$TOOL_OUT"
     TOOL_LOG="$(find "$TOOL_HOME/sessions" -name 'session.v*.jsonl' 2>/dev/null | head -1)"
     tool_log="$(cat "$TOOL_LOG" 2>/dev/null)"
@@ -333,7 +343,7 @@ if start_mock_llm "$DSH_CHECKOUT" 8141 tool_call_success,success \
   tc_status=$?
   stop_mock_llm
 
-  check "a tool-call run exits 0" '0' "$tc_status"
+  check_exit "a tool-call run exits 0" 0 "$tc_status"
   check "the stream carries a tool_call event" '"type":"tool_call"' "$(cat "$TOOLCALL_LOG")"
   check "the event names the tool the model asked for" '"tool":"bash"' "$(cat "$TOOLCALL_LOG")"
   check "and carries the parsed input, not a raw string" '"input":{"command":"echo l9-tool-call-ok"' "$(cat "$TOOLCALL_LOG")"

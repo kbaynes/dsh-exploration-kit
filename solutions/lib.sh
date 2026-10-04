@@ -74,3 +74,19 @@ boot_and_wait() {
   echo "      (boot did not reach /$pattern/ within ${timeout}s)" >&2
   return 1
 }
+
+# Assert an exit status EXACTLY.
+#
+# `check` in the lesson scripts greps for a substring, so `check "…" '0' "$status"` also passes
+# for 10, 20 or 100, and `'1'` also passes for 10, 11 or 21. Exit codes are the whole claim in
+# several phases, so they are compared as values. `failures` is the caller's global.
+#   check_exit <label> <expected> <actual>
+check_exit() {
+  if [[ "$3" == "$2" ]]; then
+    echo "PASS  $1"
+  else
+    echo "FAIL  $1"
+    echo "      expected exit $2, got ${3:-<empty>}"
+    failures=$((failures + 1))
+  fi
+}

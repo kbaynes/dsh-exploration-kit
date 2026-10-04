@@ -143,7 +143,7 @@ fan_status=$?
 if [[ "$fan_status" -eq 0 || -s "$FAN_OUT" ]]; then
   AFTER="$(count_recent_parent_linked_sessions 5)"
 
-  check "the delegating turn exits 0" '0' "$fan_status"
+  check_exit "the delegating turn exits 0" 0 "$fan_status"
   check "the parent prints the model's answer" 'mock response recovered' "$(cat "$FAN_OUT")"
   # Three requests: the parent's tool call, the CHILD's own turn, then the parent's final answer.
   # `grep -c` PRINTS 0 when there are no matches (and exits 1), so `|| echo 0` appends a second 0 -
@@ -206,7 +206,7 @@ if start_mock_llm "$DSH_CHECKOUT" 8135 success; then
   mono_status=$?
   stop_mock_llm
   MONO_TOKENS="$(sum_stream_usage "$MONO_OUT")"
-  check "the monolith run exits 0" '0' "$mono_status"
+  check_exit "the monolith run exits 0" 0 "$mono_status"
   rm -f "$MONO_OUT" "$MONO_ERR"
 else
   echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))

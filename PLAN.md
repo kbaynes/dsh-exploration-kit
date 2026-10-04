@@ -343,7 +343,7 @@ An independent editorial review of all nine lessons was run as a separate review
       `$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd` — workspace-scoped,
       one directory per session, and compressed. The old text would have failed three ways.
 
-**Protected as intentional (do not edit away):** the uniform lesson skeleton; the compounding artifact chain (`diagnose` instrument → `l6/step` events → read back in L7 → consumed by L8's fork); the offline-vs-provider split with its explicit warning; real quoted output instead of invented samples; the upstream-tutorial corrections.
+**Protected as intentional (do not edit away):** the uniform lesson skeleton; the compounding artifact chain (`diagnose` instrument → L6's `sandbox/mode` fold → read back in L7 → consumed by L8's fork); the offline-vs-provider split with its explicit warning; real quoted output instead of invented samples; the upstream-tutorial corrections.
 
 ## Verification-suite performance
 
@@ -577,7 +577,7 @@ Two independent audits were run against the scaffold: a per-lesson technical acc
 
 ## Decision records (ADRs)
 
-The durable engineering lessons of this project are recorded in [`decisions/`](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/README.md) as ADRs, each with Status, Context, Decision, Consequences, and Evidence. They exist so a future agent or contributor reads the reason *before* acting and does not repeat a mistake that cost real debugging time.
+The durable engineering lessons of this project are recorded in [`decisions/`](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/README.md) as ADRs, each with Status, Context, Decision, Consequences, and Evidence. They exist so a future agent or contributor reads the reason *before* acting and does not repeat a mistake that cost real debugging time.
 
 `AGENTS.md` requires reading them first, `CONTRIBUTING.md` requires adding one when a new lesson is learned, and `scripts/check-decisions.mjs` (wired into CI) keeps the corpus well-formed and indexed.
 

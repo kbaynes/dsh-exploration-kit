@@ -68,8 +68,16 @@ BOOTLOG="$(mktemp)"
 # Readiness for a composition boot with no probe: the web app prints its URL, and a base-backed
 # profile prints the kit plugin's own apply line instead. Waiting for only the former made this
 # boot sit out the full 60s timeout on kitdemo — and then assert on a half-started log.
-boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:|\[l1-hello\] apply' 60 "$PATCH" || true
-log="$(cat "$BOOTLOG")"
+# The boot must REACH readiness. `|| true` here meant a boot that never started still produced an
+# empty log, and every assertion below is about a string's ABSENCE — so the phase passed while
+# measuring nothing. lib.sh names that hazard; this was an instance of it.
+if boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:|\[l1-hello\] apply' 60 "$PATCH"; then
+  log="$(cat "$BOOTLOG")"
+else
+  echo "FAIL  the composition did not reach readiness, so nothing below was measured"
+  log="$(cat "$BOOTLOG")"
+  failures=$((failures + 1))
+fi
 rm -f "$BOOTLOG"
 if grep -qE 'warning: [0-9]+ entr(y|ies) did not activate' <<<"$log"; then
   echo "FAIL  an entry did not activate:"
@@ -88,7 +96,9 @@ if grep -q 'InvariantError' <<<"$log"; then
   grep -B1 -A3 'InvariantError' <<<"$log" | head -6
   failures=$((failures + 1))
 else
-  echo "PASS  the invariant checks ran and reported no violation"
+  # The honest claim, and the ledger says why: `ctx.invariants` exposes `register` and no way to
+  # enumerate or run checks on demand, so this is "no violation was REPORTED".
+  echo "PASS  no invariant violation was reported"
 fi
 
 echo
@@ -127,10 +137,30 @@ check "readSession returns the log including the marker" \
 # The POSITIVE cases: a first-party log-only event is readable back AND findable by a type
 # filter, and the session is findable by full-text search. The caveat gets its own phase below,
 # because asserting only the limitation would leave the working path untested.
-check "the type filter answers" \
-  "filterEvents by type 'sandbox/mode':" "$(grep '\[l7-probe\]' "$QUERY_LOG")"
-check "the text filter answers" \
-  'filterEvents by text:' "$(grep '\[l7-probe\]' "$QUERY_LOG")"
+# WHAT THESE FILTERS MAY LEGITIMATELY FIND, and what the earlier version got wrong.
+#
+# The check used to match only the printed LABEL — `filterEvents by type 'sandbox/mode':` — so
+# `0 match(es)` satisfied it, and the ledger claimed "the type filter answers" for rounds without
+# that ever being true. Requiring a non-zero count exposed it, and the SOURCE explains it:
+# `extractSessionEventText` gives text to user/assistant messages, tool calls and results, todo
+# writes and turns that ended with a reason; every other event contributes an empty string and
+# `buildSessionEventSearchDocuments` omits it ("structural events are omitted"). A log-only
+# STRUCTURAL event such as `sandbox/mode` therefore produces no document at all, and no filter can
+# find it — by design.
+#
+# This session has no messages, so every filter here is legitimately empty. The POSITIVE case lives
+# in phase 7, which asserts `searchSessions(<marker>): 1 hit(s)` on a session that HAS a message.
+probe_out="$(grep '\[l7-probe\]' "$QUERY_LOG")"
+check "a structural event yields no searchable document (0 matches)" \
+  "filterEvents by type 'sandbox/mode': 0 match(es)" "$probe_out"
+check "and the probe counts how many of its events are indexable at all" \
+  'events the query layer can index (semantic-bearing): 0 of' "$probe_out"
+check "text search cannot find a session by its ID (an ID is not semantic text)" \
+  'searchSessions: 0 hit(s)' "$probe_out"
+# What MUST keep working, so a change in either direction is visible.
+check "the session is still listed (live-preferred)" 'mine found: true' "$probe_out"
+check "and its log is still readable, with the appended event in it" \
+  "appended 'sandbox/mode' is in the log: true" "$probe_out"
 # Lesson 7 says the five tools register in a live ROOT AGENT's scope - a claim about
 # agent.ctx rather than the global registry, and one that would silently stop being true.
 check "all five lesson tools register in the agent scope" \
@@ -138,18 +168,23 @@ check "all five lesson tools register in the agent scope" \
 rm -f "$QUERY_LOG"
 
 echo
-echo "== 6. the CAVEAT: an invented event type is invisible, and it breaks search =="
-# The contrast with section 5 is the lesson: readSession returns an invented event, and the query
-# layer cannot see it at all. This phase DELIBERATELY creates such a session, so it removes it
-# again - a session carrying a type the harness does not know breaks search for the whole home.
+echo "== 6. the CAVEAT: an invented event type, pinned rather than demonstrated =="
+# The intended lesson is contrast with section 5: readSession returns an invented event while the
+# query layer cannot see it. Section 5 now shows that the query layer sees NOTHING in this
+# composition, so "the invented type is invisible" is true of every type and proves nothing here.
+# The checks are kept as pinned observations, and the caveat's real evidence is elsewhere: an
+# unknown event type makes the session log UNREADABLE after a restart (ADR-0024, where 37 sessions
+# left behind by an earlier version of this probe broke search for a whole home).
+#
+# This phase DELIBERATELY creates such a session, so it removes it again.
 POISON_LOG="$(mktemp)"
 boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$POISON_LOG" '\[l7-probe\] done' 60 \
   "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l7.poison.patch.yml" || failures=$((failures + 1))
 poison_out="$(grep '\[l7-probe\]' "$POISON_LOG")"
 check "readSession still returns the invented event" 'marker present: true' "$poison_out"
-check "a type filter cannot see the invented type" \
+check "the type filter shows nothing for it (pinned; see section 5)" \
   "filterEvents by type 'l6/step': 0 match" "$poison_out"
-check "a text filter cannot see it either" 'filterEvents by text: 0 match' "$poison_out"
+check "and the text filter shows nothing (pinned, same reason)" 'filterEvents by text: 0 match' "$poison_out"
 # Full-text search cannot see it either. (A session carrying an unknown type breaks search for the
 # whole HOME when it is indexed at startup - demonstrated in ADR-0024 with 37 such sessions - but a
 # single one created mid-run is simply absent from the results, which is what is deterministic.)

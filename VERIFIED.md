@@ -87,7 +87,7 @@ DSH is a developer preview with explicitly breaking changes. On each upstream re
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. The **model-visible skill catalogue** is executed end to end: against the mock provider a real turn assembles a request, the session log carries the skill catalogue with the skill's BODY absent, and when the model then **calls the `skill` tool** the body loads through the real tool pipeline — announced on demand, loaded on demand. A skill **added to a watched root live** also reaches the catalog with **no restart**: two sessions in one process see different catalogs once a new skill directory is written, and the added skill's body is not shipped either. Nothing in L5 is left unexecuted. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
-| L7 — Operate the harness | **Executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider a **real turn COMPLETES** — it produces its own assistant message, ends `{"kind":"completed"}`, is searchable back to its own session, and exposes the **token-accounting projection** with real numbers — `uncachedInputTokens: 3` and `outputTokens: 23`, the mock's constants, not zeroes; `/compact` reports a **measurable reduction** (`Compacted 4 history items (~4742 tokens)`). An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it now searches for a marker unique to the run and asserts the hit is this session. `session_event_read` is executed through a real tool call and returns the target event as JSON with `Before:`/`After:` neighbour summaries. The **workspace-authority refusal** is executed too, via a real model-driven tool call into a session under a different `cwd`: the tool result is refused with `SESSION_QUERY_TOOL_UNAUTHORIZED`, and a nonexistent target produces a byte-identical refusal, so the target's existence does not leak. The **token delta from mounting a tool** is executed with a real provider: the same prompt, the same model, one row toggled, and the tool's schema costs **1,664 input tokens** (14,544 with `tool-session-query`, 12,880 without). Nothing in L7 is left unexecuted. |
+| L7 — Operate the harness | **Executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; and the row no longer claims that a log-only event is findable by a type filter — **structural events produce no searchable document at all**, which the source explains, and the positive case is asserted on a session that has semantic text (see the evidence below); the invariant rows are asserted to report **no violation**; and against the mock provider a **real turn COMPLETES** — it produces its own assistant message, ends `{"kind":"completed"}`, is searchable back to its own session, and exposes the **token-accounting projection** with real numbers — `uncachedInputTokens: 3` and `outputTokens: 23`, the mock's constants, not zeroes; `/compact` reports a **measurable reduction** (`Compacted 4 history items (~4742 tokens)`). An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it now searches for a marker unique to the run and asserts the hit is this session. `session_event_read` is executed through a real tool call and returns the target event as JSON with `Before:`/`After:` neighbour summaries. The **workspace-authority refusal** is executed too, via a real model-driven tool call into a session under a different `cwd`: the tool result is refused with `SESSION_QUERY_TOOL_UNAUTHORIZED`, and a nonexistent target produces a byte-identical refusal, so the target's existence does not leak. The **token delta from mounting a tool** is executed with a real provider: the same prompt, the same model, one row toggled, and the tool's schema costs **1,664 input tokens** (14,544 with `tool-session-query`, 12,880 without). Nothing in L7 is left unexecuted. |
 | L8 — Orchestrate multiple agents | **Executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. The **monolith-versus-fan-out cost comparison** is executed and measured: one turn costs 26 tokens, the same task as a fan-out costs 57 (parent 31 + child 26), and the child's 26 are attributed to the **child's own session** rather than pooled. Measuring it also explained an apparent stall: a child's session was sometimes left open because the mock's scripted call took `subagent`'s **default background scheduling** and the headless process exited mid-turn; `run_in_background: false` closes it every time, and the phase now asserts the child's turn **closed** rather than merely counting requests. The two model-judgement items are executed too, with a real provider: a spawned child **does not** share the parent's conversation (a passphrase is in the parent's log, absent from the child's, and the child answers `NOT-TOLD`), and `send_message` **reaches a live child** while `interrupt_agent` **stops it** (the parent calls all four tools, the marker arrives in the child's log, and the child's turn closes as an abort). What remains unexecuted is only the *magnitude* of the cost comparison. The mock's input is a constant 3 tokens and its output is a scripted reply's character count, so the totals prove correct attribution across agents rather than a realistic price. |
 | L9 — Automate the harness | **Executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; **delivery** is verified end to end — a due task splices its reminder, records a delivery receipt, resumes the session and **completes the scheduled work** (a second assistant message, `{"kind":"completed"}`); the **headless contract** (exit codes, stdout/stderr, `--json` phases, and a real **tool call with its correlated result** in the stream) runs keyless; and a **real SDK round trip** runs keyless too — the SDK drives a turn, receives the model's answer, reports the session, and observes 23 notifications — including an SDK run that **loads a patches file and executes an earlier lesson's tool**: the mock scripts a `word_count` call that omits `unit`, the patch sets `defaultUnit: chars` for Lesson 2's tool, and the result reads `11681 chars` — the real character count of the kit README. The patched unit proves the patch was loaded; the count proves the tool read the file. The **webhook delivery** is executed too: a signed GitHub delivery is accepted (202) and creates **exactly one Session**, an unsigned one is refused as malformed (400) and a wrongly signed one as unauthenticated (401), and a **repeated delivery id runs the rule again** (2 Sessions), which is the documented behaviour since `deliveryId` is never used for built-in deduplication. It needed no credential: the adapter takes a credential *reference*, and credential resolution reads the process environment first, so the check signs its own payload. Nothing in L9 is left unexecuted. |
 
@@ -348,7 +348,7 @@ On a **web-backed** profile with both installed, a boot produced no activation w
 
 **Where the tools appear.** `schedule_*` registers in a live root Agent's scope, so it does not show up in `--dump-config`. Composing cleanly proves the service loaded; observing the tools needs a session. The lesson states that rather than implying the dump is evidence.
 
-**Deliberately unverified:** any headless run and its exit codes, `--json` events, an SDK round trip, a schedule firing, and a webhook delivery.
+**Superseded.** An earlier version of this section listed the headless run and its exit codes, `--json` events, the SDK round trip, a schedule firing and a webhook delivery as unverified. All five are executed keyless in `solutions/verify-l9.sh` (phases 6–10).
 
 ## Evidence: L4's gate decisions executed
 
@@ -573,6 +573,35 @@ Asserting only "both were refused" would have passed for two different messages,
 
 **One probe bug worth recording.** The foreign session id is a constant, because the mock's tool arguments are fixed before the harness boots. The first version therefore failed on its second run with `session "session-l7-foreign-workspace" already exists`. A check that only passes on a fresh harness home is not a check; the probe now resumes the persisted session instead.
 
+## Evidence: L7 which events the query layer can find, and why the old check was vacuous
+
+A claim in this row was wrong, and the way it was wrong is the point. The phase asserted that the type filter answers by matching only the printed **label**:
+
+```
+check "the type filter answers" "filterEvents by type 'sandbox/mode':" "$probe_out"
+```
+
+The probe prints `<label>: N match(es)`, so `0 match(es)` satisfied it. Requiring a non-zero count exposed it, and the **source** explains it exactly:
+
+- `extractSessionEventText` (`packages/session-query/session-query/src/extraction.ts`) returns text for **user and assistant messages, tool calls, tool results, todo writes, and turns that ended with a reason**. Everything else — including `sandbox/mode`, `permission/preset`, `request/header` — returns an empty string.
+- `buildSessionEventSearchDocuments` **omits** every event whose text is empty ("structural events are omitted", `documents.ts`).
+
+So a log-only **structural** event produces no searchable document, and no type filter, text filter or full-text search can find it — by design, not by fault. Measured on the phase's session, which has no messages:
+
+```
+[l7-probe] events the query layer can index (semantic-bearing): 0 of 5
+[l7-probe] filterEvents by type 'sandbox/mode': 0 match(es) after 5000ms
+[l7-probe] searchSessions: 0 hit(s)
+[l7-probe] listSessions: 1269 total; mine found: true
+[l7-probe] readSession: 5 event(s); marker present: true
+```
+
+`listSessions` (live-preferred) and `readSession` still see the session and its appended event; the query layer's *filters* do not, because there is nothing in it to index. The wait exists to rule out the innocent explanation, and it does: 30 seconds changes nothing, and neither does a fresh home holding a single session.
+
+**The positive case is asserted where it belongs.** Phase 7 runs a real turn whose user message carries a unique marker, and asserts `searchSessions(<marker>): 1 hit(s)` with the hit being that session — so the working path is checked on a session that has semantic text, instead of the broken path being checked on one that does not.
+
+**Consequences for the lesson, both now applied.** The step that told the reader a log-only event is "findable by a type filter" is wrong and is corrected: what matters is that **structural events are not retrievable at all**, so retrieval cannot be built on one. And the invented-type caveat is no longer claimed as a contrast the filters demonstrate — an unknown type is non-searchable for the same reason every structural event is; its real evidence remains ADR-0024's unreadable log.
+
 ## Evidence: L7 the turn COMPLETES, and an earlier check measured the wrong thing
 
 The turn phase runs against the mock provider, and this is what it now reports about its **own** turn:
@@ -635,7 +664,7 @@ Recorded as [ADR-0013](https://github.com/kbaynes/dsh-exploration-kit/blob/main/
 
 **A third defect was in the kit's own tooling:** `solutions/verify-l7.sh` was written with `timeout`, which is GNU coreutils and absent on macOS — the command did not run at all, so the check silently passed on empty output. It now bounds the boot portably. Worth recording because a check that cannot run is worse than no check.
 
-**Deliberately unverified:** every query, the workspace-authority refusal, token deltas, `/compact`, and the invariant sweep's findings. Each needs a session.
+**Superseded.** Every query, the workspace-authority refusal, the token delta, `/compact` and the invariant sweep are executed — see the evidence sections below and `solutions/verify-l7.sh` phases 5–10.
 
 **Two open items from the editorial review are now closed:**
 
@@ -716,25 +745,25 @@ The third line is the lesson's subtle rule made observable: the event carries th
 
 Both were invisible because an `agent/created` listener that never fires looks identical to one that works, and no boot before this created a session. `solutions/verify-l6.sh` now fails if any plugin throws on session creation.
 
-## Evidence: L6 plugins load, and the fold is unit-tested
+## Evidence: L6 the projection loads, and the fold is unit-tested
 
-Both plugins activate:
+The shipped default is the projection. The plugin-declared-event hazard is bundled but **disabled**, which is why the activation line below is the only one a normal boot prints:
 
 ```
-[l6-counter] ACTIVE — appends l6/step on each tool result
 [l6-projection] ACTIVE — registered the l6Steps unit
 ```
 
-The projection's pure core was extracted into `l6/fold.js` precisely so its two subtle contracts are testable without a session. `pnpm run check:units` runs four tests, all passing:
+The projection's pure core was extracted into `l6/fold.js` precisely so its contracts are testable without a session. `pnpm run check:units` runs **five** tests over it, all passing:
 
-1. Folding `l6/step` events yields the reported total.
-2. An unrelated event returns the **same state reference** — the contract that stops a projection recomputing on every committed event.
-3. A relevant event returns a new reference.
-4. A delta-shaped event yields a wrong total, which is the evidence for the "complete post-change state" rule rather than an assertion of it.
+1. `folds the known event type into the reported mode`
+2. `the LATEST event wins, because the event carries complete state`
+3. `folds a type the harness knows, not a plugin-declared one` — the assertion is that the folded type does not begin with `l6/`, which is ADR-0024 written as a test
+4. `returns the SAME reference for unrelated events` — the contract that stops a projection recomputing on every committed event
+5. `returns a NEW reference for a relevant event`
+
+The fold's subject is `sandbox/mode`, a first-party log-only event. An earlier version of this section described four tests including an `l6/step` fold and a delta-shaped event; neither exists, because the invented type was removed along with the plugin that appended it (the hazard keeps the pattern, disabled, as a demonstration).
 
 **A dependency was declared rather than inherited.** `zod` resolved transitively before this lesson, but a plugin importing it directly must declare it — ADR-0005's exception for a package whose *teaching is the point*. It is now in the bundle's `peerDependencies` and `devDependencies`.
-
-**Deliberately unverified:** appending to a real session, reading `l6/step` rows from JSONL, and confirming the total survives a restart. Each needs a session.
 
 ## Evidence: L5 the model-visible skill catalogue, against a real turn
 
@@ -835,7 +864,7 @@ The skills overlay composes as an in-place override of the base row:
 
 **A stale upstream example was corrected.** `docs/cookbook/adding-a-tool.md` shows `agent.inject({ content, source: { kind: 'plugin', plugin: '<name>' } })`. That is not a `UserMessage`: `inject()` requires one, and there is deliberately no catch-all `plugin` source kind — each producer declares its own. The kit's plugin uses `createUserMessage` with a declared kind, and `solutions/verify-l5.sh` asserts that the stale shape is absent.
 
-**Deliberately unverified:** the pre-step payload shape, whether injected text survives replay, what the model's skill catalog contains, and whether `/l5-facts` answers without a turn. Each requires a session and therefore a provider.
+**Superseded.** The pre-step payload shape, replay durability, the model-visible skill catalogue and `/l5-facts` are all executed — see the L5 sections below and `solutions/verify-l5.sh` phases 6–10. Each requires a session and therefore a provider.
 
 ## Evidence: L4 plugins load (decisions unverified)
 
@@ -856,7 +885,7 @@ The lesson now documents that `inject = ['tools']` is mandatory, because the ser
 
 **A design correction.** The original gate computed its confinement root from `process.cwd()`. The dsh process runs from the *checkout*, not the kit, so that would have defended the wrong tree. The root now comes from the plugin's own config, supplied by the bundle row with `!!js` at load time.
 
-**Deliberately unverified:** the allow/deny outcomes. Observing them requires a tool call, which requires a provider. The lesson separates what the boot proves from what only a call can prove, rather than presenting the former as the latter.
+**Superseded:** the allow/deny outcomes are executed through the real tool pipeline by `solutions/l4.probe.patch.yml`. What remains unverified in this lesson is the `ask` path. Observing them requires a tool call, which requires a provider. The lesson separates what the boot proves from what only a call can prove, rather than presenting the former as the latter.
 
 ## Evidence: L3 the plugin_manager layer boundary
 
@@ -1012,11 +1041,12 @@ probe 3 (commitShort not a prefix of commit) -> kit.target.json: dsh.commitShort
 
 ## Not verified at all
 
+Everything below is genuinely open. An earlier version of this section also listed "model-call-dependent outcomes in L5, L7, L8 and L9" and "the plugins have not been mounted" — both were wrong: those outcomes are executed (keyless against the mock, or opt-in with a real provider), and every lesson plugin is mounted in the compositions the suite boots.
+
 - Any **client/UI plugin authoring** (React conversation nodes) — out of scope of the curriculum.
-- **Model-call-dependent outcomes** in L5, L7, L8, and L9 — these require a configured provider and have not been run by the author.
-- The L9 **Python SDK** snippet — now a real upstream example, still unrun.
-- **An actual model tool call** for L2's `word_count` (and every other tool the kit registers). Needs a configured provider.
-- **Runtime behavior of every example plugin** (L2's tool registration, L3's service and HMR loop, L4's gate denying a real call, L5's injection and skill catalog, L6's projection replay) — the mechanisms are verified against source and, for L2, composition is executed; the plugins have not been mounted.
+- **A model CHOOSING to call a lesson's own tool.** The kit drives tool calls by scripting them, which is what makes them deterministic: L2's `word_count`, L5's `skill`, L7's session-query tools and L9's `bash` are all dispatched for real, but the *decision* is scripted. L8's agent-control phase is the exception — there a real model chooses `send_message` and `interrupt_agent` — and L4's `ask` path needs a real approval flow rather than a scripted decision.
+- The L9 **Python SDK** snippet — a real upstream example that is documented here, not executed.
+- The **magnitude** of L8's cost comparison. The attribution across agents is measured (26 tokens for one turn against 57 for a fan-out); a realistic *price* is a property of a provider's price list, not of the harness.
 
 ## Verification backlog
 

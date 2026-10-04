@@ -52,8 +52,10 @@ dump() {
     echo "       Is the kit bundle installed for that profile, and is \$DSH_HOME writable?" >&2
     echo "       Install it with:" >&2
     echo "         dsh plugin --profile $PROFILE add link:<kit>/kit-plugins" >&2
-    printf '%s\n' "SKIP: cannot compose the profile; install the kit bundle first"
-    exit 0
+    # NOT exit 0: check-kit records exit 0 as PASS, so a missing bundle would leave every claim in
+    # this lesson unmeasured and green.
+    printf '%s\n' "FAIL: cannot compose the profile; install the kit bundle first"
+    exit 1
   fi
   printf '%s' "$composed"
 }

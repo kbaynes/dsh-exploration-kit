@@ -19,7 +19,6 @@
     "agents",
     "cordis"
   ],
-  "//": "placeholder-check:allow  REPLACE BEFORE PUBLISHING: every 'kbaynes' token in the repo must become the real GitHub owner. Run `pnpm run check:placeholders` to find them all. Existing sites: package.json repository/homepage/bugs, website/.vitepress/config.mts socialLinks, and .github/ISSUE_TEMPLATE/config.yml contact links.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kbaynes/dsh-exploration-kit.git"

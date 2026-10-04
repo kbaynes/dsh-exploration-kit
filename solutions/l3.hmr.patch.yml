@@ -1,4 +1,10 @@
 # Watch the kit's plugin sources so an edit reloads the plugin in place.
+#
+# `KIT_ROOT` is evaluated at LOAD time, the same convention the L4 and L5 overlays use, so no
+# absolute path is baked into the repository: point it at your checkout and this watches that
+# checkout's `kit-plugins/`. With `KIT_ROOT` unset the root list is empty, which keeps the base
+# bundle's `root: []` behaviour (explicit configuration watches only) instead of watching a path
+# that does not exist on your machine.
 - id: hmr
   config:
-    root: ['/Users/kevinbaynes/MyDocs/DeepSeekHarness/dsh-exploration-kit/kit-plugins']
+    root: !!js "process.env.KIT_ROOT ? [process.env.KIT_ROOT + '/kit-plugins'] : []"

@@ -29,7 +29,7 @@ Reference: [observability & auditing](https://github.com/deepseek-ai/deepseek-ha
 
 ## Prerequisites
 
-L1–L6 complete, including your `l6/step` events — this lesson reads them back. A model provider is required for the cost part; steps 1–4 here are testable without one.
+L1–L6 complete, including the durable state L6 derives — this lesson reads it back. A model provider is required for the cost part; steps 1–4 here are testable without one.
 
 ## Step 1 — Turn on programmatic session history
 
@@ -89,15 +89,19 @@ session-search persistence observation failed: session "…" contains event type
 
 That is Lesson 6's trap seen from this side — see [ADR-0024](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md). `readSession` still fails for that session; `listSessions` still lists it.
 
-**An event type the harness does not know is invisible to filters.** `readSession` returns a plugin-declared event, and `filterEvents` cannot find it — not by type, and not by literal text, because the query layer indexes only documents it can interpret. Verified:
+**Retrieval only sees events that carry semantic text — and that is a short list.** The query layer builds a searchable document for **user and assistant messages, tool calls, tool results, todo writes, and turns that ended with a reason**. Every other event contributes an empty string and is dropped ("structural events are omitted"), so a log-only event like `sandbox/mode` is invisible to `filterEvents` and to full-text search *by design* — not because it is invented, and not because anything is broken:
 
 ```
+[l7-probe] events the query layer can index (semantic-bearing): 0 of 5
+[l7-probe] filterEvents by type 'sandbox/mode': 0 match(es)
+[l7-probe] searchSessions: 0 hit(s)
+[l7-probe] listSessions: 1269 total; mine found: true
 [l7-probe] readSession: 5 event(s); marker present: true
-[l7-probe] filterEvents by type: 0 match(es)
-[l7-probe] filterEvents by text: 0 match(es) for an invented type's payload
 ```
 
-A practical consequence for the reader: do not build retrieval in Lesson 5's or 6's spirit on an invented event type. It will be absent from exactly the searches meant to find it.
+`listSessions` and `readSession` still see the session and its events; only the *retrieval* layer filters them out, because there is nothing in it to index.
+
+The practical consequence is the one to carry: **do not build retrieval on a structural event type**, whether you invented it or not. Put the content you want to find in a message, a tool result, or another semantic-bearing event, and it will be found — the turn phase asserts exactly that, with `searchSessions(<marker>): 1 hit(s)` on a session whose user message carries the marker. A plugin-declared event type has a second, harsher cost, which is the one above: the log stops being readable at all.
 
 Boot with the overlay to confirm the whole composition still activates:
 
@@ -110,7 +114,7 @@ dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml --port 0 --no-open
 Terminal scrollback is not evidence. Reconstruct the run from the log:
 
 1. Ask the agent to `session_event_read` the events of the session you just ran, or read the log yourself at `$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd` (`$DSH_HOME` is `~/.dsh` by default, and the file is zstd-compressed — `zstd -dc <file>`).
-2. Find your `l6/step` events from L6 and confirm their sequence position relative to `tool/result`.
+2. Find the `sandbox/mode` events L6 folds and confirm their sequence position relative to `tool/result`.
 3. Use `session_event_trace` on one event to see its positional replacements and cited source-event relationships. This is how you answer "what did the model actually see at this point" rather than "what does the transcript look like".
 
 The mental model to keep: the session log is the source of truth, `deriveMessages()` projects model history from it, and the human transcript is a *different* projection. A trajectory view that cannot be reconstructed from the log is a bug, not a feature.

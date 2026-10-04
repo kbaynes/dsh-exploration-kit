@@ -19,6 +19,15 @@ export const Config = Schema.object({
   appendInvented: Schema.boolean().default(false),
   /** The fixed session id used by the write/read modes. */
   sessionId: Schema.string().default('session-l7-durability'),
+  /**
+   * How long to wait before accepting that the filters find nothing.
+   *
+   * The wait was added to test a hypothesis - that a session created in this process is live but
+   * not yet in the store's index, so an immediate query finds nothing. It is NOT that: 30 seconds
+   * changes nothing, a session that existed before boot reports 0 for `user/message` too, and a
+   * fresh home holding a single session behaves the same. Five seconds is enough to show it.
+   */
+  filterWaitMs: Schema.number().default(5000),
   delayMs: Schema.number().default(1800),
   /** The five model-facing tool names Lesson 7 enables. */
   expectedTools: Schema.array(Schema.string()).default([
@@ -95,12 +104,37 @@ export function apply(ctx, config) {
       // type just appended is the positive case; filtering by an invented type is the caveat.
       // Each query is contained: one failing call must not skip the checks after it, which is how
       // a leftover poisoned session silently removed the tool-scope assertion from this probe.
-      try {
-        const byType = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'type', values: [appendedType] }])
-        console.log(`[l7-probe] filterEvents by type '${appendedType}': ${(byType ?? []).length} match(es)`)
-      } catch (error) {
-        console.log(`[l7-probe] filterEvents by type threw: ${error.message}`)
+      // Why these filters legitimately find nothing here, and the rule worth knowing.
+      //
+      // The query layer builds a searchable document ONLY for events that carry semantic text
+      // (`extractSessionEventText`): user and assistant messages, tool calls and results, todo
+      // writes, and turns that ended with a reason. Everything else contributes an empty string
+      // and `buildSessionEventSearchDocuments` OMITS it ("structural events are omitted"). So a
+      // log-only structural event such as `sandbox/mode` produces NO document, and neither a type
+      // filter nor a text filter nor full-text search can ever find it - by design, not by fault.
+      //
+      // This session has no messages at all, so every filter below is legitimately empty. The
+      // POSITIVE case (a filter finding semantic text) belongs to a session that has some, and the
+      // turn phase asserts exactly that with `searchSessions(<marker>): 1 hit(s)`.
+      //
+      // The wait is kept, short, because it is what rules out the flush hypothesis.
+      const countByType = async (type) => {
+        try {
+          const found = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'type', values: [type] }])
+          return (found ?? []).length
+        } catch (error) {
+          console.log(`[l7-probe] filterEvents by type threw: ${error.message}`)
+          return 0
+        }
       }
+      const filterStarted = Date.now()
+      let typeMatches = await countByType(appendedType)
+      const filterDeadline = filterStarted + config.filterWaitMs
+      while (typeMatches === 0 && Date.now() < filterDeadline) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        typeMatches = await countByType(appendedType)
+      }
+      console.log(`[l7-probe] filterEvents by type '${appendedType}': ${typeMatches} match(es) after ${Date.now() - filterStarted}ms`)
 
       try {
         const byText = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'text', text: session.id }])
@@ -108,6 +142,17 @@ export function apply(ctx, config) {
       } catch (error) {
         console.log(`[l7-probe] filterEvents by text threw: ${error.message}`)
       }
+
+      // DIAGNOSTIC: does the filter see SURFACE events at all? Every session has `user/message`
+      // events, so a zero here means the filter is broken rather than selective.
+      // The rule, measured on this session: how many of its events can the query layer index?
+      const semanticTypes = new Set(['user/message', 'assistant/message', 'tool/call', 'tool/result', 'todo/write', 'turn/end'])
+      const indexable = events.filter(event => semanticTypes.has(event.type)).length
+      console.log(`[l7-probe] events the query layer can index (semantic-bearing): ${indexable} of ${events.length}`)
+      // What the log records for the event just appended: its type, and whether the harness treats
+      // it as a surface event (`surfaceOp`) or a log-only one.
+      const appended = events.filter(event => event.type === appendedType)
+      console.log(`[l7-probe] appended '${appendedType}' is in the log: ${appended.length > 0}; surfaceOp: ${JSON.stringify(appended.map(event => event.surfaceOp ?? null))}`)
 
       try {
         // The search request field is `query`; a page is `{ items, nextCursor? }`.

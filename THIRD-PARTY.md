@@ -29,7 +29,7 @@ DeepSeek Harness is distributed under the MIT License, which requires that its c
 ```
 MIT License
 
-Copyright (c) DeepSeek AI
+Copyright (c) 2026 DeepSeek
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
