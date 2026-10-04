@@ -267,7 +267,7 @@ with the model's *output* scripted:
 
 8. The invariant sweep reports no failure on the kit's composition.
 
-Still requiring a model-driven tool call, or a provider that reports real usage:
+Requiring a model-driven tool call, or a provider that reports real usage:
 
 9. `session_event_read` returns events as JSON with neighbours.
 10. A deliberate cross-workspace query is refused, and a missing target is
@@ -275,11 +275,17 @@ Still requiring a model-driven tool call, or a provider that reports real usage:
 11. You can state the token delta caused by mounting `tool-session-query`.
 12. `/compact` produces a measurable reduction on a long session.
 
-Items 5–8 are executed and recorded in
-[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md).
-Items 9–12 are not. Items 9, 10, and 12 need a model-driven tool call; item 11 needs a provider
-that reports token usage, and the mock purposely scripts the model's output without any — the
-right trade for the contract-shaped claims above, and the wrong one for a cost claim.
+Items 5–8 and item 10 are executed and recorded in
+[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 10 needs
+no model, only a scripted **tool call**: the refusal is produced by the tool executor, and the mock
+can ask for the call while the harness runs the tool for real. The check also compares the refusals
+for an existing foreign target and a nonexistent one, since "both were refused" would pass for two
+different messages.
+
+Items 9, 11, and 12 are not executed. Item 9 needs a scripted call to a tool this composition does
+not mount, and items 11 and 12 need a provider that reports token usage — the mock purposely
+scripts the model's output without any, which is the right trade for the contract-shaped claims
+above and the wrong one for a cost claim.
 
 ## Exit check — you should now be able to explain
 

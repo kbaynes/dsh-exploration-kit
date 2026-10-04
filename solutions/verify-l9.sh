@@ -261,11 +261,62 @@ fi
 rm -f "$FIRE_MODEL_PATCH"
 
 echo
+echo "== 9. the --json stream carries a TOOL CALL and its correlated result =="
+# The lesson's remaining headless claim: a real tool call, not just text, appears in the stream.
+# The mock scripts the CALL (`tool_call_success`) while the harness validates and dispatches the
+# tool for real (ADR-0027).
+#
+# The RESULT's status is deliberately NOT asserted as "completed": whether a tool can actually run
+# depends on the host. On this machine the sandbox backend is unusable ("sandbox-exec:
+# sandbox_apply: Operation not permitted"), so the call is refused at execution - correctly, and
+# the refusal is itself useful evidence. What is host-independent, and what the lesson claims, is
+# the stream CONTRACT: a `tool_call` event naming the tool with its parsed input, and a
+# `tool_result` event carrying the same callId.
+# Its own model patch: the phase-6 `$MODEL_PATCH` is deleted well before this point, and pointing
+# `--patch` at a removed file fails the boot with no obvious cause.
+TOOLCALL_MODEL_PATCH="$(mktemp)"
+cat > "$TOOLCALL_MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+TOOLCALL_LOG="$(mktemp)"; TOOLCALL_ERR="$(mktemp)"
+if start_mock_llm "$DSH_CHECKOUT" 8141 tool_call_success,success \
+    --tool-name bash --tool-arguments '{"command":"echo l9-tool-call-ok","description":"prove a tool call reaches the JSON stream"}'; then
+  # run_headless hardcodes $MODEL_PATCH, so drive the CLI directly with this phase's patch.
+  ( cd "$DSH_CHECKOUT" && DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
+      dsh --profile headless --patch "$TOOLCALL_MODEL_PATCH" --json "use the bash tool" \
+      >"$TOOLCALL_LOG" 2>"$TOOLCALL_ERR" )
+  tc_status=$?
+  stop_mock_llm
+
+  check "a tool-call run exits 0" '0' "$tc_status"
+  check "the stream carries a tool_call event" '"type":"tool_call"' "$(cat "$TOOLCALL_LOG")"
+  check "the event names the tool the model asked for" '"tool":"bash"' "$(cat "$TOOLCALL_LOG")"
+  check "and carries the parsed input, not a raw string" '"input":{"command":"echo l9-tool-call-ok"' "$(cat "$TOOLCALL_LOG")"
+  check "the stream carries the matching tool_result" '"type":"tool_result"' "$(cat "$TOOLCALL_LOG")"
+
+  # Correlation is the substance: a result that cannot be tied to its call is not observable.
+  call_ids="$(grep -o '"callId":"[^"]*"' "$TOOLCALL_LOG" | sort -u)"
+  if [[ "$(wc -l <<<"$call_ids" | tr -d ' ')" == "1" && -n "$call_ids" ]]; then
+    echo "PASS  the call and its result share one callId ($(tr -d '"' <<<"$call_ids" | cut -d: -f2))"
+  else
+    echo "FAIL  the call and result do not share a callId: $call_ids"
+    failures=$((failures + 1))
+  fi
+  rm -f "$TOOLCALL_LOG" "$TOOLCALL_ERR"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+rm -f "$TOOLCALL_MODEL_PATCH"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 9 verified: opt-in activation, schedule durability, DELIVERY (a due task resumes the"
   echo "session, the receipt is recorded, and the agent completes the scheduled work), a real headless"
-  echo "turn (exit codes, stdout/stderr separation, the --json event stream) and a real SDK round"
-  echo "trip - all keyless."
+  echo "turn (exit codes, stdout/stderr separation, the --json event stream including a real tool"
+  echo "call and its correlated result) and a real SDK round trip - all keyless."
   echo "Still needs a credential: a webhook delivery, which is a different transport."
 else
   echo "$failures check(s) failed."; exit 1

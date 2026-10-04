@@ -1,0 +1,14 @@
+# Enable Lesson 7's workspace-authority probe: a real turn whose mock provider answers with a
+# `session_trace` call for a session in a DIFFERENT workspace. The refusal is produced by the
+# tool executor, so this is the only way to see it without a key.
+#
+# The mock must be started with the matching tool call, because its arguments are fixed before
+# the harness boots:
+#
+#   pnpm run mock:llm --port 8138 --api-key mock-key --sequence tool_call_success,success \
+#     --repeat-last --tool-name session_trace \
+#     --tool-arguments '{"session_id":"session-l7-foreign-workspace"}'
+- id: l7-authority-probe
+  disabled: false
+  config:
+    enabled: true

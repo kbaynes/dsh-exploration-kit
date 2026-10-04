@@ -392,11 +392,16 @@ Requires a provider:
 8. A webhook rule creates exactly one Session per delivery, and you have stated what
    happens on a duplicate delivery.
 
-Items 4 and 7 are executed and recorded in
+Items 4, 5, and 7 are executed and recorded in
 [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md), along
-with a scheduled task surviving a restart and a delivery completing the scheduled work. Items 5, 6,
-and 8 are not: item 5 needs the mock scripted into a tool call, item 6 needs the SDK to invoke a
-tool rather than answer, and item 8 needs a webhook credential.
+with a scheduled task surviving a restart and a delivery completing the scheduled work. Item 5
+needs no credential either — the mock scripts the **tool call** while the harness dispatches it,
+and the check asserts the stream contract: a `tool_call` with its parsed input and a `tool_result`
+carrying the same `callId`. (Whether the tool then *runs* depends on the host's sandbox, so the
+result's status is not asserted.)
+
+Items 6 and 8 are not executed: item 6 needs the SDK to invoke a tool rather than answer a
+question, and item 8 needs a webhook credential.
 
 ## Exit check — you should now be able to explain
 

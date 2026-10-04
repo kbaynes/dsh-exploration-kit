@@ -174,12 +174,39 @@ if start_mock_llm "$DSH_CHECKOUT" 8137 success; then
 else
   echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
 fi
+
+echo
+echo "== 9. the model CALLS the skill, and only then does the body load =="
+# Phase 8 proves the catalogue arrives with the body absent. This phase proves the other half of
+# the same design: when the model actually calls the `skill` tool, the body arrives. The mock
+# scripts the CALL while the harness executes the tool for real (ADR-0027), so this is the whole
+# mechanism - announce, choose, load - with no key.
+if start_mock_llm "$DSH_CHECKOUT" 8140 tool_call_success,success \
+    --tool-name skill --tool-arguments '{"name":"repo-onboarding"}'; then
+  BODY_LOG="$(mktemp)"
+  export DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key KIT_ROOT="$KIT"
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BODY_LOG" '\[l5-cat\] done' 90 \
+    "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l5.skills.patch.yml" \
+    "$KIT/solutions/l5.cat.patch.yml" "$CAT_MODEL_PATCH" || failures=$((failures + 1))
+  unset DEEPSEEK_BASE_URL DEEPSEEK_API_KEY KIT_ROOT
+  stop_mock_llm
+
+  body_out="$(grep '\[l5-cat\]' "$BODY_LOG")"
+  check "the catalogue is still announced" "catalogue mentions 'repo-onboarding': true" "$body_out"
+  check "the call ran through the real tool pipeline" 'tool/result' "$body_out"
+  # The same marker phase 8 asserts is ABSENT is now present: the body is loaded on demand.
+  check "the skill BODY loads once the model calls it" 'body loaded into the log: true' "$body_out"
+  rm -f "$BODY_LOG"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
 rm -f "$CAT_MODEL_PATCH"
 
 echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 5 verified: injection durability, the command path, the skills overlay, and the"
-  echo "model-visible skill CATALOGUE against a real turn (announced, with the body loading on demand)."
+  echo "model-visible skill catalogue end to end - announced without its body, then loaded when the"
+  echo "model calls the skill through the real tool pipeline."
 else
   echo "$failures check(s) failed."; exit 1
 fi

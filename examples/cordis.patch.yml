@@ -142,3 +142,10 @@
     - id: l7-probe
       name: dsh-exploration-kit-plugins/l7/query-probe.js
       disabled: true
+
+    # Opt-in diagnostic: drives a REAL cross-workspace tool call, so Lesson 7's
+    # workspace-authority refusal is testable with a model-driven call but no key.
+    # See solutions/l7.auth.patch.yml.
+    - id: l7-authority-probe
+      name: dsh-exploration-kit-plugins/l7/authority-probe.js
+      disabled: true

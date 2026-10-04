@@ -169,6 +169,9 @@ or via PTC; 5 and 7–9 need a configured provider.
       skill's name (`catalogue mentions 'repo-onboarding': true`) while the body stays out
       (`body loaded into the log: false`). The PAIR is the claim: announced on demand,
       loaded on demand.
+- [x] Confirm the model CALLING the skill loads the body — `solutions/verify-l5.sh` phase 9:
+      with the mock scripting a `skill` call, the body marker that phase 8 asserts is ABSENT is
+      present, and the call ran through the real tool pipeline.
 - [ ] Confirm a rename/add reaches the catalog without a restart
 - [ ] Confirm `includeDefaultRoots: false` + `customSkillDirs` resolves as stated
 - [ ] Implement the command plugin and confirm `/l5-facts` runs with no model turn
@@ -194,7 +197,11 @@ or via PTC; 5 and 7–9 need a configured provider.
 
 - [ ] Confirm `session-query-sqlite` `openAt` values and the working config
 - [ ] Enable `tool-session-query` and confirm the five tools appear
-- [ ] Confirm cross-workspace access fails closed with the stated error code
+- [x] Confirm cross-workspace access fails closed with the stated error code — `solutions/verify-l7.sh`
+      phase 8 drives a REAL `session_trace` call into a session under a different `cwd` (the mock
+      scripts the call; the harness runs the tool), and asserts `SESSION_QUERY_TOOL_UNAUTHORIZED`
+      with `isError: true`. It also compares that refusal with the one for a nonexistent id after
+      normalising volatile ids: **indistinguishable**, so the target's existence does not leak.
 - [ ] Measure the token delta caused by mounting `tool-session-query`
 - [ ] Confirm `/compact` produces a measurable reduction
 - [ ] Confirm the telemetry env vars behave as documented and that config alone
@@ -231,7 +238,10 @@ or via PTC; 5 and 7–9 need a configured provider.
 ### Lesson 9 — Automate the harness
 
 - [ ] Confirm the headless exit codes for success and failure
-- [ ] Confirm `--json` emits assertable tool-call events
+- [x] Confirm `--json` emits assertable tool-call events — `solutions/verify-l9.sh` phase 9
+      asserts a `tool_call` naming the tool with its parsed input, and a `tool_result` sharing one
+      `callId`. The result's *status* is not asserted: whether a tool can run is host-dependent
+      (this machine has no usable sandbox backend), so the check asserts the stream contract.
 - [ ] Confirm `--session-id` adopts an exact session and fails on unknown ids
 - [ ] Run the TypeScript SDK sample with a `patches` file loading a kit tool
 - [ ] **Replace or delete the Python placeholder snippet** — currently
@@ -374,8 +384,9 @@ real quoted output instead of invented samples; the upstream-tutorial correction
 ## Verification-suite performance
 
 The full suite boots the harness 27-odd times, once or twice per lesson. It runs in about two
-minutes (measured: **124s**, 19 passed / 0 failed, after adding the L5 catalogue and L9 delivery
-phases): each boot ends when its probe reports completion rather than after a fixed wait.
+minutes (measured: **176s**, 19 passed / 0 failed, after adding the phase that make the
+remaining "needs a model-driven tool call" claims checkable): each boot ends when its probe reports
+completion rather than after a fixed wait.
 
 - [x] **Replaced the blind wait with a readiness poll.** `solutions/lib.sh` provides
       `boot_and_wait <checkout> <profile> <log> <pattern> <timeout> [overlay...]`, which polls

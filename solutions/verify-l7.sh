@@ -218,12 +218,80 @@ fi
 rm -f "$MODEL_PATCH" "$TURN_LOG"
 
 echo
+echo "== 8. workspace authority: a model-driven call to ANOTHER workspace is refused =="
+# The authority check lives in the tool EXECUTOR (`workspace-access.ts`), not in the query
+# service, so it is only reachable through a tool call - which is why a model pack was thought to
+# be required. It is not: the mock provider scripts the CALL (`tool_call_success`) while the
+# harness executes the tool for real (ADR-0027). The probe creates a session under a DIFFERENT
+# cwd, so the foreign target genuinely exists and a refusal cannot be confused with "not found".
+AUTH_MODEL_PATCH="$(mktemp)"
+cat > "$AUTH_MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+
+# The mock's tool arguments are fixed BEFORE the harness boots, which is why the foreign session
+# id is a constant the probe also uses.
+run_auth() { # run_auth <port> <target-session-id> <outfile>
+  local port="$1" target="$2" out="$3"
+  if start_mock_llm "$DSH_CHECKOUT" "$port" tool_call_success,success \
+      --tool-name session_trace --tool-arguments "{\"session_id\":\"$target\"}"; then
+    export DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key
+    boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$out" '\[l7-auth\] done' 90 \
+      "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l7.auth.patch.yml" "$AUTH_MODEL_PATCH" \
+      || failures=$((failures + 1))
+    unset DEEPSEEK_BASE_URL DEEPSEEK_API_KEY
+    stop_mock_llm
+  else
+    echo "FAIL  could not start the mock LLM server" >&2
+    failures=$((failures + 1))
+  fi
+}
+
+# Volatile identities differ between the two runs; the refusal must not.
+normalize_auth() {
+  sed -E 's/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/UUID/g' <<<"$1"
+}
+
+FOREIGN_LOG="$(mktemp)"
+run_auth 8138 'session-l7-foreign-workspace' "$FOREIGN_LOG"
+foreign_out="$(grep '\[l7-auth\]' "$FOREIGN_LOG")"
+foreign_result="$(grep '\[l7-auth\] result 0:' "$FOREIGN_LOG")"
+
+check "the cross-workspace target exists (created or resumed)" 'session-l7-foreign-workspace' "$foreign_out"
+check "a model-driven tool call really executed" 'tool/result events: 1' "$foreign_out"
+check "reading another workspace is REFUSED" 'SESSION_QUERY_TOOL_UNAUTHORIZED' "$foreign_out"
+check "and the tool result is marked an error" '"isError":true' "$foreign_out"
+check "the turn still completes (a refusal is a tool result, not a crash)" '"kind":"completed"' "$foreign_out"
+
+MISSING_LOG="$(mktemp)"
+run_auth 8139 'session-l7-does-not-exist-at-all' "$MISSING_LOG"
+missing_out="$(grep '\[l7-auth\]' "$MISSING_LOG")"
+missing_result="$(grep '\[l7-auth\] result 0:' "$MISSING_LOG")"
+
+check "a MISSING target is refused too" 'SESSION_QUERY_TOOL_UNAUTHORIZED' "$missing_out"
+
+# The lesson's real claim is that the two are INDISTINGUISHABLE. Asserting only that both are
+# refusals would pass for two different error messages, so compare them.
+if [[ -n "$foreign_result" && "$(normalize_auth "$foreign_result")" == "$(normalize_auth "$missing_result")" ]]; then
+  echo "PASS  an existing foreign target and a nonexistent one are INDISTINGUISHABLE"
+else
+  echo "FAIL  the two refusals differ, so the target's existence leaks"
+  echo "      foreign: $foreign_result"
+  echo "      missing: $missing_result"
+  failures=$((failures + 1))
+fi
+rm -f "$FOREIGN_LOG" "$MISSING_LOG" "$AUTH_MODEL_PATCH"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 7 verified: the store, the query service, the tool scope, the invented-type caveat"
   echo "(with cleanup), a COMPLETED turn with its own assistant message, the trajectory being"
-  echo "searchable back to that session, the accounting shape, and /compact."
-  echo "Also unverified: the workspace-authority refusal (needs a model-driven tool call) and the"
-  echo "invariant findings on a fresh profile."
+  echo "searchable back to that session, the accounting shape, /compact, and the workspace-authority"
+  echo "refusal via a REAL model-driven tool call - including that a foreign target and a nonexistent"
+  echo "one are indistinguishable."
 else
   echo "$failures check(s) failed."; exit 1
 fi

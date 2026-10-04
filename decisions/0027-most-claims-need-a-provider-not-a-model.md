@@ -56,6 +56,18 @@ Two details that cost iterations and are now in the scripts:
 - **Killing the `pnpm run` wrapper leaves the node server holding the port.** The next run then
   times out waiting for a `ready` record that cannot bind, which looks like a mock failure
   rather than a leak.
+- **The mock scripts a tool CALL, not only text.** `--sequence tool_call_success[,success]
+  --tool-name <tool> --tool-arguments '<json>'` makes the harness validate and dispatch a real
+  tool. That reaches checks living in a tool *executor* rather than in a service, which no
+  text-only mock can touch: the workspace-authority refusal, the skill body loading on demand,
+  and the `tool_call`/`tool_result` pair in the headless JSON stream are all verified this way.
+  Because the arguments are fixed **before** the harness boots, any value the call must carry — a
+  session id, a skill name — has to be a constant that the probe also uses.
+- **A result's *status* can be host-dependent.** Whether a dispatched tool can actually run may
+  depend on the machine (this one has no usable sandbox backend, so `bash` is refused at
+  execution). Assert the stream **contract** — the event, the tool name, the parsed input, the
+  shared `callId` — and leave the outcome to the host, or the check will pass on one machine and
+  fail on another.
 
 ## Consequences
 
@@ -65,6 +77,10 @@ Two details that cost iterations and are now in the scripts:
 - "Needs a credential" is now a narrower and more honest category than "needs a model": an SDK
   round trip or a real provider's behaviour still needs a key, but the harness's own contract
   does not.
+- Three later gaps named in the ledger as "needs a model-driven tool call" turned out to need
+  only a scripted call: L5's skill body loading, L7's cross-workspace refusal, and L9's tool-call
+  event in the JSON stream. The phrase was accurate about the *mechanism* and wrong about the
+  cost, which is the same mistake this ADR was written to correct.
 - Verification depends on a *test-support* package of the checkout under test, so it is tied to
   a source checkout — which the lessons already require.
 
