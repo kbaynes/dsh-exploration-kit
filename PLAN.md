@@ -244,6 +244,9 @@ Turn the verified lessons into something CI can defend.
       the first without secrets
 - [x] Add a CI workflow for the kit's own checks (links, OKF, build) — `site.yml`, on
       every push and pull request
+- [x] Validate the machine-read configs themselves — a malformed workflow never runs and
+      reports nothing, so `pnpm run check:configs` parses and structurally checks them.
+      Three failure modes confirmed to fire.
 - [x] Add a workflow for the **full** suite including per-lesson checks, cloning the
       harness at the pinned commit: `verify-against-dsh.yml`, weekly and on demand. Its
       command sequence is verified locally; the Actions YAML is not (recorded in

@@ -541,7 +541,22 @@ environment fact, not a DSH defect.
 | Workflow | Status |
 |---|---|
 | `site` (environment-free checks, Pages deploy) | Documented. Its checks all pass locally; the Actions orchestration is not exercised here. |
-| `verify against dsh` (full per-lesson suite at the pinned commit) | **Steps verified locally, YAML not executed.** The command sequence — install the CLI shim, provision the profiles, `check:target`, `check:kit` — was run locally with `dsh` resolved only from that shim, reporting `16 passed, 0 failed`. GitHub Actions itself cannot be run from the authoring environment, so the workflow's orchestration is unverified. |
+| `verify against dsh` (full per-lesson suite at the pinned commit) | **Steps verified locally; YAML validated, not executed.** The command sequence — install the CLI shim, provision the profiles, `check:target`, `check:kit` — was run locally with `dsh` resolved only from that shim, reporting `16 passed, 0 failed`. The workflow files themselves are now parsed and structurally checked by `pnpm run check:configs` (triggers, jobs, `runs-on`, steps, and for this workflow that it uses the pinned commit and asserts it). GitHub Actions cannot be run from the authoring environment, so the orchestration is still unverified. |
+
+### Configuration artifacts are now machine-checked
+
+A malformed workflow **never runs, and Actions reports nothing** — the failure is silence,
+which is why it is worth a check rather than care. `pnpm run check:configs` parses every
+shipped machine-read config (both workflows, `kit.target.json`, `okf-base.yaml`,
+`package.json`, the bundle manifest) and asserts the fields each consumer actually reads.
+
+Three failure modes were confirmed to fire, not assumed:
+
+```
+probe 1 (YAML syntax error)         -> parse error reported
+probe 2 (step with neither uses nor run) -> job "build" step 4 has neither "uses" nor "run"
+probe 3 (commitShort not a prefix of commit) -> kit.target.json: dsh.commitShort is not a prefix of dsh.commit
+```
 
 ## Not verified at all
 

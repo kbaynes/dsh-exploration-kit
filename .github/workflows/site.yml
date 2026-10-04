@@ -55,6 +55,9 @@ jobs:
       - name: Check for pre-publication placeholders
         run: pnpm run check:placeholders
 
+      - name: Check configuration artifacts
+        run: pnpm run check:configs
+
       - name: Check lesson structure
         run: pnpm run check:lessons
 
