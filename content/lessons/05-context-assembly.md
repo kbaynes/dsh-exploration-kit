@@ -89,8 +89,9 @@ first-party plugins already listen here, including `agent-instructions`, `plan-m
 existing layer, not replacing it.
 
 **No API key?** The registration is observable at boot — the plugin prints that it is
-watching. What the payload *contains* needs a turn, and therefore a provider; that
-part is recorded as unverified rather than described from memory.
+watching. The payload's shape is observed too, from a real turn against the mock
+provider: the observer logs `pre-step turn=1 step=1 messages=2`, and
+`solutions/verify-l5.sh` runs it.
 
 ## Step 2 — Inject context deliberately
 
@@ -234,9 +235,10 @@ durable catalog of names and capped descriptions before the first request, and t
 body loads only when the agent calls the `skill` tool. That is why `description`
 quality decides whether a skill is ever used.
 
-**No API key?** The overlay composes (visible in `--dump-config`) and the profile
-boots with it. What the *model* sees in its catalog needs a session, and is recorded
-as unverified.
+**No API key?** The overlay composes (visible in `--dump-config`), the profile boots
+with it, and what the *model* sees is asserted against the mock provider: the session
+log carries the skill's name while the body stays out of it. That pair — announced,
+not shipped — is the whole design described here.
 
 ## Step 4 — A command that needs no model turn
 
@@ -329,9 +331,11 @@ Requires a session, and therefore a provider:
 7. Renaming the skill directory changes the catalog without a restart.
 8. `/l5-facts` responds with no model turn and no `pre-step` log line.
 
-Items 4–8 are recorded as unverified in
-[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
-Do not read 1–3 as evidence for them.
+Items 5, 6, and 8 are executed and recorded in
+[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md), and
+item 4's payload shape is observed there. Item 7 (a rename reflected without a restart) and the
+step *after* the catalog — a model choosing to invoke the skill — are not: the second needs a
+model-driven tool call, not a scripted one.
 
 ## Exit check — you should now be able to explain
 

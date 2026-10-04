@@ -1,12 +1,15 @@
 /**
- * Finds the entry whose plugin `Config` is not a schema.
+ * Audits every active entry's plugin `Config`, and reports any that is not a working schema.
  *
- * DSH's settings plugin guards with `'toJSON' in schema`, which is TRUE for a Cordis Context proxy -
- * and *calling* `.toJSON()` on that proxy throws `cannot get property "toJSON" without inject`,
- * which is how an agent turn ends up failing inside the settings plugin. This audit walks the same
- * entry list `describe()` walks and reports which entry has a `Config` that is not a schema.
+ * It was written to hunt a turn-killing `cannot get property "toJSON" without inject` error. The
+ * hypothesis was that some entry's `Config` was a Cordis Context proxy: the harness's settings
+ * plugin guards with `'toJSON' in schema` (true for such a proxy) and then calls `schema.toJSON()`.
+ * That hypothesis was WRONG, and this audit is the evidence: it reports every entry's Config as a
+ * valid schema. The real cause was the kit's own Lesson 5 pre-step listener stringifying a live
+ * event payload (see ADR-0028) - a reminder to audit your own plugins before blaming the harness.
  *
- * Diagnostic only, disabled by default.
+ * The audit is still a useful probe for a composition that will not start: an entry whose `Config`
+ * is not a schema is a real failure mode, it is just not this one. Diagnostic only, off by default.
  */
 export const name = 'l3-config-audit'
 export const inject = ['configEditor']

@@ -10,8 +10,8 @@
 # Usage: bash solutions/verify-l5.sh /path/to/deepseek-harness
 # Prereq: dsh plugin --profile kitdemo add link:<kit>/kit-plugins
 #
-# NOT asserted, because each needs a session/model: the pre-step payload shape, the
-# injected text surviving replay, the model's skill catalog, and /l5-facts.
+# NOT asserted, because each needs a model-driven tool call of its own: the model
+# INVOKING the skill once the catalogue has announced it.
 set -uo pipefail
 
 DSH_CHECKOUT="${1:-}"
@@ -22,6 +22,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib-llm.sh"
 
 failures=0
 check() {
@@ -137,10 +138,48 @@ check "no model request was made" 'model-request events in the log: 0' "$cmd_out
 rm -f "$CMD_LOG"
 
 echo
+echo "== 8. the model-visible skill CATALOGUE, against a real turn =="
+# The catalogue only exists once a request is assembled, so this needs a provider - not a model:
+# the repository's scriptable mock endpoint runs the real loop and request assembly (ADR-0027).
+# The catalogue is durable, which is what makes it checkable: it lands in the session log as a
+# user message. The BODY must NOT be there, because a skill body loads on demand, after the model
+# chooses it. That pair is the lesson's actual claim.
+CAT_MODEL_PATCH="$(mktemp)"
+cat > "$CAT_MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+if start_mock_llm "$DSH_CHECKOUT" 8137 success; then
+  CAT_LOG="$(mktemp)"
+  # boot_and_wait runs `dsh` from the checkout, so the mock route must be exported, not inlined.
+  # KIT_ROOT is load-bearing too: the skills overlay computes customSkillDirs from it at load
+  # time, so without it the skill directory resolves to undefined and the catalogue is empty -
+  # a silent no-op that looks exactly like the claim being false.
+  export DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key KIT_ROOT="$KIT"
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$CAT_LOG" '\[l5-cat\] done' 90 \
+    "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l5.skills.patch.yml" \
+    "$KIT/solutions/l5.cat.patch.yml" "$CAT_MODEL_PATCH" || failures=$((failures + 1))
+  unset DEEPSEEK_BASE_URL DEEPSEEK_API_KEY KIT_ROOT
+  stop_mock_llm
+
+  cat_out="$(grep '\[l5-cat\]' "$CAT_LOG")"
+  check "the turn itself completed (a request was assembled)" 'assistant/message' "$cat_out"
+  check "the catalogue announces the skill to the model" "catalogue mentions 'repo-onboarding': true" "$cat_out"
+  # The pair matters more than either half: a catalogue in the log proves announcement, and an
+  # absent body proves the body is loaded on demand rather than shipped with it.
+  check "the skill BODY is NOT shipped with the catalogue" 'body loaded into the log: false' "$cat_out"
+  rm -f "$CAT_LOG"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+rm -f "$CAT_MODEL_PATCH"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 5 verified: injection durability, the command path, and the skills overlay."
-  echo "Still unverified (needs a provider): the model-visible skill catalogue, which only"
-  echo "exists once a request is assembled."
+  echo "Lesson 5 verified: injection durability, the command path, the skills overlay, and the"
+  echo "model-visible skill CATALOGUE against a real turn (announced, with the body loading on demand)."
 else
   echo "$failures check(s) failed."; exit 1
 fi

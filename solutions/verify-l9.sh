@@ -224,12 +224,49 @@ fi
 rm -rf "$SDK_HOME"
 
 echo
+echo "== 8. DELIVERY: a due task resumes the session and the agent DOES the work =="
+# The half that needs a provider. Two details are load-bearing, and both were learned by failing:
+#   - The session must have talked to the model BEFORE the task fires. Delivery resumes the session
+#     and restores provider/model from the session's logged request header; a session that never
+#     made a request resumes with no model at all and dies on
+#     `prompt variable "{{model}}" has no value`. The probe's warm-up turn creates that header.
+#   - The receipt is under `records` in ctx.schedule.history(), not `receipts`/`entries`.
+FIRE_MODEL_PATCH="$(mktemp)"
+cat > "$FIRE_MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+if start_mock_llm "$DSH_CHECKOUT" 8136 success; then
+  FIRE_LOG="$(mktemp)"
+  # boot_and_wait runs `dsh` from the checkout, so the mock route has to be exported, not inlined.
+  export DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$FIRE_LOG" '\[l9-fire\] done' 90 \
+    "$KIT/solutions/l9.patch.yml" "$KIT/solutions/l9.fire.patch.yml" "$FIRE_MODEL_PATCH" \
+    || failures=$((failures + 1))
+  unset DEEPSEEK_BASE_URL DEEPSEEK_API_KEY
+  stop_mock_llm
+
+  fire_out="$(grep '\[l9-fire\]' "$FIRE_LOG")"
+  check "a due task reports a DELIVERY receipt" 'deliveries reported: 1' "$fire_out"
+  check "the receipt records when it was delivered" '"deliveredAt"' "$fire_out"
+  check "the scheduled work ran: a second assistant message in the session" \
+    'assistant messages in the session: 2' "$fire_out"
+  check "and the delivered turn COMPLETED rather than failing" '"kind":"completed"' "$fire_out"
+  rm -f "$FIRE_LOG"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+rm -f "$FIRE_MODEL_PATCH"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 9 verified: opt-in activation, schedule durability, a real headless turn (exit"
-  echo "codes, stdout/stderr separation, the --json event stream) and a real SDK round trip - all"
-  echo "keyless."
-  echo "Still needs a credential: a webhook delivery, and the scheduled work completing (blocked by"
-  echo "the upstream settings-plugin error recorded in VERIFIED.md)."
+  echo "Lesson 9 verified: opt-in activation, schedule durability, DELIVERY (a due task resumes the"
+  echo "session, the receipt is recorded, and the agent completes the scheduled work), a real headless"
+  echo "turn (exit codes, stdout/stderr separation, the --json event stream) and a real SDK round"
+  echo "trip - all keyless."
+  echo "Still needs a credential: a webhook delivery, which is a different transport."
 else
   echo "$failures check(s) failed."; exit 1
 fi

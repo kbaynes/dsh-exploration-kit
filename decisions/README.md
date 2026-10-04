@@ -58,3 +58,4 @@ without re-running the experiment.
 - [ADR-0025 — plugin_manager manages profile rows and bundles, not rows a bundle contributes](0025-plugin-manager-manages-profiles-not-bundle-rows.md)
 - [ADR-0026 — A find-and-replace must not rewrite the files that define the token](0026-a-substitution-must-not-rewrite-its-own-tooling.md)
 - [ADR-0027 — Most "needs a model" claims need a provider, and the repository ships a keyless one](0027-most-claims-need-a-provider-not-a-model.md)
+- [ADR-0028 — Never `JSON.stringify` a live event payload; the Cordis proxy throws on `toJSON`](0028-never-stringify-a-live-event-payload.md)

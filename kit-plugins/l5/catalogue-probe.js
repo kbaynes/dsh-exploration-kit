@@ -9,6 +9,14 @@ export const Config = Schema.object({
   enabled: Schema.boolean().default(false),
   /** The skill the catalogue should mention. */
   expectSkill: Schema.string().default('repo-onboarding'),
+  /**
+   * The provider route and model for the probe's turn. `agents.create()` requires both
+   * explicitly: a saved model selection in settings supplies them for UI-created agents, but a
+   * programmatic create that omits them fails at the first step with "has no provider/model"
+   * (see ADR-0028). Point these at the mock provider with DEEPSEEK_BASE_URL/DEEPSEEK_API_KEY.
+   */
+  provider: Schema.string().default('deepseek-official'),
+  model: Schema.string().default('deepseek-flash'),
   delayMs: Schema.number().default(1500),
 })
 
@@ -29,6 +37,7 @@ export function apply(ctx, config) {
       handle = await ctx.agents.create({
         sessionId: `session-l5-catalogue-${Date.now()}`,
         meta: { cwd: process.cwd() },
+        agentOptions: { provider: config.provider, model: config.model },
       })
       const agent = handle.agent
       agent.followup(createUserMessage({

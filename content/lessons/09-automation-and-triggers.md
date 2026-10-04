@@ -237,30 +237,33 @@ memory. `bash <kit>/solutions/verify-l9.sh` runs both phases.
 > On a base-backed profile (`kitdemo`) plugin output appears normally, which is why the
 > other probes need no such arrangement.
 
-**Delivery is partly verified.** A due task really does resume the session — with the mock
-provider supplying the model, a task scheduled two seconds out produced this in the session log:
+**Delivery is verified end to end.** A due task really does resume the session and the agent does
+the work. With the mock provider supplying the model, a task scheduled two seconds out reports:
 
 ```
-agent/inbox/spliced -> {"target":"next-turn", "inserted":[{"content":[{"type":"text",
-    "text":"[SCHEDULE REMINDER]\nThis is a scheduled message from the user\n…"}]}]}
-turn/start -> {"turn": 1}
-turn/end   -> {"turn": 1, "reason": {"kind":"error","error":{"message":
-    "cannot get property \"toJSON\" without inject"}}}
+[l9-fire] delivery receipt: {"scheduledAt":"…","deliveredAt":"…","messageId":"…",
+    "prompt":"The scheduled task fired; report that you ran."}
+[l9-fire] deliveries reported: 1
+[l9-fire] assistant messages in the session: 2
+[l9-fire] the delivered turn ended: {"kind":"completed"}
 ```
 
-So the reminder is spliced into the inbox and a turn opens — `schedules are Host-owned … due
-messages resume the original Session` is true. The turn then fails with an error raised inside the
-harness's **settings** plugin (`packages/settings/settings`, which calls `schema.toJSON()` while
-describing plugin schemas). The kit's plugins contain no `toJSON` access, so this is an upstream
-observation rather than a defect here, and it is recorded rather than worked around:
+In the session log that is `agent/inbox/spliced` delivering the reminder, `turn/start` opening the turn,
+and a second `assistant/message` closed by `{"kind":"completed"}`.
 
-- **Verified:** storage across restarts, and that a due task resumes the session and opens a turn.
-- **Blocked by that upstream error:** the agent actually completing the scheduled work, and the
-  delivery receipt being recorded (`records` was empty).
+**Three details this cost, all worth knowing.**
 
-`solutions/l9.fire.patch.yml` reproduces it in about a minute; it is deliberately **not** part of
-`solutions/verify-l9.sh`, because a check that fails for a reason outside this repository would
-just train people to ignore the suite.
+- Delivery restores provider/model from the session's **logged request header**, so a session that has
+  never made a request resumes with no model and the turn dies on
+  `prompt variable "{{model}}" has no value`. The probe talks to the model once before scheduling —
+  which is the realistic shape of a scheduled follow-up anyway.
+- A `ctx.on` handler must never `JSON.stringify` a live payload. The payload carries an `Agent` behind a
+  Cordis proxy, and reaching `toJSON` on that proxy throws
+  `cannot get property "toJSON" without inject` — from inside your listener, which aborts the whole
+  turn. Log fields by name instead. (ADR-0028.)
+- The receipt is under `records` in `ctx.schedule.history()`, not `receipts` or `entries`.
+
+`solutions/l9.fire.patch.yml` reproduces this, and `solutions/verify-l9.sh` runs it as phase 8.
 
 They arrive as ordinary follow-up messages in the original conversation — **not** email,
 SMS, or push:
@@ -389,8 +392,11 @@ Requires a provider:
 8. A webhook rule creates exactly one Session per delivery, and you have stated what
    happens on a duplicate delivery.
 
-Items 4–8 are recorded as unverified in
-[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+Items 4 and 7 are executed and recorded in
+[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md), along
+with a scheduled task surviving a restart and a delivery completing the scheduled work. Items 5, 6,
+and 8 are not: item 5 needs the mock scripted into a tool call, item 6 needs the SDK to invoke a
+tool rather than answer, and item 8 needs a webhook credential.
 
 ## Exit check — you should now be able to explain
 

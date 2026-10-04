@@ -265,17 +265,21 @@ with the model's *output* scripted:
 7. `sessionStats` is *absent* on a base-backed profile, which is why step 3 above tells you to
    use a web-backed one for statistics.
 
-Still requiring a model-driven tool call:
+8. The invariant sweep reports no failure on the kit's composition.
 
-8. `session_event_read` returns events as JSON with neighbours.
-6. A deliberate cross-workspace query is refused, and a missing target is
-   indistinguishable from an unauthorized one.
-7. You can state the token delta caused by mounting `tool-session-query`.
-8. `/compact` produces a measurable reduction on a long session.
-9. The invariant sweep reports no failure on the kit's composition.
+Still requiring a model-driven tool call, or a provider that reports real usage:
 
-Items 5–9 are recorded as unverified in
+9. `session_event_read` returns events as JSON with neighbours.
+10. A deliberate cross-workspace query is refused, and a missing target is
+    indistinguishable from an unauthorized one.
+11. You can state the token delta caused by mounting `tool-session-query`.
+12. `/compact` produces a measurable reduction on a long session.
+
+Items 5–8 are executed and recorded in
 [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+Items 9–12 are not. Items 9, 10, and 12 need a model-driven tool call; item 11 needs a provider
+that reports token usage, and the mock purposely scripts the model's output without any — the
+right trade for the contract-shaped claims above, and the wrong one for a cost claim.
 
 ## Exit check — you should now be able to explain
 

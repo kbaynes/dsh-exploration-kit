@@ -97,11 +97,11 @@ row that admits it has not been checked yet.
 | L2 — Register a tool, compose with config | **Executed** | The plugin loads through the installed bundle; the Schemastery schema rejects an invalid value; an overlay changes the installed row's config; and the **tool itself is called through the real pipeline** by a shipped probe — the configured default reaches it, an explicit unit overrides it, invalid arguments are rejected before `execute` runs, and `value`/`content` show the canonical/render split. Outside this lesson's scope: whether a model *chooses* to call it. See evidence below. |
 | L3 — Services, isolation, and hot reload | **Executed** | The service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay; the `plugin_manager` claim is executed and **corrected** (it manages the profile's rows and whole bundles, not rows a bundle contributes — ADR-0025); and **service isolation is executed** — two groups isolating one service name each see their own provider. Two upstream-tutorial traps found by running it. Nothing in this lesson is unverified. |
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
-| L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. **Not** executed: the model-visible skill catalogue, which only exists once a request is assembled. |
+| L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. The **model-visible skill catalogue** is executed too: against the mock provider a real turn assembles a request, the session log carries the skill catalogue, and the skill's BODY is absent — announced on demand, loaded on demand. **Not** executed: the model choosing to invoke the skill, which needs a model-driven tool call. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
-| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider the **token-accounting projection shape** and `/compact` are exercised. **NOT executed: a COMPLETED turn** — turns in this composition end inside the harness's settings plugin with `cannot get property "toJSON" without inject` (an upstream finding; the kit's 119 entry Configs were audited and are all valid schemas). An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it has been replaced by a pinned assertion. Also not executed: the workspace-authority refusal, which needs a completed model-driven tool call. |
+| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider a **real turn COMPLETES** — it produces its own assistant message, ends `{"kind":"completed"}`, is searchable back to its own session, and exposes the **token-accounting projection shape**; `/compact` is exercised. An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it now searches for a marker unique to the run and asserts the hit is this session. Also not executed: the workspace-authority refusal, which needs a completed model-driven tool call. |
 | L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. **Not** executed: the monolith-versus-fan-out cost comparison, which needs real token usage. |
-| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; the **headless contract** (exit codes, stdout/stderr, `--json` phases) runs keyless; and a **real SDK round trip** runs keyless too — the SDK drives a turn, receives the model's answer, reports the session, and observes 15 notifications. Delivery is **partly** verified: a due task splices its reminder and opens a turn, which then fails inside the harness's settings plugin (an upstream finding, shared with L7). **Not** executed: a webhook delivery, and the scheduled work completing. |
+| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; **delivery** is verified end to end — a due task splices its reminder, records a delivery receipt, resumes the session and **completes the scheduled work** (a second assistant message, `{"kind":"completed"}`); the **headless contract** (exit codes, stdout/stderr, `--json` phases) runs keyless; and a **real SDK round trip** runs keyless too — the SDK drives a turn, receives the model's answer, reports the session, and observes 15 notifications. **Not** executed: a webhook delivery, which is a different transport. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
 
@@ -213,33 +213,45 @@ notifications=15
 Five assertions: exit 0, the answer, the session id, a non-empty notification feed, and that the SDK home
 holds an **uncompressed** session log.
 
-**Two findings came out of making it work.** The SDK needs its own `DSH_HOME`: its profile persists
+**One thing came out of making it work.** The SDK needs its own `DSH_HOME`: its profile persists
 sessions uncompressed while the base and web profiles write `.jsonl.zstd`, and sharing a home fails with
-*"uses .jsonl.zstd, but this backend is configured for compression none"*. And the SDK's turn **succeeded**
-where a web/base turn fails — more attribution evidence that the `toJSON` error belongs to compositions
-mounting the settings plugin, not to the harness's turn machinery.
+*"uses .jsonl.zstd, but this backend is configured for compression none"*.
 
-## Evidence: L9 delivery fires, then hits an upstream error
+## Evidence: L9 delivery resumes the session and the scheduled work COMPLETES
 
-A task scheduled two seconds out, with the mock provider supplying the model. The session log shows
-delivery working and then failing outside this repository:
+A task scheduled two seconds out, with the mock provider supplying the model. The probe reports:
 
 ```
-agent/inbox/spliced -> {"target":"next-turn","inserted":[{"content":[{"type":"text",
-    "text":"[SCHEDULE REMINDER]\nThis is a scheduled message from the user\n…"}]}]}
-turn/start -> {"turn": 1}
-turn/end   -> {"turn": 1,"reason":{"kind":"error","error":{"message":
-    "cannot get property \"toJSON\" without inject"}}}
+[l9-fire] warm-up turn produced 1 assistant message(s)
+[l9-fire] the session logged a request header: true
+[l9-fire] scheduled schedule-6552f8d1-… to fire in 2s
+[l9-fire] delivery receipt: {"scheduledAt":"2026-10-03T05:50:48.096Z",
+    "deliveredAt":"2026-10-03T05:50:48.105Z","messageId":"f94a6d08-…",
+    "prompt":"The scheduled task fired; report that you ran."}
+[l9-fire] deliveries reported: 1
+[l9-fire] assistant messages in the session: 2
+[l9-fire] the delivered turn ended: {"kind":"completed"}
 ```
 
-Delivery is proven to the point of resuming the session and opening a turn. The error comes from
-`packages/settings/settings` calling `schema.toJSON()` while describing plugin schemas; the kit has no
-`toJSON` access anywhere, so this is recorded as an upstream observation. The delivery receipt was
-consequently empty (`records: []`), and the scheduled work never completed.
+In the session log that is `agent/inbox/spliced` delivering the reminder, `turn/start` opening the turn,
+and a second `assistant/message` followed by `{"kind":"completed"}` — the scheduled work really ran, and
+the receipt is recorded.
 
-`solutions/l9.fire.patch.yml` reproduces it. It is **not** wired into `solutions/verify-l9.sh`: a check
-that fails for a reason outside this repository trains people to ignore the suite, which is worse than
-not having it.
+**Two fixes were needed, and both are instructive.**
+
+- The turn used to die at `turn/start` with `cannot get property "toJSON" without inject`. That was
+  **this repository's bug**, not the harness's: Lesson 5's pre-step listener called
+  `JSON.stringify(payload)` on a live event payload, and reaching `toJSON` on the Cordis proxy inside it
+  throws. See ADR-0028. It was attributed upstream here for two rounds, while an audit of 119 entry
+  `Config` schemas found nothing because the fault was never in them.
+- Delivery then failed one layer deeper with `prompt variable "{{model}}" has no value`. Delivery
+  restores provider/model from the session's **logged request header**, so a programmatically created
+  session that has never made a request resumes with no model at all. The probe now talks to the model
+  once before scheduling — the realistic shape of a scheduled follow-up in any case.
+
+`solutions/l9.fire.patch.yml` reproduces it, and it **is** wired into `solutions/verify-l9.sh` (phase 8)
+now that it passes. It stayed out while it failed: a check that fails for a reason outside this
+repository trains people to ignore the suite.
 
 ## Evidence: L9 the headless contract, keyless
 
@@ -446,32 +458,29 @@ base-backed profile never prints — so it sat out the full 60-second timeout an
 half-started log. Accepting either the web URL or the kit plugin's own apply line cut verify-l7 from
 about 75 seconds to 15.
 
-## Evidence: L7 the turn does not complete, and an earlier check measured the wrong thing
+## Evidence: L7 the turn COMPLETES, and an earlier check measured the wrong thing
 
-The turn phase runs against the mock provider, and this is what it actually reports about its **own**
-turn:
+The turn phase runs against the mock provider, and this is what it now reports about its **own** turn:
 
 ```
-[l7-turn] this turn's assistant messages: 0
-[l7-turn] this turn ended: {"kind":"error","error":{"message":
-    "cannot get property \"toJSON\" without inject","code":"UNKNOWN"}}
-[l7-turn] tokenUsage: {"totals":{"uncachedInputTokens":0,…},"last":null}
-[l7-turn] /compact outcome: {"kind":"success","text":"No compactable history yet."}
+PASS  the turn produced its own assistant message
+PASS  the turn completed rather than failed
+PASS  the trajectory is searchable and the hit is this session
 ```
 
-**It does not complete the turn.** The error is raised inside the harness's settings plugin, whose guard
-is `'toJSON' in schema` — true for a Cordis Context proxy, whose `.toJSON` then throws the inject error.
-An audit of **all 119 configuration entries** in this composition found every `Config` to be a valid
-schema with a working `toJSON()`, so the kit is not the trigger; the same error ends a schedule-delivery
-turn (see the L9 evidence), which makes it one upstream bug with two lesson impacts.
+**An honest correction, twice over.** The first version of this phase asserted that the trajectory was
+searchable by "the assistant's own text", and it **passed — because the search found `mock response` in
+other sessions** left by earlier headless runs. The turn it was describing had no assistant message at
+all. That is the most dangerous kind of green check; the search now uses a marker unique to the run and
+asserts the hit is this session.
 
-**And an honest correction.** The first version of this phase asserted that the trajectory was searchable
-by "the assistant's own text", and it **passed — because the search found `mock response` in other
-sessions** left by earlier headless runs. This turn has no assistant message at all. The assertion was
-measuring the wrong thing, which is the most dangerous kind of green check, and it is now replaced by an
-assertion that *pins the observed failure* so a change in either direction is visible.
-
-`solutions/l3.audit.patch.yml` reproduces the config audit in one boot.
+The second correction is what removed the missing assistant message. This file previously recorded the
+failure as an upstream bug in the harness's settings plugin — whose guard `'toJSON' in schema` is true
+for a Cordis Context proxy, whose `.toJSON` then throws the inject error — and noted that an audit of
+all 119 configuration entries found every `Config` valid. That audit was correct and the conclusion was
+wrong: the fault was never in the harness. It was this repository's own Lesson 5 listener stringifying a
+live event payload (ADR-0028). `solutions/l3.audit.patch.yml` is kept, reframed as what it actually
+shows: every entry's `Config` is a valid schema.
 
 ## Evidence: L7 a real turn, keyless, and the caveat
 
@@ -681,6 +690,30 @@ exception for a package whose *teaching is the point*. It is now in the bundle's
 
 **Deliberately unverified:** appending to a real session, reading `l6/step` rows from
 JSONL, and confirming the total survives a restart. Each needs a session.
+
+## Evidence: L5 the model-visible skill catalogue, against a real turn
+
+The catalogue only exists once a request is assembled, so this needs a provider — not a model. The
+mock endpoint runs the real loop and request assembly (ADR-0027), and the catalogue is durable, which
+is what makes it checkable: it lands in the session log as a user message. The claim is a PAIR, and the
+second half is what stops the first from being trivially satisfiable:
+
+```
+[l5-cat] event types: …,step/start,system/message,user/message,…,request/header,request/context,
+         session/title,assistant/message,step/end,turn/end
+[l5-cat] catalogue mentions 'repo-onboarding': true
+[l5-cat] body loaded into the log: false
+```
+
+`true` is the catalogue reaching the model's context. `false` is the skill body **not** being shipped
+with it — the body loads only once the model chooses the skill, which is the lesson's actual point.
+`solutions/verify-l5.sh` phase 8 asserts all three lines, including that the turn completed.
+
+**A silent no-op caught here.** The first version of that phase omitted `KIT_ROOT`, which the skills
+overlay reads at load time to compute `customSkillDirs`. An unset value resolves to `undefined`, the
+skill directory disappears, and the catalogue is empty — indistinguishable, in the assertion output,
+from the claim being false. The lesson's own environment variable was load-bearing for its
+verification.
 
 ## Evidence: L5 the command path, with no model request
 

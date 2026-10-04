@@ -7,6 +7,13 @@ export const inject = ['agents', 'sessionProjections', 'sessionQuery', 'commands
 export const Config = Schema.object({
   /** Off by default: this creates a session and runs a real turn. */
   enabled: Schema.boolean().default(false),
+  /**
+   * The provider route and model for the probe's turn. A programmatic `agents.create()` must
+   * state both: only a UI-created agent inherits a saved selection from settings, so omitting
+   * them fails the first step with "has no provider/model" (ADR-0028 has the diagnosis).
+   */
+  provider: Schema.string().default('deepseek-official'),
+  model: Schema.string().default('deepseek-flash'),
   delayMs: Schema.number().default(1500),
 })
 
@@ -33,13 +40,19 @@ export function apply(ctx, config) {
       handle = await ctx.agents.create({
         sessionId: `session-l7-turn-${Date.now()}`,
         meta: { cwd: process.cwd() },
+        agentOptions: { provider: config.provider, model: config.model },
       })
       const agent = handle.agent
       const session = agent.session
 
       // A real turn: the mock provider answers with its scripted text.
+      // The marker makes the search assertion below measure THIS turn. A search for a fixed
+      // phrase like 'mock response' also matches every earlier mock run in the same harness
+      // home, which is exactly how an earlier version of this check passed while measuring
+      // nothing about this session.
+      const marker = `l7-turn-marker-${Date.now()}`
       agent.followup(createUserMessage({
-        content: [{ type: 'text', text: 'say hi' }],
+        content: [{ type: 'text', text: `say hi ${marker}` }],
         source: { kind: 'user' },
       }))
       await agent.whenIdle()
@@ -65,14 +78,16 @@ export function apply(ctx, config) {
       const stats = ctx.sessionProjections.stateOf(session, 'sessionStats')
       console.log(`[l7-turn] sessionStats (web-only): ${stats === undefined ? 'not mounted in this profile' : JSON.stringify(stats).slice(0, 160)}`)
 
-      // The trajectory is searchable by text the ASSISTANT produced, which is the substance
-      // behind Lesson 7's session_search.
+      // The trajectory is searchable, and the hit must be THIS session. The marker is unique to
+      // this run, so a hit on it cannot be another session's text.
       try {
         // A search page is `{ items, nextCursor? }` — not `results`/`sessions`, which my first
         // version guessed and then reported as "object hit(s)".
-        const page = await ctx.sessionQuery.searchSessions({ query: 'mock response' })
+        const page = await ctx.sessionQuery.searchSessions({ query: marker })
         const items = page?.items ?? []
-        console.log(`[l7-turn] searchSessions('mock response'): ${items.length} hit(s)`)
+        const ids = items.map(item => item.header?.id)
+        console.log(`[l7-turn] searchSessions(marker): ${items.length} hit(s)`)
+        console.log(`[l7-turn] the marker search found this session: ${ids.includes(session.id)}`)
       } catch (error) {
         console.log(`[l7-turn] searchSessions failed: ${error.message}`)
       }

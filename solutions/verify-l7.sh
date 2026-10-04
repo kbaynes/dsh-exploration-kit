@@ -12,9 +12,9 @@
 #   dsh plugin --profile kitdemo add link:<kit>/kit-plugins
 #   dsh plugin --profile kitdemo add @deepseek-ai/dsh-tool-session-query@<dsh version>
 #
-# NOT asserted, because each needs a session or model: session_search,
-# session_trace, the workspace-authority refusal, token deltas, /compact, and the
-# invariant sweep's findings. Recorded as unverified in VERIFIED.md.
+# NOT asserted, because each needs a session or model: session_trace, and the
+# workspace-authority refusal (which needs a model-driven tool call, not just a
+# completed turn). Recorded as unverified in VERIFIED.md.
 set -uo pipefail
 
 DSH_CHECKOUT="${1:-}"
@@ -203,23 +203,15 @@ if start_mock_llm "$DSH_CHECKOUT" 8132 success; then
   check "the statistics unit is absent in a base-backed profile" 'sessionStats (web-only): not mounted' "$turn_out"
   check "/compact settles as a command" '/compact outcome: {"kind":"success"' "$turn_out"
 
-  # WHAT THIS PHASE DOES *NOT* CLAIM. The first version asserted that the trajectory was searchable
-  # by "the assistant's own text" - and it passed, because the search had found 'mock response' in
-  # OTHER sessions left by earlier headless runs. THIS turn produced no assistant message at all:
-  # it ends with an error raised inside the harness's settings plugin. The assertion measured the
-  # wrong thing, which is the most dangerous kind of green check.
-  #
-  # So the finding is pinned instead of hidden: assert that we observed it, so a change in either
-  # direction is visible.
-  if grep -q "this turn's assistant messages: 0" <<<"$turn_out"; then
-    echo "PASS  the turn's own outcome is now reported (not inferred from other sessions)"
-    check "and the upstream turn error is pinned as observed" 'toJSON' "$turn_out"
-    echo "NOTE  turns in this composition end with 'cannot get property "toJSON" without inject',"
-    echo "      raised inside the harness's settings plugin; the kit's 119 entry Configs were audited"
-    echo "      and all are valid schemas, so this is an upstream finding (see VERIFIED.md)."
-  else
-    echo "PASS  the turn produced an assistant message (the upstream error is evidently fixed)"
-  fi
+  # What the turn ACTUALLY did. An earlier version of this phase pinned a failure instead: turns
+  # died at `turn/start` with 'cannot get property "toJSON" without inject', which was recorded as
+  # an upstream defect for two rounds. It was the kit's own L5 pre-step listener stringifying a
+  # live payload (ADR-0028). With that fixed these assertions measure the turn itself.
+  check "the turn produced its own assistant message" "this turn's assistant messages: 1" "$turn_out"
+  check "the turn completed rather than failed" '"kind":"completed"' "$turn_out"
+  # The marker is unique to this run, so a hit proves the search found THIS session rather than
+  # another mock run in the same harness home - the wrong-measurement trap from the first version.
+  check "the trajectory is searchable and the hit is this session" 'the marker search found this session: true' "$turn_out"
 else
   echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
 fi
@@ -228,9 +220,8 @@ rm -f "$MODEL_PATCH" "$TURN_LOG"
 echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 7 verified: the store, the query service, the tool scope, the invented-type caveat"
-  echo "(with cleanup), the accounting shape, and /compact."
-  echo "NOT verified, and pinned rather than hidden: a completed turn. Turns in this composition end"
-  echo "with an upstream error in the harness's settings plugin (see the NOTE above and VERIFIED.md)."
+  echo "(with cleanup), a COMPLETED turn with its own assistant message, the trajectory being"
+  echo "searchable back to that session, the accounting shape, and /compact."
   echo "Also unverified: the workspace-authority refusal (needs a model-driven tool call) and the"
   echo "invariant findings on a fresh profile."
 else

@@ -1,4 +1,5 @@
 import Schema from '@deepseek-ai/schemastery'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
 
 export const name = 'l9-fire-probe'
 export const inject = ['agents', 'schedule', 'sessionQuery']
@@ -6,6 +7,12 @@ export const inject = ['agents', 'schedule', 'sessionQuery']
 export const Config = Schema.object({
   /** Off by default: this creates a task that fires. */
   enabled: Schema.boolean().default(false),
+  /**
+   * Provider route and model for the probe's own turn, and the route the delivery restores.
+   * A programmatic `agents.create()` must state both (ADR-0028).
+   */
+  provider: Schema.string().default('deepseek-official'),
+  model: Schema.string().default('deepseek-flash'),
   /** Seconds until the task is due. */
   afterSeconds: Schema.number().default(2),
   /** How long to wait for it to fire, in milliseconds. */
@@ -31,8 +38,23 @@ export function apply(ctx, config) {
       handle = await ctx.agents.create({
         sessionId: `session-l9-fire-${Date.now()}`,
         meta: { cwd: process.cwd() },
+        agentOptions: { provider: config.provider, model: config.model },
       })
       const session = handle.agent.session
+
+      // Talk to the model ONCE before scheduling. This is not decoration: delivery to a session
+      // that has never made a request resumes with no model at all, and the turn then dies on
+      // `prompt variable "{{model}}" has no value`. A session with a logged request header
+      // restores its provider/model on resume (api-session-controller's installSelection reads
+      // the header back), which is the realistic shape of a scheduled follow-up anyway.
+      handle.agent.followup(createUserMessage({
+        content: [{ type: 'text', text: 'Warm the session up before scheduling.' }],
+        source: { kind: 'user' },
+      }))
+      await handle.agent.whenIdle()
+      const warmed = (await ctx.sessionQuery.readSession(session.id))?.events ?? []
+      console.log(`[l9-fire] warm-up turn produced ${warmed.filter(event => event.type === 'assistant/message').length} assistant message(s)`)
+      console.log(`[l9-fire] the session logged a request header: ${warmed.some(event => event.type === 'request/header')}`)
 
       const record = await ctx.schedule.create(session.id, {
         title: 'l9 fire probe',
@@ -54,9 +76,16 @@ export function apply(ctx, config) {
             console.log(`[l9-fire] history shape: ${JSON.stringify(history)?.slice(0, 200)}`)
             shapeLogged = true
           }
-          const entries = history?.receipts ?? history?.entries ?? history?.deliveries ?? history?.items ?? []
-          deliveries = Array.isArray(entries) ? entries.length : (history?.latest ? 1 : 0)
-          if (deliveries > 0) break
+          // The documented field is `records` (oldest-first retained deliveries); `lastDelivery`
+          // is the most recent receipt on its own. The earlier guess-list here omitted `records`,
+          // so a delivery that had actually happened still reported zero.
+          const entries = history?.records
+            ?? (history?.lastDelivery === undefined ? [] : [history.lastDelivery])
+          deliveries = Array.isArray(entries) ? entries.length : 0
+          if (deliveries > 0) {
+            console.log(`[l9-fire] delivery receipt: ${JSON.stringify(entries[entries.length - 1])?.slice(0, 200)}`)
+            break
+          }
         } catch (error) {
           if (!shapeLogged) {
             console.log(`[l9-fire] history unavailable: ${error.message}`)
@@ -71,6 +100,10 @@ export function apply(ctx, config) {
       const types = (log?.events ?? []).map(event => event.type)
       const assistant = types.filter(type => type === 'assistant/message').length
       console.log(`[l9-fire] assistant messages in the session: ${assistant}`)
+      // The LAST turn is the delivered one, so its reason is what says whether the scheduled work
+      // completed or merely started.
+      const lastEnd = [...(log?.events ?? [])].reverse().find(event => event.type === 'turn/end')
+      console.log(`[l9-fire] the delivered turn ended: ${JSON.stringify(lastEnd?.data?.reason)?.slice(0, 160) ?? '(no turn/end)'}`)
       console.log(`[l9-fire] event types: ${types.join(',')}`)
     } catch (error) {
       console.log(`[l9-fire] FAILED: ${error.message}`)

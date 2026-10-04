@@ -13,6 +13,12 @@ A fast status view. The detailed task list with checkboxes lives in
 the kit is one owner substitution away from publishable, and publication is deliberately
 held until more hardening is done.
 
+A turn-killing bug in the kit's **own** Lesson 5 listener (`JSON.stringify` of a live event
+payload — see [ADR-0028](decisions/0028-never-stringify-a-live-event-payload.md)) had been
+misrecorded as an upstream harness defect for two rounds. Fixing it closed the L5 skill
+catalogue, L7's completed turn, and L9's delivery, all of which are now asserted by the
+suite rather than described as unverified.
+
 | Phase | Goal | Status |
 |---|---|---|
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
