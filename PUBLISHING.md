@@ -19,8 +19,17 @@ The owner appears as the single token `REPLACE_OWNER` in a handful of files. Cha
 everywhere at once:
 
 ```sh
-grep -rl 'REPLACE_OWNER' --exclude-dir=node_modules . | xargs sed -i '' 's/REPLACE_OWNER/<your-github-owner>/g'
+grep -rl 'REPLACE_OWNER' --exclude-dir=node_modules --exclude-dir=.git . \
+  | grep -vE '^(\./)?(PUBLISHING|PLAN)\.md$' \
+  | grep -vE '^\./scripts/check-(placeholders|publication)\.mjs$' \
+  | xargs sed -i '' 's/REPLACE_OWNER/<your-github-owner>/g'
 ```
+
+**Excluding those four files is not tidiness — it is required.** This document and
+`scripts/check-placeholders.mjs` are where the token is *defined*: a blanket substitution
+rewrites the checker's own token list, after which it reports the real owner as a placeholder
+and the gate can never pass. The procedure was tested in a clean export; the exclusions are
+what make it work.
 
 Then confirm nothing is left:
 
@@ -30,6 +39,11 @@ pnpm run check:placeholders
 
 That check exists because a published repository containing `REPLACE_OWNER` produces
 broken links and a site pointing at a stranger's account.
+
+**This procedure is tested**, not assumed: in a clean export with a fake owner, the gate
+passes, the link checks are clean, the site builds, and the owner appears in the built HTML.
+The exclusions above are what make it work — see
+[ADR-0026](decisions/0026-a-substitution-must-not-rewrite-its-own-tooling.md).
 
 ## 3. Set the git author identity
 

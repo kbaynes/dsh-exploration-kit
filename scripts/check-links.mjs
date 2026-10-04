@@ -7,6 +7,10 @@
  * Broken *internal* links are always a defect, so they fail the check.
  *
  * Usage: node scripts/check-links.mjs [contentDir]
+ *
+ * Run it through `pnpm run check:links`, which syncs the generated site pages first. Running
+ * this file directly on a fresh clone reports the three synced root documents as missing from
+ * `content/`, which is true until `scripts/sync-site-docs.mjs` has run.
  */
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'

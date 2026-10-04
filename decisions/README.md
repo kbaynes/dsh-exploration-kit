@@ -56,3 +56,4 @@ without re-running the experiment.
 - [ADR-0023 — Verification honours DSH_HOME, so it never has to touch the real harness home](0023-verification-runs-against-a-relocatable-home.md)
 - [ADR-0024 — A plugin must not invent a session event type for durable state](0024-do-not-invent-session-event-types.md)
 - [ADR-0025 — plugin_manager manages profile rows and bundles, not rows a bundle contributes](0025-plugin-manager-manages-profiles-not-bundle-rows.md)
+- [ADR-0026 — A find-and-replace must not rewrite the files that define the token](0026-a-substitution-must-not-rewrite-its-own-tooling.md)
