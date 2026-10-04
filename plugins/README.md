@@ -1,37 +1,44 @@
-# Exercise plugins
+# Scratch space
 
-Build your lesson exercise plugins here, under `<kit>/plugins/`.
+Your own experiments, not the lessons.
 
-Each lesson names the exact files to create, for example:
+**The lesson exercise plugins do not live here.** They live in
+[`../kit-plugins/`](../kit-plugins/README.md), because a plugin that imports anything
+from dsh must be part of an **installed bundle** — a loose file reached by a `--patch`
+overlay cannot resolve `@deepseek-ai/*`, and the entry fails to activate. Lesson 1 step 2
+walks through why, and [ADR-0003](../decisions/0003-plugins-ship-as-a-bundle.md) records
+it.
 
+So use this directory for what it is good at:
+
+- **A plugin that imports nothing from dsh.** That is the one case where a loose file
+  works, and it is a fast way to try something. Lesson 1's `hello.ts` is exactly this
+  shape, and it is the reason that one lesson can be a `.ts` file
+  ([ADR-0011](../decisions/0011-typescript-erasure-limits.md)).
+- **Notes, half-finished ideas, and throwaway overlays** while you work through a lesson.
+
+## Mounting a scratch plugin
+
+A row in an overlay resolves its `name` **relative to the patch file**, so `./hello.ts`
+points beside the overlay, not at the repository root:
+
+```yaml
+# plugins/scratch.patch.yml
+- insert:
+    - id: scratch
+      name: './hello.ts'
 ```
-plugins/
-  l1/
-    hello.ts
-  l1.patch.yml
-  l2/
-    wordcount.ts
-  l2.patch.yml
-```
-
-The `.patch.yml` overlays are passed to the harness with `--patch`, so a lesson's
-command looks like:
 
 ```sh
-cd <path/to/deepseek-harness>
-dsh --profile web --patch <kit>/plugins/l1.patch.yml --port 0 --no-open
+dsh --profile kitdemo --patch <kit>/plugins/scratch.patch.yml --port 0 --no-open
 ```
 
-Two footguns, both documented in [Lesson 1](../content/lessons/01-plugin-lifecycle.md):
+Two traps, both from Lesson 1:
 
-- New plugin rows go under `- insert:`. A bare `- id: <new-id>` fails with
-  `patch: entry "<id>" not found`.
-- An entry's `name` is resolved **relative to the patch file**, not to the
-  workspace root.
+- A bare `- id: <new-id>` entry is a *patch* of an existing row. For a new row it fails
+  quietly with `patch: entry "<id>" not found` and the plugin never mounts.
+- Getting the relative path wrong produces a doubled path (`plugins/plugins/hello.ts`)
+  rather than an error you would recognise.
 
-The [examples/](../examples/) directory holds the exact files as each lesson
-presents them, and [solutions/](../solutions/) holds a working answer key for
-diffing when you get stuck.
-
-This directory is git-ignored except for this README, because it is your working
-scratch space.
+Anything beyond a scratch experiment belongs in the bundle. This directory is git-ignored
+apart from this file.

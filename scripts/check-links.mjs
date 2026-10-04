@@ -24,7 +24,13 @@ const root = resolve(repo, process.argv[2] ?? 'content')
  * VERIFIED.md's LOCAL links are deliberately skipped: the site sync rewrites them, so
  * a relative form is valid here and broken only in the generated copy.
  */
-const rootDocs = ['README.md', 'PLAN.md', 'ROADMAP.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md', 'THIRD-PARTY.md']
+const rootDocs = [
+  'README.md', 'PLAN.md', 'ROADMAP.md', 'CONTRIBUTING.md', 'CODE_OF_CONDUCT.md',
+  'THIRD-PARTY.md', 'PUBLISHING.md',
+  // Committed support documents. Easy to forget, and they are reader-facing: a stale
+  // link here sends someone down a path the lessons no longer use.
+  'plugins/README.md', 'solutions/README.md', 'examples/README.md', 'kit-plugins/README.md',
+]
 const syncRewritten = ['VERIFIED.md']
 
 /** Walk a directory for markdown files. */

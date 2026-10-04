@@ -1,37 +1,53 @@
-# Solutions
+# Solutions and verification
 
-The working answer key: the complete, corrected form of each lesson's exercise,
-for diffing when you get stuck.
+Two things live here: the **overlays** each lesson applies, and a **verification script
+per lesson**.
 
-Unlike [`../examples/`](../examples/README.md) — which mirrors exactly what a lesson
-prints on the page — these files are the finished article. If a lesson shows a
-fragment ("now add this to `apply`"), the solution here carries the whole file.
+## Verification scripts
 
-## Status
-
-**Empty for now.** Populating this directory is the first item in
-[VERIFIED.md](../VERIFIED.md)'s verification backlog, because building the
-reference solutions is also how each lesson gets tested.
-
-Until then, work from the lesson text into [`../plugins/`](../plugins/README.md).
-Struggling here is productive: the harness fails loudly and the error messages
-name the problem, which is the skill the curriculum is trying to build.
-
-## Planned layout
-
-```
-solutions/
-  l1/hello.ts
-  l1.patch.yml
-  l2/wordcount.ts
-  l2.patch.yml
-  l3/clock.ts
-  l3/uses-clock.ts
-  l3/diagnose.ts
-  l3.patch.yml
-  ...
+```sh
+bash solutions/verify-l2.sh <path/to/deepseek-harness>
 ```
 
-Each `README.md` added alongside a lesson's solution should record what was run
-and against which DSH version — the same rule as the rest of the repository: never
-claim verification you did not perform.
+Each script checks the wiring a lesson depends on — that the bundle carries the right
+rows, that a plugin declares the services it uses, that an overlay composes the way the
+lesson says — and prints `PASS`/`FAIL` per assertion. They need a DSH checkout and a
+provisioned profile:
+
+```sh
+bash scripts/install-dsh-shim.sh <path/to/deepseek-harness> /tmp/dsh-bin
+PATH=/tmp/dsh-bin:$PATH bash scripts/setup-verify-profiles.sh
+```
+
+`pnpm run check:kit` runs all of them when `DSH_CHECKOUT` is set, and the
+`verify against dsh` workflow runs them in CI against the pinned commit.
+
+**Each script states what it does not check.** Every lesson has claims that need a model
+provider — a real tool call, a payload shape, a fan-out — and no script pretends to cover
+them. Those are listed per lesson in [VERIFIED.md](../VERIFIED.md).
+
+## Overlays
+
+| File | Lesson | What it does |
+|---|---|---|
+| `l2.patch.yml` | 2 | The row for the `word_count` tool, as a `--patch` overlay rather than a bundle row |
+| `l2.override.patch.yml` | 2 | Overrides the **installed** row's config in place — no `insert`, no `name` |
+| `l3.hmr.patch.yml` | 3 | Points `dsh-hmr` at the kit's plugin directory so an edit reloads live |
+| `l5.skills.patch.yml` | 5 | Points `skill-filesystem` at the kit's own skill directory |
+| `l7.patch.yml` | 7 | Opens the session store, inserts the query tool and the invariant checks |
+| `l9.patch.yml` | 9 | Inserts the opt-in `schedule` and `webhook` packages |
+
+Two things about these are deliberate and worth reading before adapting them:
+
+- **`l2.patch.yml` and `l3.hmr.patch.yml` are teaching aids, not the way to add a
+  plugin.** The lesson plugins ship in [`../kit-plugins/`](../kit-plugins/README.md);
+  these files show the overlay mechanism being used where it is the right tool —
+  overriding an installed row's config, or turning on a watch root.
+- **`l9.patch.yml` must be applied to a web-backed profile.** On a base-backed one both
+  rows sit in `PENDING`, naming services only the web bundle provides
+  ([ADR-0016](../decisions/0016-profile-choice-is-load-bearing.md)).
+
+## Where the lesson code lives
+
+[`../examples/`](../examples/README.md) is a **generated** mirror of
+`../kit-plugins/`, so lesson text and booting code cannot drift. Never edit it by hand.
