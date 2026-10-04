@@ -15,7 +15,10 @@ URL on the published site will 404.
 
 ## 2. Substitute the repository owner
 
-The owner appears as the single token `REPLACE_OWNER` in a handful of files. Change it
+The owner appears as the token `REPLACE_OWNER` in prose and in `package.json`. The **site
+config does not carry it at all** — `website/.vitepress/config.mts` derives the social link,
+the per-page edit link, and the link-preview URL from `package.json`'s `kit.repositoryOwner`,
+so the site follows one source rather than needing its own substitution. Change the token
 everywhere at once:
 
 ```sh

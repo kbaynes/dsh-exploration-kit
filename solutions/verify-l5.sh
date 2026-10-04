@@ -120,10 +120,27 @@ fi
 rm -f "$L5LOG1" "$L5LOG2"
 
 echo
+echo "== 7. the command runs from plain code, with NO model turn =="
+# Lesson 5 claims /l5-facts answers without a model turn. ctx.commands.execute is the dispatch
+# path the composer uses and it takes an Agent, which ctx.agents.create provides without
+# running a turn - so the claim is testable, and the session log is the evidence: command
+# lifecycle events, and zero model-request events.
+CMD_LOG="$(mktemp)"
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$CMD_LOG" '\[l5-cmd\] done' 60 \
+  "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l5.cmd.patch.yml" || failures=$((failures + 1))
+cmd_out="$(grep '\[l5-cmd\]' "$CMD_LOG")"
+
+check "the command resolves" 'resolved: true' "$cmd_out"
+check "the handler returns its text" '"kind":"success","text":"content/' "$cmd_out"
+check "the session logs the command lifecycle" 'command/run, command/done' "$cmd_out"
+check "no model request was made" 'model-request events in the log: 0' "$cmd_out"
+rm -f "$CMD_LOG"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 5 verified, including that injected context survives a restart."
-  echo "Still unverified (needs a provider): whether a model's skill catalog shows the"
-  echo "skill, and whether /l5-facts answers in a real composer."
+  echo "Lesson 5 verified: injection durability, the command path, and the skills overlay."
+  echo "Still unverified (needs a provider): the model-visible skill catalogue, which only"
+  echo "exists once a request is assembled."
 else
   echo "$failures check(s) failed."; exit 1
 fi

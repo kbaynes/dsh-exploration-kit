@@ -79,6 +79,12 @@
 
     # Opt-in diagnostic: tests whether injected context survives a restart, which is
     # Lesson 5's durability claim. See solutions/l5.probe.patch.yml.
+    # Opt-in diagnostic: dispatches /l5-facts through ctx.commands.execute, so Lesson 5's
+    # "no model turn" command claim is testable without a model. See solutions/l5.cmd.patch.yml.
+    - id: l5-cmd-probe
+      name: dsh-exploration-kit-plugins/l5/command-probe.js
+      disabled: true
+
     - id: l5-probe
       name: dsh-exploration-kit-plugins/l5/context-probe.js
       disabled: true

@@ -1,7 +1,20 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig } from 'vitepress'
 
 // The curriculum has a single source of truth: ../content (an OKF bundle).
 // VitePress reads it directly — nothing is copied or generated into the site.
+
+// Derived from package.json so the repository identity lives in ONE place. Anything here
+// that needs an absolute URL (the social link, the edit link, link-preview metadata) is
+// computed from it, which means publication substitutes the owner in package.json rather
+// than in this file. See PUBLISHING.md and ADR-0026.
+const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../../package.json'), 'utf8'))
+const owner = pkg.kit?.repositoryOwner ?? 'REPLACE_OWNER'
+const repoName = pkg.kit?.repositoryName ?? 'dsh-exploration-kit'
+const repoUrl = `https://github.com/${owner}/${repoName}`
+const siteUrl = `https://${owner}.github.io/${repoName}/`
+
 export default defineConfig({
   srcDir: '../content',
   lang: 'en-US',
@@ -20,6 +33,22 @@ export default defineConfig({
   head: [
     ['meta', { name: 'theme-color', content: '#0b7285' }],
     ['meta', { name: 'author', content: 'DSH Exploration Kit contributors' }],
+    // Link-preview metadata. Without it, promoting the kit on Discord or in a discussion
+    // produces a bare URL, which is a poor first impression for a curriculum whose whole
+    // pitch is that it is hands-on.
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: 'DSH Exploration Kit' }],
+    ['meta', { property: 'og:title', content: 'DSH Exploration Kit' }],
+    [
+      'meta',
+      {
+        property: 'og:description',
+        content:
+          'A hands-on, nine-lesson curriculum for learning DeepSeek Harness by building real plugins.',
+      },
+    ],
+    ['meta', { property: 'og:url', content: siteUrl }],
+    ['meta', { name: 'twitter:card', content: 'summary' }],
   ],
 
   themeConfig: {
@@ -57,9 +86,13 @@ export default defineConfig({
       },
     ],
 
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/REPLACE_OWNER/dsh-exploration-kit' },
-    ],
+    socialLinks: [{ icon: 'github', link: repoUrl }],
+
+    // The repository invites contributions, so give readers a way to make them from the page.
+    editLink: {
+      pattern: `${repoUrl}/edit/main/content/:path`,
+      text: 'Edit this page',
+    },
 
     search: { provider: 'local' },
 

@@ -558,8 +558,11 @@ fixed and re-verified.
       (`fetch-depth: 0`)
 - [x] **MAJOR** added `CODE_OF_CONDUCT.md` and linked it
 - [x] **MINOR** added `.editorconfig`
-- [ ] **MINOR** add `.gitattributes` (LF normalisation,
-      `pnpm-lock.yaml linguist-generated`)
+- [x] **MINOR** added `.gitattributes` (LF normalisation, generated-file marking)
+- [x] **OPTIONAL** added the site's link-preview metadata (Open Graph, Twitter card) and an
+      `editLink`, both derived from the single `kit.repositoryOwner` source so the site needs no
+      substitution of its own
+- [x] **OPTIONAL** recorded the intended GitHub topics in `.github/topics.txt`
 - [ ] **MINOR** add issue labels (`lesson-defect`, `clarity`) to the repository, or
       drop the `labels:` keys
 - [ ] **OPTIONAL** record the intended GitHub topics in-repo so they survive a

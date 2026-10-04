@@ -1,0 +1,12 @@
+# Enable Lesson 5's command probe: it creates a session and dispatches `/l5-facts` through
+# ctx.commands.execute, so the lesson's "no model turn" claim is testable WITHOUT a provider.
+#
+# l7.patch.yml is applied too, because the probe reads the session log through
+# ctx.sessionQuery and that overlay opens the store.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
+#       --patch <kit>/solutions/l5.cmd.patch.yml --port 0 --no-open
+- id: l5-cmd-probe
+  disabled: false
+  config:
+    enabled: true

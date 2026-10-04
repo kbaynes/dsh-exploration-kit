@@ -269,9 +269,26 @@ whitespace; everything after the name is `rawInput` and the command owns its gra
 Registering the same name twice in one scope throws. The handler returns `success` or
 `error` plus optional UI text.
 
-Type `/l5-facts` in the composer and confirm the reply is immediate. Because the
-handler is plain code, no model turn occurs — you can watch your `pre-step` observer
-stay silent as proof.
+Type `/l5-facts` in the composer and confirm the reply is immediate. That the handler runs
+from plain code is testable rather than merely asserted — the kit's probe dispatches the
+command through `ctx.commands.execute`, the same path the composer uses:
+
+```sh
+dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
+    --patch <kit>/solutions/l5.cmd.patch.yml --port 0 --no-open
+```
+
+```
+[l5-cmd] resolved: true
+[l5-cmd] outcome: {"kind":"success","text":"content/      the curriculum (OKF bundle) — …"}
+[l5-cmd] command events in the log: command/run, command/done
+[l5-cmd] model-request events in the log: 0
+```
+
+**The last line is the claim.** The session records the command's lifecycle events and
+**zero model-request events** — which is what "needs no model turn" means in the log, rather
+than a claim about responsiveness. (`ctx.commands.execute` takes an Agent, and
+`ctx.agents.create` makes one without running a turn, which is why this is reachable offline.)
 
 ## Step 5 — Decide where knowledge belongs
 
