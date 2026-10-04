@@ -52,20 +52,33 @@ a placeholder so that no real identity was invented on your behalf. Rewrite it b
 first push — after the push it is permanent, and GitHub will never link those commits to
 an account.
 
-```sh
-git rebase -i --root          # mark every commit 'edit', then:
-git commit --amend --reset-author --no-edit
-git rebase --continue         # repeat for each commit
-```
-
-Or, if you would rather keep the messages and only fix authorship:
+**Tested, non-interactive recipe** — rewrites every commit's author and committer in one
+pass, using the identity in the environment:
 
 ```sh
-git filter-repo --email-callback 'return b"<you>@users.noreply.github.com"' \
-                --name-callback 'return b"<Your Name>"'
+GIT_AUTHOR_NAME="<Your Name>" GIT_AUTHOR_EMAIL="<you>@users.noreply.github.com" \
+GIT_COMMITTER_NAME="<Your Name>" GIT_COMMITTER_EMAIL="<you>@users.noreply.github.com" \
+GIT_SEQUENCE_EDITOR=: git rebase --root --exec 'git commit --amend --reset-author --no-edit'
 ```
 
-`pnpm run check:publication` fails while the placeholder identity is still in the history.
+Verified on this repository: all 43 commits came back with the new identity, `git status`
+stayed clean, and the objects verify. The rebase leaves dangling objects, which is normal —
+`git gc --prune=now` if you want them gone.
+
+Alternative, if you would rather not preserve the development history at all — and for a
+curriculum whose history is scaffolding, this is a defensible choice:
+
+```sh
+rm -rf .git && git init && git add -A
+git -c user.name="<Your Name>" -c user.email="<you>@users.noreply.github.com" commit -m "Initial commit"
+```
+
+**Not recommended as written:** `git filter-repo` is the usual tool for this and it is **not
+installed** on a stock machine (`command -v git-filter-repo` fails). It needs
+`pip install git-filter-repo` first, which is another thing to go wrong before a first push.
+
+`pnpm run check:publication` fails while the placeholder identity is still in the history,
+which is what makes this step impossible to forget.
 
 ## 4. Repository description and topics
 

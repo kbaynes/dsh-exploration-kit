@@ -390,8 +390,12 @@ suite people skip.
 - [ ] Replace the placeholder owner — **needs the real GitHub owner**; then
       `pnpm run check:placeholders` passes
 - [ ] Rewrite the git author identity — **needs the maintainer identity**; the history
-      currently carries `kit@example.invalid`, which is a placeholder rather than an
-      invented real identity
+      currently carries `kit@example.invalid`, which is a placeholder rather than an invented
+      real identity. The recipe in `PUBLISHING.md` is **tested**: a non-interactive
+      `git rebase --root --exec 'git commit --amend --reset-author --no-edit'` with the identity
+      in the environment rewrote all 43 commits and left the tree clean. The previously
+      documented `git filter-repo` route is not usable as written — that tool is not installed
+      on a stock machine.
 - [ ] Decide the public repository name (working name `dsh-exploration-kit`; changing it
       means updating the VitePress `base` in the same edit)
 - [x] Confirm the license choice and that `LICENSE`, `package.json`, and
