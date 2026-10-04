@@ -21,6 +21,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib-llm.sh"
 failures=0
 check() {
   if grep -qF -- "$2" <<<"$3"; then echo "PASS  $1"
@@ -75,10 +76,65 @@ check "the child's projection reflects the inherited event" 'child projection: {
 rm -f "$FORK_LOG"
 
 echo
+echo "== 5. a REAL delegation, end to end, with no provider key =="
+# The lesson's central claim is that a delegation runs a CHILD agent with its own context. That
+# needs a provider, and the repository ships a scriptable one (ADR-0027): the mock is told to
+# answer the first request with a `subagent` tool call, and every later request with plain text.
+# What follows is a genuine fan-out - the parent calls the tool, a child runs its own turn, the
+# child reports back, the parent finishes - visible in the mock's request count and in the session
+# log's parent link.
+SUBAGENT_ARGS='{"description":"fan-out check","prompt":"Report the answer in one short line."}'
+MODEL_PATCH="$(mktemp)"
+cat > "$MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+
+# Count parent-linked child sessions before, so the assertion is about THIS run. The session log
+# is compressed, so this decompresses recent sessions rather than grepping them.
+BEFORE="$(count_recent_parent_linked_sessions 5)"
+
+if start_mock_llm "$DSH_CHECKOUT" 8133 tool_call_success,success,success,success \
+     --tool-name subagent --tool-arguments "$SUBAGENT_ARGS"; then
+  FAN_OUT="$(mktemp)"; FAN_ERR="$(mktemp)"
+  ( cd "$DSH_CHECKOUT" && DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
+      dsh --profile headless --patch "$MODEL_PATCH" "delegate the fan-out check" \
+      >"$FAN_OUT" 2>"$FAN_ERR" )
+  fan_status=$?
+  stop_mock_llm
+  AFTER="$(count_recent_parent_linked_sessions 5)"
+
+  check "the delegating turn exits 0" '0' "$fan_status"
+  check "the parent prints the model's answer" 'mock response recovered' "$(cat "$FAN_OUT")"
+  # Three requests: the parent's tool call, the CHILD's own turn, then the parent's final answer.
+  requests="$(grep -c '"type":"request"' "$MOCK_LLM_LOG" 2>/dev/null || echo 0)"
+  if [[ "$requests" -ge 3 ]]; then
+    echo "PASS  a child agent ran its own turn (model requests served: $requests)"
+  else
+    echo "FAIL  expected at least 3 model requests (parent call, child turn, parent finish); saw $requests"
+    failures=$((failures + 1))
+  fi
+  # And the child is durably recorded with a link to its parent.
+  if [[ "$AFTER" -gt "$BEFORE" ]]; then
+    echo "PASS  a child session was recorded with a parent link ($BEFORE -> $AFTER)"
+  else
+    echo "FAIL  no parent-linked child session appeared ($BEFORE -> $AFTER)"
+    failures=$((failures + 1))
+  fi
+  rm -f "$FAN_OUT" "$FAN_ERR"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+rm -f "$MODEL_PATCH"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 8 verified, including fork heredity through derived state."
-  echo "Still needs a provider: any real delegation or fan-out (a subagent turn), and the"
-  echo "monolith-versus-fan-out cost comparison."
+  echo "Lesson 8 verified: orchestration primitives, fake-engine logic, fork heredity through"
+  echo "derived state, and a real end-to-end delegation."
+  echo "Still needs a credential: the monolith-versus-fan-out cost comparison, which needs real"
+  echo "token usage (the mock reports none for scripted text)."
 else
   echo "$failures check(s) failed."; exit 1
 fi

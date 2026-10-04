@@ -100,7 +100,7 @@ row that admits it has not been checked yet.
 | L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. **Not** executed: the model-visible skill catalogue, which only exists once a request is assembled. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
 | L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted **with self-cleanup** (an unknown event type is invisible to both filters and search); and against the repository's mock provider a **real turn** is searchable by its own assistant text, the token-accounting projection is exposed with its documented shape, and `/compact` settles. **Not** executed: the workspace-authority refusal (needs a model-driven tool call) and the invariant findings. |
-| L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (this lesson adds no plugin); the workflow's pure core passes 7 unit tests with a fake engine; and **fork heredity is verified without a model** — a child seeded from its parent's log reports the exact inherited prefix, the `isSeeded` marker, the parent lineage, and its L6 projection already reflects the inherited event. **Not** executed: any real delegation or fan-out (a subagent turn), and the monolith-versus-fan-out cost comparison. |
+| L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. **Not** executed: the monolith-versus-fan-out cost comparison, which needs real token usage. |
 | L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are confirmed opt-in; the overlay composes and activates on a web-backed profile with no warnings while a base-backed one strands both in `PENDING`; both install pinned; a scheduled task **survives a restart**; and the **headless contract is executed keyless** against the repository's scriptable mock provider — exit 0 with the answer on stdout, exit 1 with the diagnostic on stderr, and a `--json` stream carrying `turn_start`, `turn_end`, a `text` event and a closing `final`. **Not** executed: an SDK round trip, a webhook delivery, and a task firing. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
@@ -302,6 +302,26 @@ wrong key is rejected by argument validation *before* policy runs — easy to mi
 gate working. And `ctx.tools.execute()` requires a `signal`.
 
 `bash solutions/verify-l4.sh` asserts both verdicts.
+
+## Evidence: L8 a real delegation, end to end
+
+Against the mock provider, with the first request scripted as a `subagent` tool call:
+
+```
+PASS  the delegating turn exits 0
+PASS  the parent prints the model's answer
+PASS  a child agent ran its own turn (model requests served: 3)
+PASS  a child session was recorded with a parent link (5 -> 6)
+```
+
+The request count is the evidence that matters: **three** requests means the parent called the tool, a
+**child ran its own model turn**, and the parent finished — a genuine fan-out, not a simulated one. The
+parent link in the child's session header makes the delegation durable lineage, which is what
+`solutions/verify-l8.sh` decompresses the recent session log to check.
+
+**A counter bug worth recording:** the first version of that check grepped the session files for
+`parentSession` and always reported zero, because the log is `zstd`-compressed. It now decompresses only
+recently-touched sessions.
 
 ## Evidence: L8 fork heredity, verified through derived state
 

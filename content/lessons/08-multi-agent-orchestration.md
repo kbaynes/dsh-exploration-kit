@@ -235,12 +235,35 @@ Observable without a model:
 3. The result schema has an object root and declares `additionalProperties: false` on
    every object node.
 
-Requires a provider:
+Executed keyless, against the repository's scriptable mock provider (ADR-0027) — the mock is told
+to answer the first request with a `subagent` call and every later request with text:
 
-4. A spawned child completes a task while demonstrating it lacks the parent's context.
+```sh
+pnpm run mock:llm --port 8133 --api-key mock-key \
+  --sequence tool_call_success,success,success,success --repeat-last \
+  --tool-name subagent --tool-arguments '{"description":"fan-out check","prompt":"Report the answer in one short line."}'
+
+DEEPSEEK_BASE_URL=http://127.0.0.1:8133/v1 DEEPSEEK_API_KEY=mock-key \
+  dsh --profile headless --patch <model-patch> "delegate the fan-out check"
+```
+
+A real delegation follows, and the numbers say what happened:
+
+- **three model requests** — the parent's tool call, the **child's own turn**, then the parent's
+  final answer. A child agent really ran, in its own context.
+- **a child session recorded with a parent link** in the session log, so the delegation is durable
+  lineage rather than a transient call.
+
+`bash <kit>/solutions/verify-l8.sh` runs it and asserts all four properties.
+
+Requires a real provider:
+
+5. A spawned child demonstrates it lacks the parent's *conversation* context — the mock cannot show
+   this, because scripted output does not depend on what the child was given.
 5. A forked child inherits the cut, and your L6 projection consumes it rather than inferring
    it — **executed**: the probe asserts the inherited prefix length, the `isSeeded` marker,
    the parent lineage, and that the projection reflects the inherited event.
+6. A real delegation runs a child turn and records it — **executed**, against the mock provider.
 6. `send_message` reaches a live child and `interrupt_agent` stops it.
 7. A real fan-out returns schema-validated rows.
 8. You can produce the four-part audit for a monolithic run *and* a decomposed run of
