@@ -2,7 +2,7 @@ import Schema from '@deepseek-ai/schemastery'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 
 export const name = 'l5-catalogue-probe'
-export const inject = ['agents', 'sessionQuery']
+export const inject = ['agents', 'sessionQuery', 'skills', 'tools']
 
 export const Config = Schema.object({
   /** Off by default: this runs a real turn. */
@@ -40,6 +40,30 @@ export function apply(ctx, config) {
         agentOptions: { provider: config.provider, model: config.model },
       })
       const agent = handle.agent
+
+      // Wait for a COMPLETE catalog BEFORE driving the turn.
+      //
+      // The catalogue is skipped outright while discovery is incomplete
+      // (`if (!snapshot.complete) return decision` in tool-skill), and discovery is incomplete
+      // while a watched root is still settling. The listener asks with `scope: agent`, which is a
+      // SEPARATE observation from the unscoped ask: waiting on only the unscoped one still raced
+      // the watcher, and the same probe passed and failed on consecutive runs depending only on
+      // that timing. Waiting on both, before the first request, removes the race from the
+      // verification without changing the product.
+      const observeRegistry = async () => ({
+        plain: await ctx.skills.snapshot({ cwd: process.cwd() }),
+        scoped: await ctx.skills.snapshot({ cwd: process.cwd(), scope: agent }),
+      })
+      let { plain, scoped } = await observeRegistry()
+      const settleDeadline = Date.now() + 20000
+      while ((!plain.complete || !scoped.complete) && Date.now() < settleDeadline) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        ;({ plain, scoped } = await observeRegistry())
+      }
+      console.log(`[l5-cat] registry: ${plain.skills.length} skill(s), complete=${plain.complete}, agent-scoped complete=${scoped.complete}: ${plain.skills.map(skill => skill.name).join(',') || '(none)'}`)
+      console.log(`[l5-cat] the skill tool is visible to the agent: ${ctx.tools.get('skill', agent) !== undefined}`)
+
+      // A real turn: the mock provider answers with its scripted text.
       agent.followup(createUserMessage({
         content: [{ type: 'text', text: 'say hi' }],
         source: { kind: 'user' },
@@ -51,8 +75,17 @@ export function apply(ctx, config) {
       const types = events.map(event => event.type)
       const whole = JSON.stringify(events)
 
+      // Read the catalogue from the message that CARRIES it (`source.kind === 'skill-catalog'`)
+      // rather than searching the whole log. A plain substring search is satisfied by any text
+      // that happens to name the skill - including the model's own tool-call arguments, which is
+      // exactly how the companion probe reported a catalogue that was not there.
+      const catalogues = events.filter(event =>
+        event.type === 'user/message' && event.data?.source?.kind === 'skill-catalog')
+      const catalogueText = JSON.stringify(catalogues)
+
       console.log(`[l5-cat] event types: ${types.join(',')}`)
-      console.log(`[l5-cat] catalogue mentions '${config.expectSkill}': ${whole.includes(config.expectSkill)}`)
+      console.log(`[l5-cat] skill-catalog messages: ${catalogues.length}`)
+      console.log(`[l5-cat] catalogue mentions '${config.expectSkill}': ${catalogueText.includes(config.expectSkill)}`)
 
       // Distinguish the CATALOGUE from the BODY: the catalogue is a short pinned summary, the body
       // is the full instructions. Searching for a phrase that only the body carries answers which

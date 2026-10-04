@@ -166,6 +166,11 @@ if start_mock_llm "$DSH_CHECKOUT" 8137 success; then
 
   cat_out="$(grep '\[l5-cat\]' "$CAT_LOG")"
   check "the turn itself completed (a request was assembled)" 'assistant/message' "$cat_out"
+  check "the registry reported a complete catalog before the turn" 'agent-scoped complete=true' "$cat_out"
+  # The catalogue is read from the message that CARRIES it. A plain substring search over the log
+  # is satisfied by anything that names the skill - including the model's own tool-call arguments,
+  # which is how the companion phase once reported a catalogue that was not there.
+  check "exactly one skill-catalog message reaches the session" 'skill-catalog messages: 1' "$cat_out"
   check "the catalogue announces the skill to the model" "catalogue mentions 'repo-onboarding': true" "$cat_out"
   # The pair matters more than either half: a catalogue in the log proves announcement, and an
   # absent body proves the body is loaded on demand rather than shipped with it.
@@ -192,7 +197,7 @@ if start_mock_llm "$DSH_CHECKOUT" 8140 tool_call_success,success \
   stop_mock_llm
 
   body_out="$(grep '\[l5-cat\]' "$BODY_LOG")"
-  check "the catalogue is still announced" "catalogue mentions 'repo-onboarding': true" "$body_out"
+  check "the catalogue is still announced" 'skill-catalog messages: 1' "$body_out"
   check "the call ran through the real tool pipeline" 'tool/result' "$body_out"
   # The same marker phase 8 asserts is ABSENT is now present: the body is loaded on demand.
   check "the skill BODY loads once the model calls it" 'body loaded into the log: true' "$body_out"

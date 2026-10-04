@@ -38,6 +38,8 @@
     "preview": "vitepress preview website --host 127.0.0.1 --port 4173",
     "validate": "okflint validate --manifest okf-base.yaml",
     "check:links": "node scripts/sync-site-docs.mjs && node scripts/check-links.mjs",
+    "reflow": "node scripts/reflow-markdown.mjs",
+    "check:wrapping": "node scripts/reflow-markdown.mjs --check",
     "check:placeholders": "node scripts/check-placeholders.mjs",
     "check:upstream": "node scripts/check-upstream-links.mjs",
     "sync:site": "node scripts/sync-site-docs.mjs",

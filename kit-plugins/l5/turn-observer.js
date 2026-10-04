@@ -7,7 +7,13 @@ export function apply(ctx) {
     // answers "cannot get property \"toJSON\" without inject" — an error that aborts the
     // whole turn from inside this listener. See ADR-0028.
     console.log(`[l5-observer] pre-step turn=${payload.turn} step=${payload.step} messages=${payload.messages?.length ?? '?'}`)
-    return next()
+    const decision = await next()
+    // What the waterfall produced for this step. `next()` runs the remaining listeners, so the
+    // message sources here are what the request will actually carry - a durable, checkable
+    // summary of what pre-step contributed.
+    const sources = (decision?.messages ?? []).map(message => message.source?.kind ?? '?')
+    console.log(`[l5-observer] pre-step decision kind=${decision?.kind ?? '?'} message sources: ${sources.join(',') || '(none)'}`)
+    return decision
   })
 
   ctx.on('agent/created', ({ agent }) => {

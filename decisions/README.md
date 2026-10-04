@@ -1,8 +1,6 @@
 # Decision records (ADRs)
 
-The durable engineering decisions behind this kit, each one **earned by getting it
-wrong first**. They exist so nobody — human or agent — pays for the same mistake
-twice.
+The durable engineering decisions behind this kit, each one **earned by getting it wrong first**. They exist so nobody — human or agent — pays for the same mistake twice.
 
 ## Why these are separate from the other records
 
@@ -12,22 +10,14 @@ twice.
 | Task plan | *What is left to do?* | [PLAN.md](../PLAN.md) |
 | These ADRs | *Why is it built this way, and what should I not try?* | `decisions/` |
 
-An ADR is not a task and not a test result. It states a decision, the evidence that
-forced it, and the consequences — including the alternatives that were rejected. A
-future contributor should be able to read one and stop before making the mistake,
-without re-running the experiment.
+An ADR is not a task and not a test result. It states a decision, the evidence that forced it, and the consequences — including the alternatives that were rejected. A future contributor should be able to read one and stop before making the mistake, without re-running the experiment.
 
 ## Rules
 
-1. **Every ADR has: Status, Context, Decision, Consequences, Evidence.** Evidence
-   is what was observed, quoted. If a decision was not verified, say so in the ADR
-   rather than implying certainty.
-2. **Numbers are permanent.** Never renumber. Superseded records stay and get
-   `Status: Superseded by ADR-00NN`.
-3. **Add `decisions/README.md` to the index** when you add a record — enforced by
-   `pnpm run check:decisions`.
-4. **No decision without a reason.** If you cannot state what would go wrong
-   without it, it is a preference, not a decision.
+1. **Every ADR has: Status, Context, Decision, Consequences, Evidence.** Evidence is what was observed, quoted. If a decision was not verified, say so in the ADR rather than implying certainty.
+2. **Numbers are permanent.** Never renumber. Superseded records stay and get `Status: Superseded by ADR-00NN`.
+3. **Add `decisions/README.md` to the index** when you add a record — enforced by `pnpm run check:decisions`.
+4. **No decision without a reason.** If you cannot state what would go wrong without it, it is a preference, not a decision.
 
 ## Index
 
@@ -61,3 +51,5 @@ without re-running the experiment.
 - [ADR-0028 — Never `JSON.stringify` a live event payload; the Cordis proxy throws on `toJSON`](0028-never-stringify-a-live-event-payload.md)
 - [ADR-0029 — A delivery receipt records admission, not completion; never assert on it](0029-an-acknowledgment-is-not-a-completion.md)
 - [ADR-0030 — Verification owns the harness home; one run at a time](0030-verification-owns-the-harness-home.md)
+- [ADR-0031 — Prose is one line per paragraph, so every viewer renders it the same](0031-prose-is-not-column-wrapped.md)
+- [ADR-0032 — Do not drive a turn before skill discovery reports a complete catalog](0032-wait-for-skill-discovery-to-complete.md)

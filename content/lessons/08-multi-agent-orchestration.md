@@ -9,12 +9,9 @@ timestamp: 2026-09-30
 
 # L8 — Orchestrate multiple agents
 
-**Goal.** By the end of this lesson you can split work across isolated contexts,
-collect structured results, and justify the split with the numbers you learned to
-produce in L7.
+**Goal.** By the end of this lesson you can split work across isolated contexts, collect structured results, and justify the split with the numbers you learned to produce in L7.
 
-**Why here.** Everything so far ran in one context. Orchestration is the capability
-most likely to be over-applied, so it is scheduled *after* you can measure it.
+**Why here.** Everything so far ran in one context. Orchestration is the capability most likely to be over-applied, so it is scheduled *after* you can measure it.
 
 ## Concepts taught
 
@@ -31,51 +28,33 @@ most likely to be over-applied, so it is scheduled *after* you can measure it.
 | Agent presets | Per-session capability sets (met properly in L9's webhook request) |
 | Agent teams | Roster, task board, mailbox — opt-in, and it displaces the legacy control names |
 
-Reference: the repository's
-[subagent subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/subagent.md),
-[workflow package](https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/workflow),
-and [agent-team subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/agent-team.md).
+Reference: the repository's [subagent subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/subagent.md), [workflow package](https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/workflow), and [agent-team subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/agent-team.md).
 
 ## Prerequisites
 
-L1–L7 complete. A model provider is required — this lesson is meaningless without
-one. You need L7's token-accounting routine.
+L1–L7 complete. A model provider is required — this lesson is meaningless without one. You need L7's token-accounting routine.
 
 ## Step 1 — One delegation, deliberately scoped
 
-The base bundle already makes delegation available: `subagent` uses the `spawn`
-provider with `backgroundMode: continuable`, and `subagent_fork` uses the `fork`
-provider with model selection omitted so provider/model stay equal to the parent
-(which keeps the inherited history eligible for KV-cache reuse).
+The base bundle already makes delegation available: `subagent` uses the `spawn` provider with `backgroundMode: continuable`, and `subagent_fork` uses the `fork` provider with model selection omitted so provider/model stay equal to the parent (which keeps the inherited history eligible for KV-cache reuse).
 
 Use it on a real task in your exploration workspace, for example:
 
-> *Ask the agent to delegate: "Read `<kit>/content/feature-map.md` and report
-> every capability in section 5 as a compact table."*
+> *Ask the agent to delegate: "Read `<kit>/content/feature-map.md` and report every capability in section 5 as a compact table."*
 
-Then ask the follow-up question that matters: **what did the child not know?**
-A spawned child does not share this conversation's context — that is its value and
-its cost. Confirm it can `list_agents` and `send_message` to the child afterward,
-because the base row is continuable, and `interrupt_agent` to stop it.
+Then ask the follow-up question that matters: **what did the child not know?** A spawned child does not share this conversation's context — that is its value and its cost. Confirm it can `list_agents` and `send_message` to the child afterward, because the base row is continuable, and `interrupt_agent` to stop it.
 
-Choose between the two delegation tools on one axis: `subagent` when the task is
-self-contained and the parent's context would only be noise; `subagent_fork` when
-the task genuinely builds on this conversation. Forking to avoid writing a good
-task description is a common and expensive mistake.
+Choose between the two delegation tools on one axis: `subagent` when the task is self-contained and the parent's context would only be noise; `subagent_fork` when the task genuinely builds on this conversation. Forking to avoid writing a good task description is a common and expensive mistake.
 
 ## Step 2 — Fan out with a workflow
 
-The `workflow` tool takes a JavaScript script and runs agents from it. **Neither the
-tool nor its engine needs installing** — the base bundle mounts `tool-workflow`,
-`workflow-ptc`, `tool-subagent`, and the fork row, so this lesson adds no plugin to the
-kit. Confirm that before writing anything:
+The `workflow` tool takes a JavaScript script and runs agents from it. **Neither the tool nor its engine needs installing** — the base bundle mounts `tool-workflow`, `workflow-ptc`, `tool-subagent`, and the fork row, so this lesson adds no plugin to the kit. Confirm that before writing anything:
 
 ```sh
 dsh --profile kitdemo --dump-config | grep -E 'id: (tool-workflow|tool-subagent|workflow-ptc)'
 ```
 
-The kit ships the workflow at `<kit>/kit-plugins/l8/audit-workflow.js`. It is split in
-two **deliberately**, and the split is the lesson's most transferable idea:
+The kit ships the workflow at `<kit>/kit-plugins/l8/audit-workflow.js`. It is split in two **deliberately**, and the split is the lesson's most transferable idea:
 
 ```js
 // audit-workflow.js — the PURE half, unit-tested without an agent
@@ -102,10 +81,7 @@ export async function runWorkflow({ agent, pipeline, phase, log }, sections) {
 }
 ```
 
-The engine injects `agent`, `pipeline`, `phase`, and `log` into the script, so a
-function taking them as parameters is testable with fakes. That is exactly what
-`audit-workflow.test.mjs` does — **seven tests, no model** — and it is what lets you
-trust the orchestration before spending tokens on it:
+The engine injects `agent`, `pipeline`, `phase`, and `log` into the script, so a function taking them as parameters is testable with fakes. That is exactly what `audit-workflow.test.mjs` does — **seven tests, no model** — and it is what lets you trust the orchestration before spending tokens on it:
 
 ```sh
 pnpm run check:units
@@ -113,28 +89,16 @@ pnpm run check:units
 
 The mechanics worth internalizing:
 
-- **`pipeline(items, ...stages)` has no barrier between stages.** Each item flows
-  independently, so a slow item does not hold up the rest. Prefer it over
-  `parallel()` unless a stage genuinely needs every prior result together.
-- **A schema turns prose into a checked object.** Without one you get text back and you
-  write a fragile regex to parse it. Note the schema shape: an object root, and
-  `additionalProperties: false` on every object node.
-- **A throwing stage drops that item to `null`** and skips its remaining stages — it
-  does not reject the whole run. That is why the normalization step exists, and why the
-  test asserting it is the most valuable one in the file.
-- **`phase()` and `log()` are real API, not decoration.** They drive the progress a
-  human sees, and they are the difference between a five-minute fan-out and an opaque
-  one.
+- **`pipeline(items, ...stages)` has no barrier between stages.** Each item flows independently, so a slow item does not hold up the rest. Prefer it over `parallel()` unless a stage genuinely needs every prior result together.
+- **A schema turns prose into a checked object.** Without one you get text back and you write a fragile regex to parse it. Note the schema shape: an object root, and `additionalProperties: false` on every object node.
+- **A throwing stage drops that item to `null`** and skips its remaining stages — it does not reject the whole run. That is why the normalization step exists, and why the test asserting it is the most valuable one in the file.
+- **`phase()` and `log()` are real API, not decoration.** They drive the progress a human sees, and they are the difference between a five-minute fan-out and an opaque one.
 
-Misusing a hook — bad arguments, an unsupported schema keyword, a tripped cap — ends
-the whole script rather than yielding `null`. Read the failure; it names the argument.
+Misusing a hook — bad arguments, an unsupported schema keyword, a tripped cap — ends the whole script rather than yielding `null`. Read the failure; it names the argument.
 
 ## Step 3 — Compare decomposition to a monolithic run
 
-This is the lesson's actual deliverable. Take one task you have already run
-monolithically and run it again as a fan-out. For each run, record the four audit
-parts from L7: the task, turn/step counts, token totals, and the events that prove
-them.
+This is the lesson's actual deliverable. Take one task you have already run monolithically and run it again as a fan-out. For each run, record the four audit parts from L7: the task, turn/step counts, token totals, and the events that prove them.
 
 Then answer honestly:
 
@@ -145,14 +109,11 @@ Then answer honestly:
 | Was the parallelism real? | In-process providers still share one machine's CPU and model quota |
 | What would you do differently next time? | The only question that transfers to the next task |
 
-If the fan-out was not better, that is a successful lesson. Orchestration has a
-cost, and finding the boundary where it stops paying is the skill.
+If the fan-out was not better, that is a successful lesson. Orchestration has a cost, and finding the boundary where it stops paying is the skill.
 
 ## Step 4 — Fork a session at a turn boundary
 
-Programmatic forking is the seam behind `subagent_fork`, and **it is testable without a
-model** — creating sessions is not a model call. The kit's probe creates a parent, seeds a
-child from the parent's log, and reports what the child inherited:
+Programmatic forking is the seam behind `subagent_fork`, and **it is testable without a model** — creating sessions is not a model call. The kit's probe creates a parent, seeds a child from the parent's log, and reports what the child inherited:
 
 ```sh
 dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
@@ -167,32 +128,18 @@ dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
 [l8-probe] child projection: {"mode":"read-only"}
 ```
 
-That last line is the claim worth pausing on. The child's **L6 projection already reports the
-mode carried by the inherited event** — heredity observed through *derived state*, not merely
-through a header field. If your projection inferred the cut instead of reading it, this is
-where forks would start misreporting, and this is the check that catches it.
+That last line is the claim worth pausing on. The child's **L6 projection already reports the mode carried by the inherited event** — heredity observed through *derived state*, not merely through a header field. If your projection inferred the cut instead of reading it, this is where forks would start misreporting, and this is the check that catches it.
 
 Two contracts the probe hit, both precise:
 
-- **The seed must be contiguous from seq 0** — a prefix of the parent's log, which is what
-  "completed-turn seed" means. Passing one later event fails with
-  `seed event at index 0 has seq 4 (expected 0); seed must be contiguous from 0`. So read the
-  prefix from the log rather than assembling one by hand.
-- **`inheritedEventCount` is required whenever `meta.isSeeded` is set**, or creation fails
-  with `seeded session requires an inherited event count`. It is the exact inherited prefix
-  length, and the child's header then carries it so a projection's `init` can read the cut
-  instead of inferring it from `firstLiveSeq`.
+- **The seed must be contiguous from seq 0** — a prefix of the parent's log, which is what "completed-turn seed" means. Passing one later event fails with `seed event at index 0 has seq 4 (expected 0); seed must be contiguous from 0`. So read the prefix from the log rather than assembling one by hand.
+- **`inheritedEventCount` is required whenever `meta.isSeeded` is set**, or creation fails with `seeded session requires an inherited event count`. It is the exact inherited prefix length, and the child's header then carries it so a projection's `init` can read the cut instead of inferring it from `firstLiveSeq`.
 
-Only agent-loop-published sessions persist. `bash <kit>/solutions/verify-l8.sh` asserts all
-four lines above.
+Only agent-loop-published sessions persist. `bash <kit>/solutions/verify-l8.sh` asserts all four lines above.
 
 ## Step 5 — Opt into agent teams (optional, deeper)
 
-Teams layer a durable roster, task board, and mailbox over continuable subagents on
-`ctx.agentTeams`. They are **not** enabled in the base bundle. The shipped `agent-team` profile patch is the documented way in, and it is instructive to read
-before applying, because it disables the legacy continuable-child control names
-(`tool-subagent-control`, `tool-subagent-list-agents`, `tool-subagent`) while
-inserting the team plugins with explicit caps:
+Teams layer a durable roster, task board, and mailbox over continuable subagents on `ctx.agentTeams`. They are **not** enabled in the base bundle. The shipped `agent-team` profile patch is the documented way in, and it is instructive to read before applying, because it disables the legacy continuable-child control names (`tool-subagent-control`, `tool-subagent-list-agents`, `tool-subagent`) while inserting the team plugins with explicit caps:
 
 ```yaml
 - id: tool-subagent-control
@@ -209,14 +156,9 @@ inserting the team plugins with explicit caps:
         disposalTimeoutMs: 5000
 ```
 
-Note what that teaches: swapping a coordination model is a *composition* change,
-and the caps are part of the contract rather than optional hardening. The
-`agentTeam` session projection replays one root Session into roster, task board,
-and mailbox — selecting records by `TeamId`, so events inherited by an ordinary
-fork retain the ancestor id and never enter the new root's state.
+Note what that teaches: swapping a coordination model is a *composition* change, and the caps are part of the contract rather than optional hardening. The `agentTeam` session projection replays one root Session into roster, task board, and mailbox — selecting records by `TeamId`, so events inherited by an ordinary fork retain the ancestor id and never enter the new root's state.
 
-If you explore teams, stop before making them load-bearing. The package is
-explicitly experimental, and the lesson is the mechanism, not the feature.
+If you explore teams, stop before making them load-bearing. The package is explicitly experimental, and the lesson is the mechanism, not the feature.
 
 ## Verification
 
@@ -226,17 +168,11 @@ bash <kit>/solutions/verify-l8.sh <path/to/deepseek-harness>
 
 Observable without a model:
 
-1. `tool-workflow`, `tool-subagent`, `tool-subagent-fork`, and `workflow-ptc` are
-   mounted by the base bundle and compose — **this lesson adds no plugin**, which is
-   itself the finding: orchestration is capability the harness already provides.
-2. The workflow's pure core passes seven unit tests with a **fake engine**
-   (`pnpm run check:units`): the pipeline drives every item, logs each one, passes the
-   schema through, and a partially failed fan-out still yields a dense array.
-3. The result schema has an object root and declares `additionalProperties: false` on
-   every object node.
+1. `tool-workflow`, `tool-subagent`, `tool-subagent-fork`, and `workflow-ptc` are mounted by the base bundle and compose — **this lesson adds no plugin**, which is itself the finding: orchestration is capability the harness already provides.
+2. The workflow's pure core passes seven unit tests with a **fake engine** (`pnpm run check:units`): the pipeline drives every item, logs each one, passes the schema through, and a partially failed fan-out still yields a dense array.
+3. The result schema has an object root and declares `additionalProperties: false` on every object node.
 
-Executed keyless, against the repository's scriptable mock provider (ADR-0027) — the mock is told
-to answer the first request with a `subagent` call and every later request with text:
+Executed keyless, against the repository's scriptable mock provider (ADR-0027) — the mock is told to answer the first request with a `subagent` call and every later request with text:
 
 ```sh
 pnpm run mock:llm --port 8133 --api-key mock-key \
@@ -249,30 +185,21 @@ DEEPSEEK_BASE_URL=http://127.0.0.1:8133/v1 DEEPSEEK_API_KEY=mock-key \
 
 A real delegation follows, and the numbers say what happened:
 
-- **three model requests** — the parent's tool call, the **child's own turn**, then the parent's
-  final answer. A child agent really ran, in its own context.
-- **a child session recorded with a parent link** in the session log, so the delegation is durable
-  lineage rather than a transient call.
+- **three model requests** — the parent's tool call, the **child's own turn**, then the parent's final answer. A child agent really ran, in its own context.
+- **a child session recorded with a parent link** in the session log, so the delegation is durable lineage rather than a transient call.
 
 `bash <kit>/solutions/verify-l8.sh` runs it and asserts all four properties.
 
 Requires a real provider:
 
-5. A spawned child demonstrates it lacks the parent's *conversation* context — the mock cannot show
-   this, because scripted output does not depend on what the child was given.
-5. A forked child inherits the cut, and your L6 projection consumes it rather than inferring
-   it — **executed**: the probe asserts the inherited prefix length, the `isSeeded` marker,
-   the parent lineage, and that the projection reflects the inherited event.
+5. A spawned child demonstrates it lacks the parent's *conversation* context — the mock cannot show this, because scripted output does not depend on what the child was given.
+5. A forked child inherits the cut, and your L6 projection consumes it rather than inferring it — **executed**: the probe asserts the inherited prefix length, the `isSeeded` marker, the parent lineage, and that the projection reflects the inherited event.
 6. A real delegation runs a child turn and records it — **executed**, against the mock provider.
 6. `send_message` reaches a live child and `interrupt_agent` stops it.
 7. A real fan-out returns schema-validated rows.
-8. You can produce the four-part audit for a monolithic run *and* a decomposed run of
-   the same task.
+8. You can produce the four-part audit for a monolithic run *and* a decomposed run of the same task.
 
-Items 4–8 are recorded as unverified in
-[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md).
-Item 2 is the reason this lesson is worth more than its prose: the orchestration
-*contract* is tested even though the agents are not.
+Items 4–8 are recorded as unverified in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 2 is the reason this lesson is worth more than its prose: the orchestration *contract* is tested even though the agents are not.
 
 ## Exit check — you should now be able to explain
 

@@ -4,29 +4,19 @@ okf_version: "0.1"
 
 # DSH Exploration Kit
 
-A hands-on, nine-lesson curriculum for learning DeepSeek Harness (`dsh`) by
-building real plugins — from mounting your first plugin to unattended automation.
+A hands-on, nine-lesson curriculum for learning DeepSeek Harness (`dsh`) by building real plugins — from mounting your first plugin to unattended automation.
 
-Learn [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) by
-building things that run. Nine lessons, each producing a working artifact, each
-teaching exactly one new part of the harness.
+Learn [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (`dsh`) by building things that run. Nine lessons, each producing a working artifact, each teaching exactly one new part of the harness.
 
-DSH is enormous but its *mechanism* is small and uniform: every capability is a
-plugin mounted into one shared context, reacting to typed events, owning a
-lifecycle. This kit teaches that mechanism once and then points it at a different
-extension seam in every lesson.
+DSH is enormous but its *mechanism* is small and uniform: every capability is a plugin mounted into one shared context, reacting to typed events, owning a lifecycle. This kit teaches that mechanism once and then points it at a different extension seam in every lesson.
 
 ## Start here
 
-1. [Learning path](./learning-path.md) — the ordering, why it is ordered that way,
-   the dependency graph, and five progress checkpoints.
-2. [Capability map](./feature-map.md) — every DSH capability grouped by subsystem,
-   with the package or seam that provides it.
-3. [Lesson 1 — Mount your first plugin](./lessons/01-plugin-lifecycle.md) — needs
-   no API key.
+1. [Learning path](./learning-path.md) — the ordering, why it is ordered that way, the dependency graph, and five progress checkpoints.
+2. [Capability map](./feature-map.md) — every DSH capability grouped by subsystem, with the package or seam that provides it.
+3. [Lesson 1 — Mount your first plugin](./lessons/01-plugin-lifecycle.md) — needs no API key.
 
-**Short on time?** [The learning path](./learning-path.md#if-you-only-have-30-minutes) has a
-defensible 30-minute subset — Lessons 1 and 3 — and says what it leaves out.
+**Short on time?** [The learning path](./learning-path.md#if-you-only-have-30-minutes) has a defensible 30-minute subset — Lessons 1 and 3 — and says what it leaves out.
 
 ## The nine lessons
 
@@ -44,15 +34,12 @@ defensible 30-minute subset — Lessons 1 and 3 — and says what it leaves out.
 
 ## How to use this kit
 
-Each lesson has the same shape: **goal → concepts → steps → verification →
-exit check → next**. Do not skip the verification step. DSH fails loudly by
-design, and reading the failure is most of the learning.
+Each lesson has the same shape: **goal → concepts → steps → verification → exit check → next**. Do not skip the verification step. DSH fails loudly by design, and reading the failure is most of the learning.
 
 Every lesson assumes:
 
 - A **DeepSeek Harness source checkout** with `pnpm run build` already run.
-- `dsh` on your `PATH` (see
-  [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md)).
+- `dsh` on your `PATH` (see [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md)).
 - The path convention `<kit>` meaning this repository's root.
 - The kit's exercise plugins installed as a **bundle**. Lesson 1 does this once:
 
@@ -61,42 +48,23 @@ Every lesson assumes:
   dsh plugin --profile kitdemo add link:<kit>/kit-plugins
   ```
 
-  `link:` symlinks the package, so edits you make while working the lessons are
-  live. Your own scratch plugins go under `<kit>/plugins/`.
+`link:` symlinks the package, so edits you make while working the lessons are live. Your own scratch plugins go under `<kit>/plugins/`.
 
-**Plugins ship as a bundle, not as loose files.** A `--patch` overlay resolves its
-row relative to the patch file, and a loose source file cannot import `@deepseek-ai/*`
-packages — pnpm symlinks only declared dependencies. This was verified by running
-it; see the kit's bundle documentation at
-https://github.com/kbaynes/dsh-exploration-kit/blob/main/kit-plugins/README.md.
+**Plugins ship as a bundle, not as loose files.** A `--patch` overlay resolves its row relative to the patch file, and a loose source file cannot import `@deepseek-ai/*` packages — pnpm symlinks only declared dependencies. This was verified by running it; see the kit's bundle documentation at https://github.com/kbaynes/dsh-exploration-kit/blob/main/kit-plugins/README.md.
 
-**Run boot commands in your own shell, not through a sandboxed agent's bash tool.**
-The default file sandbox blocks `dsh` from writing its composed profile under
-`~/.dsh`, and the boot fails with `EPERM`.
+**Run boot commands in your own shell, not through a sandboxed agent's bash tool.** The default file sandbox blocks `dsh` from writing its composed profile under `~/.dsh`, and the boot fails with `EPERM`.
 
 ## Compatibility
 
-Authored and verified against **DeepSeek Harness `0.2.0-rc.2`**
-(commit `639ed01539`). DSH is a developer preview with explicitly breaking
-changes, so a different version may require adjustments. See
-[VERIFIED.md](./VERIFIED.md)
-for exactly which steps have been executed and which are documented but unrun.
+Authored and verified against **DeepSeek Harness `0.2.0-rc.2`** (commit `639ed01539`). DSH is a developer preview with explicitly breaking changes, so a different version may require adjustments. See [VERIFIED.md](./VERIFIED.md) for exactly which steps have been executed and which are documented but unrun.
 
 ## Contributing
 
-Corrections, clearer explanations, and additional lessons are welcome — see
-[CONTRIBUTING.md](./CONTRIBUTING.md).
-The content is an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog)
-bundle, so every file is plain markdown with YAML frontmatter.
+Corrections, clearer explanations, and additional lessons are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md). The content is an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog) bundle, so every file is plain markdown with YAML frontmatter.
 
 ## Attribution
 
-This is an independent, unofficial teaching resource. DeepSeek Harness is
-developed by [DeepSeek AI](https://deepseek.com) and licensed under MIT (see
-[THIRD-PARTY.md](./THIRD-PARTY.md)).
-The knowledge here was derived from the public DSH documentation and source; the
-lesson design, exercises, and explanations are original. Not affiliated with or
-endorsed by DeepSeek AI.
+This is an independent, unofficial teaching resource. DeepSeek Harness is developed by [DeepSeek AI](https://deepseek.com) and licensed under MIT (see [THIRD-PARTY.md](./THIRD-PARTY.md)). The knowledge here was derived from the public DSH documentation and source; the lesson design, exercises, and explanations are original. Not affiliated with or endorsed by DeepSeek AI.
 
 ## Bundle
 

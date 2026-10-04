@@ -1,8 +1,6 @@
 # Examples
 
-The exact files each lesson presents, so you can read or copy them instead of
-transcribing. **Generated** from `../kit-plugins/` — that directory is canonical,
-because it is what actually boots in a profile.
+The exact files each lesson presents, so you can read or copy them instead of transcribing. **Generated** from `../kit-plugins/` — that directory is canonical, because it is what actually boots in a profile.
 
 Regenerate after editing a lesson plugin:
 
@@ -26,14 +24,9 @@ node scripts/sync-examples.mjs --check   # fails if this mirror has drifted
 
 ## Why these are generated rather than hand-written
 
-A hand-maintained copy drifts. When a lesson's code and the booting code disagree,
-the lesson is wrong and nobody notices until a reader hits it. Mirroring the
-booting files — with a `--check` mode — means the disagreement is a failing check
-instead of a support request.
+A hand-maintained copy drifts. When a lesson's code and the booting code disagree, the lesson is wrong and nobody notices until a reader hits it. Mirroring the booting files — with a `--check` mode — means the disagreement is a failing check instead of a support request.
 
 ## Related
 
-- [`../kit-plugins/`](../kit-plugins/README.md) — the canonical bundle, and why
-  plugins must ship as one
-- [`../solutions/`](../solutions/README.md) — the answer key and per-lesson
-  verification scripts
+- [`../kit-plugins/`](../kit-plugins/README.md) — the canonical bundle, and why plugins must ship as one
+- [`../solutions/`](../solutions/README.md) — the answer key and per-lesson verification scripts

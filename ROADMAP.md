@@ -1,30 +1,19 @@
 # Roadmap — at a glance
 
-A fast status view. The detailed task list with checkboxes lives in
-[PLAN.md](PLAN.md); this file is what you read in five seconds.
+A fast status view. The detailed task list with checkboxes lives in [PLAN.md](PLAN.md); this file is what you read in five seconds.
 
-**Verified harness state:** DSH `0.2.0-rc.2` at
-`639ed015397290b3745d163aafe02ffee4aa3f84` (tag `dsh-v0.2.0-rc.2`), captured
-2026-10-01. Kit releases are tagged against this so the relationship survives; see
-[VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets) and
-[PLAN Phase 4.5](PLAN.md).
+**Verified harness state:** DSH `0.2.0-rc.2` at `639ed015397290b3745d163aafe02ffee4aa3f84` (tag `dsh-v0.2.0-rc.2`), captured 2026-10-01. Kit releases are tagged against this so the relationship survives; see [VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets) and [PLAN Phase 4.5](PLAN.md).
 
-**Current phase: 4 — Publication readiness.** All nine lessons are built and executed;
-the kit is one owner substitution away from publishable, and publication is deliberately
-held until more hardening is done.
+**Current phase: 4 — Publication readiness.** All nine lessons are built and executed; the kit is one owner substitution away from publishable, and publication is deliberately held until more hardening is done.
 
-A turn-killing bug in the kit's **own** Lesson 5 listener (`JSON.stringify` of a live event
-payload — see [ADR-0028](decisions/0028-never-stringify-a-live-event-payload.md)) had been
-misrecorded as an upstream harness defect for two rounds. Fixing it closed the L5 skill
-catalogue, L7's completed turn, and L9's delivery, all of which are now asserted by the
-suite rather than described as unverified.
+A turn-killing bug in the kit's **own** Lesson 5 listener (`JSON.stringify` of a live event payload — see [ADR-0028](decisions/0028-never-stringify-a-live-event-payload.md)) had been misrecorded as an upstream harness defect for two rounds. Fixing it closed the L5 skill catalogue, L7's completed turn, and L9's delivery, all of which are now asserted by the suite rather than described as unverified.
 
 | Phase | Goal | Status |
 |---|---|---|
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
 | 0.5 | Rewrite lessons for the verified bundle mechanism | ✅ All nine rewritten |
 | 1 | Build, test, and review each lesson | ✅ All nine built and executed |
-| 2 | Test infrastructure — automated verification in CI | ✅ 19 checks, version gate, full CI run (~4m15s) |
+| 2 | Test infrastructure — automated verification in CI | ✅ 20 checks, version gate, full CI run (~4m15s + one fast static check) |
 | 3 | Whole-kit review — editorial and technical pass | ✅ Two independent audits triaged and fixed |
 | 4 | Publication readiness — placeholders, licensing, metadata | 🔄 owner set (`kbaynes`); only the git author identity remains |
 | 4.5 | Tag the release against a harness state | ⬜ Pending publication |
@@ -48,12 +37,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | 8 | Orchestrate multiple agents | ✅ | 🟡 | ✅ |
 | 9 | Automate the harness | ✅ | 🟡 | ✅ |
 
-"Tested" means executed end-to-end against a real DSH checkout and recorded in
-[VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it. A partial 🟡
-means the mechanism was executed but the lesson's own exercise was not.
+"Tested" means executed end-to-end against a real DSH checkout and recorded in [VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it. A partial 🟡 means the mechanism was executed but the lesson's own exercise was not.
 
 ## The gate that matters
 
-**Do not promote the kit until every lesson is Implemented and Tested.** A
-curriculum that does not run is worse than no curriculum, because the people who
-try it conclude the harness is broken.
+**Do not promote the kit until every lesson is Implemented and Tested.** A curriculum that does not run is worse than no curriculum, because the people who try it conclude the harness is broken.

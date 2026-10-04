@@ -14,8 +14,7 @@ Accepted
 
 ## Context
 
-Lesson 9's delivery phase reads the schedule's delivery history, then reads the session log to ask
-what the delivered turn did:
+Lesson 9's delivery phase reads the schedule's delivery history, then reads the session log to ask what the delivered turn did:
 
 ```js
 if (deliveries > 0) break          // receipt observed
@@ -33,25 +32,16 @@ FAIL  the scheduled work ran: a second assistant message in the session
 PASS  and the delivered turn COMPLETED rather than failing
 ```
 
-The receipt is appended when the reminder is **admitted to the inbox**, which is before the agent has
-run a single step. The log read raced the delivered turn, so it saw only the warm-up turn's assistant
-message. The companion assertion passed for a worse reason: with the delivered turn still open, the
-*last* `turn/end` in the log was the warm-up turn's `{"kind":"completed"}`. So it reported success
-while describing the wrong turn — the same false-green shape as L7's search that matched other
-sessions, and just as invisible from the check's output.
+The receipt is appended when the reminder is **admitted to the inbox**, which is before the agent has run a single step. The log read raced the delivered turn, so it saw only the warm-up turn's assistant message. The companion assertion passed for a worse reason: with the delivered turn still open, the *last* `turn/end` in the log was the warm-up turn's `{"kind":"completed"}`. So it reported success while describing the wrong turn — the same false-green shape as L7's search that matched other sessions, and just as invisible from the check's output.
 
 Two properties make this general rather than a quirk of `ctx.schedule`:
 
-- **An acknowledgment is an event about admission.** A receipt, a queue record, or an accepted
-  delivery proves the work was *taken*, not that it *finished*. The gap is unbounded: it is the whole
-  duration of the work.
-- **A "most recent closed turn" is not a label.** If the observer counts turns rather than
-  identifying them, one previously closed turn is indistinguishable from the delivered one.
+- **An acknowledgment is an event about admission.** A receipt, a queue record, or an accepted delivery proves the work was *taken*, not that it *finished*. The gap is unbounded: it is the whole duration of the work.
+- **A "most recent closed turn" is not a label.** If the observer counts turns rather than identifying them, one previously closed turn is indistinguishable from the delivered one.
 
 ## Decision
 
-Never assert completion from an acknowledgment record. Poll for the state that completion implies,
-and state the baseline that distinguishes it:
+Never assert completion from an acknowledgment record. Poll for the state that completion implies, and state the baseline that distinguishes it:
 
 ```js
 const warmupTurns = warmed.filter(event => event.type === 'turn/end').length
@@ -62,19 +52,13 @@ while (endsOf(log) <= warmupTurns && Date.now() < settleDeadline) {
 }
 ```
 
-The baseline is the load-bearing part. This probe deliberately runs a warm-up turn first, so an
-absolute count of assistant messages is not a count of *delivered* messages.
+The baseline is the load-bearing part. This probe deliberately runs a warm-up turn first, so an absolute count of assistant messages is not a count of *delivered* messages.
 
 ## Consequences
 
-- L9's delivery phase measures the delivery it claims to measure. The flake is explained rather than
-  recorded as "not reproduced", which is where it would otherwise have sat.
-- The rule generalises to every acknowledgment-shaped API in the kit's orbit — delivery receipts,
-  inbox admissions, `delivery-accepted` log events. All of them are permission to *wait*, not
-  evidence to *assert*.
-- It is the third instance of one failure mode in this repository: an assertion that passes while
-  measuring something other than its claim. The first two are recorded in ADR-0028 and in the L7
-  evidence. Naming the pattern is more useful than fixing three instances.
+- L9's delivery phase measures the delivery it claims to measure. The flake is explained rather than recorded as "not reproduced", which is where it would otherwise have sat.
+- The rule generalises to every acknowledgment-shaped API in the kit's orbit — delivery receipts, inbox admissions, `delivery-accepted` log events. All of them are permission to *wait*, not evidence to *assert*.
+- It is the third instance of one failure mode in this repository: an assertion that passes while measuring something other than its claim. The first two are recorded in ADR-0028 and in the L7 evidence. Naming the pattern is more useful than fixing three instances.
 
 ## Evidence
 
@@ -88,5 +72,4 @@ FAIL  solution: lesson 9
         PASS  and the delivered turn COMPLETED rather than failing
 ```
 
-`solutions/verify-l9.sh` phase 8 asserts the three lines and passes on repeat runs with the wait in
-place.
+`solutions/verify-l9.sh` phase 8 asserts the three lines and passes on repeat runs with the wait in place.

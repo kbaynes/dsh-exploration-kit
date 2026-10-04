@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 
 export const name = 'l5-live-catalog-probe'
-export const inject = ['agents', 'sessionQuery']
+export const inject = ['agents', 'sessionQuery', 'skills']
 
 export const Config = Schema.object({
   /** Off by default: this runs two real turns. */
@@ -42,6 +42,25 @@ export function apply(ctx, config) {
   const timer = setTimeout(async () => {
     const handles = []
     try {
+      // The catalogue is skipped while discovery is incomplete. The listener asks with
+      // `scope: agent`, a separate observation from the unscoped ask, so both are waited on -
+      // and AFTER the agent exists, because the agent-scoped view cannot be observed before it
+      // does. Driving the turn earlier races the watcher; that race, not a product bug, is what
+      // made this probe and the catalogue probe fail intermittently.
+      const waitForComplete = async agent => {
+        const observe = async () => ({
+          plain: await ctx.skills.snapshot({ cwd: process.cwd() }),
+          scoped: await ctx.skills.snapshot({ cwd: process.cwd(), scope: agent }),
+        })
+        let { plain, scoped } = await observe()
+        const deadline = Date.now() + 20000
+        while ((!plain.complete || !scoped.complete) && Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 500))
+          ;({ plain, scoped } = await observe())
+        }
+        return { plain, scoped }
+      }
+
       const runTurn = async (sessionId) => {
         const handle = await ctx.agents.create({
           sessionId,
@@ -49,18 +68,32 @@ export function apply(ctx, config) {
           agentOptions: { provider: config.provider, model: config.model },
         })
         handles.push(handle)
+        const snapshot = await waitForComplete(handle.agent)
         handle.agent.followup(createUserMessage({
           content: [{ type: 'text', text: 'say hi' }],
           source: { kind: 'user' },
         }))
         await handle.agent.whenIdle()
         const log = await ctx.sessionQuery.readSession(handle.agent.session.id)
-        return JSON.stringify(log?.events ?? [])
+        const events = log?.events ?? []
+        // The catalogue is read from the message that carries it, not by searching the log: a
+        // substring search is satisfied by anything that names the skill (ADR-0028's sibling
+        // failure mode). The event count is reported too, because a negative assertion ("the body
+        // is NOT there") passes vacuously against an empty log.
+        const catalogues = events.filter(event =>
+          event.type === 'user/message' && event.data?.source?.kind === 'skill-catalog')
+        return {
+          catalogue: JSON.stringify(catalogues),
+          body: JSON.stringify(events),
+          events: events.length,
+          complete: snapshot.plain.complete && snapshot.scoped.complete,
+        }
       }
 
       const before = await runTurn(`session-l5-live-before-${Date.now()}`)
-      console.log(`[l5-live] before: catalogue mentions the original skill: ${before.includes('repo-onboarding')}`)
-      console.log(`[l5-live] before: catalogue mentions the new skill: ${before.includes(config.newSkillName)}`)
+      console.log(`[l5-live] before: events read from the log: ${before.events}`)
+      console.log(`[l5-live] before: catalogue mentions the original skill: ${before.catalogue.includes('repo-onboarding')}`)
+      console.log(`[l5-live] before: catalogue mentions the new skill: ${before.catalogue.includes(config.newSkillName)}`)
 
       // Write a SECOND skill into the watched root. Directory name, frontmatter `name`, and a body
       // phrase that appears nowhere else, so the assertion cannot match by accident.
@@ -81,9 +114,11 @@ export function apply(ctx, config) {
       await new Promise(resolve => setTimeout(resolve, config.settleMs))
 
       const after = await runTurn(`session-l5-live-after-${Date.now()}`)
-      console.log(`[l5-live] after: catalogue mentions the original skill: ${after.includes('repo-onboarding')}`)
-      console.log(`[l5-live] after: catalogue mentions the new skill: ${after.includes(config.newSkillName)}`)
-      console.log(`[l5-live] after: the new skill's BODY is not shipped either: ${!after.includes('written into a watched skill root')}`)
+      console.log(`[l5-live] after: events read from the log: ${after.events}`)
+      console.log(`[l5-live] after: catalogue mentions the original skill: ${after.catalogue.includes('repo-onboarding')}`)
+      console.log(`[l5-live] after: catalogue mentions the new skill: ${after.catalogue.includes(config.newSkillName)}`)
+      // Guard the negative assertion: with no events at all it would pass while proving nothing.
+      console.log(`[l5-live] after: the new skill's BODY is not shipped either: ${after.events > 0 && !after.body.includes('written into a watched skill root')}`)
     } catch (error) {
       console.log(`[l5-live] FAILED: ${error.message}`)
       console.log(String(error.stack ?? '').split('\n').slice(1, 4).join('\n'))

@@ -9,20 +9,11 @@ timestamp: 2026-09-30
 
 # DeepSeek Harness Capability Map
 
-The reference inventory behind the [exploration lesson plan](index.md).
-Every row is a capability that ships in the repository checkout, named by the
-package or seam that provides it. The **Lesson** column points at the
-[guided lesson](index.md) that puts that capability under your hands.
+The reference inventory behind the [exploration lesson plan](index.md). Every row is a capability that ships in the repository checkout, named by the package or seam that provides it. The **Lesson** column points at the [guided lesson](index.md) that puts that capability under your hands.
 
-**Reading that column.** A link means the lesson teaches or exercises the capability. An em
-dash (`—`) means it ships in the harness but **no lesson here covers it** — this is a path
-through the harness, not a survey of it, and saying so is more useful than a link that does
-not deliver.
+**Reading that column.** A link means the lesson teaches or exercises the capability. An em dash (`—`) means it ships in the harness but **no lesson here covers it** — this is a path through the harness, not a survey of it, and saying so is more useful than a link that does not deliver.
 
-Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md), the architecture doc's
-"where new behavior goes" table (`docs/architecture.md`), the tool schema catalog
-(`docs/tool-catalog.md`), and the shipped bundle patches
-(`packages/bundle/base/cordis.patch.yml`, `packages/bundle/web-app/cordis.patch.yml`).
+Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md), the architecture doc's "where new behavior goes" table (`docs/architecture.md`), the tool schema catalog (`docs/tool-catalog.md`), and the shipped bundle patches (`packages/bundle/base/cordis.patch.yml`, `packages/bundle/web-app/cordis.patch.yml`).
 
 ## 1. Plugin core — the defining capability
 
@@ -169,8 +160,7 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | Retry and fallback policy | `llm-retry` |
 | Sandboxed execution backends | `sandbox-local`, `e2b`, `sandbox-windows-acl` |
 
-See [OpenRouter integration & reasoning error hardening](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md)
-for the verified provider-configuration recipe.
+See [OpenRouter integration & reasoning error hardening](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md) for the verified provider-configuration recipe.
 
 ## 11. Observability and operations
 
@@ -181,10 +171,7 @@ for the verified provider-configuration recipe.
 | Trajectory replay from the durable log | `session-projection`, `session-query` | [L7](./lessons/07-operating-the-harness.md) |
 | Runtime invariant checking | `runtime-diagnostics/invariants` | [L7](./lessons/07-operating-the-harness.md) |
 
-Deploy-time hardening guidance is **not** published by DSH as documentation; it
-lives in the package READMEs for the container, session-store, and telemetry
-packages, plus your own operational judgment. Treat every row above as a capability
-to harden rather than a deployment recipe.
+Deploy-time hardening guidance is **not** published by DSH as documentation; it lives in the package READMEs for the container, session-store, and telemetry packages, plus your own operational judgment. Treat every row above as a capability to harden rather than a deployment recipe.
 
 ## Related Concepts
 

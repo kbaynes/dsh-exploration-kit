@@ -9,13 +9,9 @@ timestamp: 2026-09-30
 
 # L5 — Assemble context deliberately
 
-**Goal.** By the end of this lesson you control what the model knows at each step:
-you inject context from a plugin, you ship a skill the agent discovers without
-being told, and you add a `/command` that runs entirely in code.
+**Goal.** By the end of this lesson you control what the model knows at each step: you inject context from a plugin, you ship a skill the agent discovers without being told, and you add a `/command` that runs entirely in code.
 
-**Why here.** L4 was about constraining the model. This lesson is about informing
-it — the context-engineering half of the harness, and the prerequisite for the
-durable state you add in L6.
+**Why here.** L4 was about constraining the model. This lesson is about informing it — the context-engineering half of the harness, and the prerequisite for the durable state you add in L6.
 
 ## Concepts taught
 
@@ -29,16 +25,11 @@ durable state you add in L6.
 | Skills | A `SKILL.md` catalog discovered from scanned roots, body loaded on demand |
 | Human commands | `ctx.commands.register()` — dispatches without a model turn |
 
-Reference: [workspace instruction loading](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md), the
-repository's
-[skill filesystem README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/skill/skill-filesystem/README.md)
-and
-[commands README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/interaction/commands/README.md).
+Reference: [workspace instruction loading](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md), the repository's [skill filesystem README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/skill/skill-filesystem/README.md) and [commands README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/interaction/commands/README.md).
 
 ## Prerequisites
 
-L1–L4 complete. You need the `diagnose` instrument, the reload loop, and the
-habit of separating what a boot proves from what a session proves.
+L1–L4 complete. You need the `diagnose` instrument, the reload loop, and the habit of separating what a boot proves from what a session proves.
 
 ## Step 1 — Watch the turn flow before touching it
 
@@ -49,8 +40,11 @@ export const name = 'l5-turn-observer'
 
 export function apply(ctx) {
   ctx.on('agent/pre-step', async (payload, next) => {
-    console.log('[l5-observer] pre-step', JSON.stringify(payload).slice(0, 160))
-    return next()
+    console.log(`[l5-observer] pre-step turn=${payload.turn} step=${payload.step} messages=${payload.messages?.length ?? '?'}`)
+    const decision = await next()
+    const sources = (decision?.messages ?? []).map(message => message.source?.kind ?? '?')
+    console.log(`[l5-observer] pre-step decision kind=${decision?.kind ?? '?'} message sources: ${sources.join(',') || '(none)'}`)
+    return decision
   })
 
   ctx.on('agent/created', ({ agent }) => {
@@ -60,6 +54,10 @@ export function apply(ctx) {
   console.log('[l5-observer] ACTIVE — watching agent/pre-step')
 }
 ```
+
+**Never `JSON.stringify` the payload.** `payload.agent` is reached through a Cordis context proxy, and `JSON.stringify` probes a value for a `toJSON` method before serializing — a property read that lands on the proxy, where Cordis answers `cannot get property "toJSON" without inject`. The error is thrown *from inside your listener*, which aborts the whole turn: this one line killed every turn in this kit's composition until it was found ([ADR-0028](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0028-never-stringify-a-live-event-payload.md)). Log the fields you need by name.
+
+Logging the **decision** is the other half of the step: `next()` runs the remaining `agent/pre-step` listeners, so the message sources it returns are what the request will actually carry. On a real turn you will see the other contributed layers arrive this way — including `skill-catalog`, which Step 3 builds.
 
 The declared payload is:
 
@@ -73,25 +71,13 @@ The declared payload is:
 }, next: () => Promise<PreStepDecision>): Promise<PreStepDecision>
 ```
 
-**Take the shape from the declaration, not from the event name.** The payload is an
-object, and the subject is `payload.agent` — the same trap that bit this kit's own
-`agent/created` listeners, where reading `payload.session` instead of
-`payload.agent.session` produced `undefined` and, behind a `try`/`catch`, a plugin that
-silently did nothing.
+**Take the shape from the declaration, not from the event name.** The payload is an object, and the subject is `payload.agent` — the same trap that bit this kit's own `agent/created` listeners, where reading `payload.session` instead of `payload.agent.session` produced `undefined` and, behind a `try`/`catch`, a plugin that silently did nothing.
 
-Boot the profile and start a conversation, then read what actually arrives there. The
-declaration says which fields *exist*; only a real turn shows you what is *in* them, and
-guessing either is the usual source of broken context plugins.
+Boot the profile and start a conversation, then read what actually arrives there. The declaration says which fields *exist*; only a real turn shows you what is *in* them, and guessing either is the usual source of broken context plugins.
 
-`agent/pre-step` is a **waterfall**: return `next()` to delegate. Several
-first-party plugins already listen here, including `agent-instructions`, `plan-mode`,
-`tool-skill`, `time-context`, and `session-checkpoint-policy`. You are joining an
-existing layer, not replacing it.
+`agent/pre-step` is a **waterfall**: return `next()` to delegate. Several first-party plugins already listen here, including `agent-instructions`, `plan-mode`, `tool-skill`, `time-context`, and `session-checkpoint-policy`. You are joining an existing layer, not replacing it.
 
-**No API key?** The registration is observable at boot — the plugin prints that it is
-watching. The payload's shape is observed too, from a real turn against the mock
-provider: the observer logs `pre-step turn=1 step=1 messages=2`, and
-`solutions/verify-l5.sh` runs it.
+**No API key?** The registration is observable at boot — the plugin prints that it is watching. The payload's shape is observed too, from a real turn against the mock provider: the observer logs `pre-step turn=1 step=1 messages=2`, and `solutions/verify-l5.sh` runs it.
 
 ## Step 2 — Inject context deliberately
 
@@ -131,26 +117,14 @@ export function apply(ctx) {
 
 Three contract points, each verified against the runtime's own types:
 
-- **`agent.inject()` takes a complete `UserMessage`, not a loose object.** Build it
-  with `createUserMessage`, which fills in the role and a stable identity.
-- **The source kind is producer-owned.** Each producer declares its own kind; there
-  is deliberately no catch-all `plugin` kind to reuse. The upstream cookbook shows
-  `source: { kind: 'plugin', plugin: '…' }`, which is stale — that shape is not a
-  `UserMessage` source and will not typecheck.
-- **It is not a wake-up.** Injected context lands in the *next* admitted request; an
-  idle agent stays idle. Guard against a disposed agent, as above.
-- **`agent/created` hands you a payload, not an agent.** The listener receives
-  `{ agent, source, signal }`, so it is `({ agent }) => …` — not `(agent) => …`. Getting
-  this wrong is quiet: `agent.session` is `undefined`, and a `try`/`catch` around it turns
-  the whole plugin into a no-op that logs a cheerful success message. That is why the
-  catch here says `FAILED` rather than `skipped`, and why this lesson's probe creates a
-  session — an agent-created listener that never fires is invisible until one exists.
+- **`agent.inject()` takes a complete `UserMessage`, not a loose object.** Build it with `createUserMessage`, which fills in the role and a stable identity.
+- **The source kind is producer-owned.** Each producer declares its own kind; there is deliberately no catch-all `plugin` kind to reuse. The upstream cookbook shows `source: { kind: 'plugin', plugin: '…' }`, which is stale — that shape is not a `UserMessage` source and will not typecheck.
+- **It is not a wake-up.** Injected context lands in the *next* admitted request; an idle agent stays idle. Guard against a disposed agent, as above.
+- **`agent/created` hands you a payload, not an agent.** The listener receives `{ agent, source, signal }`, so it is `({ agent }) => …` — not `(agent) => …`. Getting this wrong is quiet: `agent.session` is `undefined`, and a `try`/`catch` around it turns the whole plugin into a no-op that logs a cheerful success message. That is why the catch here says `FAILED` rather than `skipped`, and why this lesson's probe creates a session — an agent-created listener that never fires is invisible until one exists.
 
 ### Confirming the durability claim — in two processes, with no model
 
-Durability cannot be checked in one process. `agent/created` fires while the session is
-being built, so an in-process assertion measures the *queue*, not the log. The kit ships a
-probe that does it properly:
+Durability cannot be checked in one process. `agent/created` fires while the session is being built, so an in-process assertion measures the *queue*, not the log. The kit ships a probe that does it properly:
 
 ```sh
 export L5_SESSION_ID="session-l5-check-$RANDOM"
@@ -164,22 +138,15 @@ dsh --profile kitdemo --patch <kit>/solutions/l5.read.patch.yml  --port 0 --no-o
 [l5-probe] carried by: agent/inbox/spliced
 ```
 
-**The carrier is worth noticing: an inbox event, not a `user/message`.** `agent.inject()`
-queues into the agent's inbox, and that is the durable record. It is also a *first-party*
-event type, which is why the log stays readable — the constraint
-[ADR-0024](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md)
-records, and the reason L6's original approach had to be rebuilt.
+**The carrier is worth noticing: an inbox event, not a `user/message`.** `agent.inject()` queues into the agent's inbox, and that is the durable record. It is also a *first-party* event type, which is why the log stays readable — the constraint [ADR-0024](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md) records, and the reason L6's original approach had to be rebuilt.
 
 `bash <kit>/solutions/verify-l5.sh` runs both phases and asserts the text is still there.
 
-That is the mechanism L6 builds on: the log is the source of truth, and anything durable
-about a session is in it.
+That is the mechanism L6 builds on: the log is the source of truth, and anything durable about a session is in it.
 
 ## Step 3 — A skill the agent discovers on its own
 
-Skills are the right delivery mechanism for knowledge too large to inject on every
-turn and too specific to put in `AGENTS.md`. The kit ships one at
-`<kit>/kit-plugins/l5/skills/repo-onboarding/SKILL.md`:
+Skills are the right delivery mechanism for knowledge too large to inject on every turn and too specific to put in `AGENTS.md`. The kit ships one at `<kit>/kit-plugins/l5/skills/repo-onboarding/SKILL.md`:
 
 ```md
 ---
@@ -194,15 +161,9 @@ building real plugins. Its layout:
 ...
 ```
 
-Frontmatter rules that bite if ignored: `name` must be kebab-case, `description` is
-**required**, and discovery is exactly one level deep — `<root>/<name>/SKILL.md` or
-`<root>/<name>.md`. A nested `**/SKILL.md` is deliberately not discovered. An invalid
-skill is skipped with a warning, so from the model's point of view a broken skill
-looks **identical to an absent one** — a genuinely nasty failure mode, and the reason
-the `description` deserves care.
+Frontmatter rules that bite if ignored: `name` must be kebab-case, `description` is **required**, and discovery is exactly one level deep — `<root>/<name>/SKILL.md` or `<root>/<name>.md`. A nested `**/SKILL.md` is deliberately not discovered. An invalid skill is skipped with a warning, so from the model's point of view a broken skill looks **identical to an absent one** — a genuinely nasty failure mode, and the reason the `description` deserves care.
 
-Point a scanned root at the kit's skills with the shipped overlay,
-`<kit>/solutions/l5.skills.patch.yml`:
+Point a scanned root at the kit's skills with the shipped overlay, `<kit>/solutions/l5.skills.patch.yml`:
 
 ```yaml
 - id: skill-filesystem
@@ -213,12 +174,8 @@ Point a scanned root at the kit's skills with the shipped overlay,
 
 Two things about that shape:
 
-- **It is an override, not an insert.** `customSkillDirs` is a config field on an
-  existing base-bundle row, so the entry has no `insert` and no `name`. This is the
-  same in-place override you used in L2.
-- **`includeDefaultRoots: false` makes the experiment unambiguous.** Root resolution
-  order is project roots, then `customSkillDirs`, then user roots; disabling the
-  default roots means only the kit's skill can appear.
+- **It is an override, not an insert.** `customSkillDirs` is a config field on an existing base-bundle row, so the entry has no `insert` and no `name`. This is the same in-place override you used in L2.
+- **`includeDefaultRoots: false` makes the experiment unambiguous.** Root resolution order is project roots, then `customSkillDirs`, then user roots; disabling the default roots means only the kit's skill can appear.
 
 Boot with it:
 
@@ -226,24 +183,15 @@ Boot with it:
 KIT_ROOT=<kit> dsh --profile kitdemo --patch <kit>/solutions/l5.skills.patch.yml --port 0 --no-open
 ```
 
-The directory **need not exist yet** — a missing root is probed until it appears, and
-existing roots are watched, so adding or renaming a skill reaches the next catalog
-without a restart.
+The directory **need not exist yet** — a missing root is probed until it appears, and existing roots are watched, so adding or renaming a skill reaches the next catalog without a restart.
 
-The catalog/body split is the design worth noticing: a model-invocable skill gets a
-durable catalog of names and capped descriptions before the first request, and the
-body loads only when the agent calls the `skill` tool. That is why `description`
-quality decides whether a skill is ever used.
+The catalog/body split is the design worth noticing: a model-invocable skill gets a durable catalog of names and capped descriptions before the first request, and the body loads only when the agent calls the `skill` tool. That is why `description` quality decides whether a skill is ever used.
 
-**No API key?** The overlay composes (visible in `--dump-config`), the profile boots
-with it, and what the *model* sees is asserted against the mock provider: the session
-log carries the skill's name while the body stays out of it. That pair — announced,
-not shipped — is the whole design described here.
+**No API key?** The overlay composes (visible in `--dump-config`), the profile boots with it, and what the *model* sees is asserted against the mock provider: the session log carries the skill's name while the body stays out of it. That pair — announced, not shipped — is the whole design described here.
 
 ## Step 4 — A command that needs no model turn
 
-`ctx.commands.register()` gives a human a deterministic entry point.
-`<kit>/kit-plugins/l5/commands.js` registers one:
+`ctx.commands.register()` gives a human a deterministic entry point. `<kit>/kit-plugins/l5/commands.js` registers one:
 
 ```js
 export const name = 'l5-commands'
@@ -266,14 +214,9 @@ export function apply(ctx) {
 }
 ```
 
-A command line starts with `/`, a lowercase name, then either end-of-input or
-whitespace; everything after the name is `rawInput` and the command owns its grammar.
-Registering the same name twice in one scope throws. The handler returns `success` or
-`error` plus optional UI text.
+A command line starts with `/`, a lowercase name, then either end-of-input or whitespace; everything after the name is `rawInput` and the command owns its grammar. Registering the same name twice in one scope throws. The handler returns `success` or `error` plus optional UI text.
 
-Type `/l5-facts` in the composer and confirm the reply is immediate. That the handler runs
-from plain code is testable rather than merely asserted — the kit's probe dispatches the
-command through `ctx.commands.execute`, the same path the composer uses:
+Type `/l5-facts` in the composer and confirm the reply is immediate. That the handler runs from plain code is testable rather than merely asserted — the kit's probe dispatches the command through `ctx.commands.execute`, the same path the composer uses:
 
 ```sh
 dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
@@ -287,15 +230,11 @@ dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
 [l5-cmd] model-request events in the log: 0
 ```
 
-**The last line is the claim.** The session records the command's lifecycle events and
-**zero model-request events** — which is what "needs no model turn" means in the log, rather
-than a claim about responsiveness. (`ctx.commands.execute` takes an Agent, and
-`ctx.agents.create` makes one without running a turn, which is why this is reachable offline.)
+**The last line is the claim.** The session records the command's lifecycle events and **zero model-request events** — which is what "needs no model turn" means in the log, rather than a claim about responsiveness. (`ctx.commands.execute` takes an Agent, and `ctx.agents.create` makes one without running a turn, which is why this is reachable offline.)
 
 ## Step 5 — Decide where knowledge belongs
 
-You now have four delivery mechanisms, and choosing correctly is most of the
-skill:
+You now have four delivery mechanisms, and choosing correctly is most of the skill:
 
 | Mechanism | Use it for | Cost model |
 |---|---|---|
@@ -304,24 +243,15 @@ skill:
 | Skills | Procedures and reference too large to inject | Catalog always, body on demand |
 | Commands | Deterministic actions with no reasoning needed | No model turn at all |
 
-Placement has a correctness dimension, not just a cost one. The
-[agent-instructions concept](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md) records the rule and
-a real mistake from this very bundle: `~/.dsh/AGENTS.md` loads in **every** dsh
-session on the machine, so anything workspace-specific placed there bleeds into
-unrelated projects. Workspace-root `AGENTS.md` is correct for workspace-specific
-knowledge even though it is less guaranteed to fire. Correctness of scope beats
-the convenience of "always loads".
+Placement has a correctness dimension, not just a cost one. The [agent-instructions concept](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md) records the rule and a real mistake from this very bundle: `~/.dsh/AGENTS.md` loads in **every** dsh session on the machine, so anything workspace-specific placed there bleeds into unrelated projects. Workspace-root `AGENTS.md` is correct for workspace-specific knowledge even though it is less guaranteed to fire. Correctness of scope beats the convenience of "always loads".
 
 ## Verification
 
 Observable without a model:
 
-1. The boot prints all three activation lines:
-   `[l5-observer] ACTIVE`, `[l5-inject] ACTIVE`, `[l5-commands] ACTIVE`.
-2. `--dump-config` with the skills overlay shows the composed `skill-filesystem`
-   row carrying your `customSkillDirs` and `includeDefaultRoots: false`.
-3. Removing `inject = ['agents']` or `['commands']` makes the load fail loudly, as
-   L4 showed — proof neither service is ambient.
+1. The boot prints all three activation lines: `[l5-observer] ACTIVE`, `[l5-inject] ACTIVE`, `[l5-commands] ACTIVE`.
+2. `--dump-config` with the skills overlay shows the composed `skill-filesystem` row carrying your `customSkillDirs` and `includeDefaultRoots: false`.
+3. Removing `inject = ['agents']` or `['commands']` makes the load fail loudly, as L4 showed — proof neither service is ambient.
 
 Requires a session, and therefore a provider:
 
@@ -331,20 +261,14 @@ Requires a session, and therefore a provider:
 7. Renaming the skill directory changes the catalog without a restart.
 8. `/l5-facts` responds with no model turn and no `pre-step` log line.
 
-All eight are executed and recorded in
-[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 4's payload
-shape is observed from a real turn; item 6 is the pair described above — the catalog arrives without
-the body, and the body appears when the model calls the `skill` tool; and item 7 is verified by
-writing a new skill into a **watched** root and running a second turn in the same process, with no
-restart.
+All eight are executed and recorded in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 4's payload shape is observed from a real turn; item 6 is the pair described above — the catalog arrives without the body, and the body appears when the model calls the `skill` tool; and item 7 is verified by writing a new skill into a **watched** root and running a second turn in the same process, with no restart.
 
 ## Exit check — you should now be able to explain
 
 - Why `next()` in a waterfall is mandatory for an observing listener.
 - Why injected context is *not* a mechanism for waking a background agent.
 - What the catalog/body split buys, and what a missing `description` costs you.
-- Which of the four mechanisms you would use for: a coding standard, a
-  discovered API fact, a 40-step release procedure, and a cache-clearing action.
+- Which of the four mechanisms you would use for: a coding standard, a discovered API fact, a 40-step release procedure, and a cache-clearing action.
 
 ## Next
 

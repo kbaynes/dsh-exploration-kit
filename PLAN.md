@@ -1,40 +1,27 @@
 # Implementation Plan
 
-The working plan for taking the DSH Exploration Kit from scaffold to published
-curriculum. Detailed and checkbox-driven: tick items as they are completed, and
-keep [ROADMAP.md](ROADMAP.md) in sync as the fast status view.
+The working plan for taking the DSH Exploration Kit from scaffold to published curriculum. Detailed and checkbox-driven: tick items as they are completed, and keep [ROADMAP.md](ROADMAP.md) in sync as the fast status view.
 
 ## Guiding rules
 
 These constrain every task below. They are the reason the plan is shaped this way.
 
-1. **Verified means run.** A lesson step is verified only when it was executed
-   against a real DSH checkout and the observed result recorded in
-   [VERIFIED.md](VERIFIED.md). Design is not implementation; documentation is not
-   verification.
-2. **One lesson, one seam.** Each lesson introduces exactly one new extension
-   point, so a failure is attributable.
-3. **Ship the working artifact.** Every lesson's exercise exists in `solutions/`
-   (answer key) and `examples/` (exactly as presented). Building the reference
-   solution *is* the test.
-4. **Nothing unpublishable ships in `content/`.** Labs, drafts, and dead ends stay
-   out of the bundle, because that is what the site renders.
-5. **Version honesty.** Every claim carries the DSH version it was verified
-   against. When upstream changes, the ledger changes with it.
-6. **Prerequisites are explicit.** A reader on a clean checkout must not have to
-   guess what a lesson assumes.
+1. **Verified means run.** A lesson step is verified only when it was executed against a real DSH checkout and the observed result recorded in [VERIFIED.md](VERIFIED.md). Design is not implementation; documentation is not verification.
+2. **One lesson, one seam.** Each lesson introduces exactly one new extension point, so a failure is attributable.
+3. **Ship the working artifact.** Every lesson's exercise exists in `solutions/` (answer key) and `examples/` (exactly as presented). Building the reference solution *is* the test.
+4. **Nothing unpublishable ships in `content/`.** Labs, drafts, and dead ends stay out of the bundle, because that is what the site renders.
+5. **Version honesty.** Every claim carries the DSH version it was verified against. When upstream changes, the ledger changes with it.
+6. **Prerequisites are explicit.** A reader on a clean checkout must not have to guess what a lesson assumes.
 
 ## Status legend
 
-`[ ]` not started · `[~]` in progress · `[x]` done · `[-]` decided against (with
-the reason recorded inline)
+`[ ]` not started · `[~]` in progress · `[x]` done · `[-]` decided against (with the reason recorded inline)
 
 ---
 
 ## Phase 0 — Groundwork
 
-Get the repo consistent and its checks trustworthy before writing nine lessons
-against it.
+Get the repo consistent and its checks trustworthy before writing nine lessons against it.
 
 - [x] Create the repo scaffold, VitePress site, and OKF bundle (`bc3c233`)
 - [x] Establish `VERIFIED.md` as the verification ledger, with only L1 `Executed`
@@ -54,15 +41,9 @@ against it.
 
 ## Phase 0.5 — Rewrite the lessons for the bundle mechanism
 
-**Blocking all lesson work.** A verified design finding invalidated the mechanism
-the lessons teach: a plugin that imports anything from dsh **cannot** be loaded by
-pointing a `--patch` overlay at a loose file, because pnpm symlinks only declared
-dependencies and `@deepseek-ai/*` is unreachable from outside a dsh installation.
-Full evidence is in [VERIFIED.md](VERIFIED.md) ("Design pivot").
+**Blocking all lesson work.** A verified design finding invalidated the mechanism the lessons teach: a plugin that imports anything from dsh **cannot** be loaded by pointing a `--patch` overlay at a loose file, because pnpm symlinks only declared dependencies and `@deepseek-ai/*` is unreachable from outside a dsh installation. Full evidence is in [VERIFIED.md](VERIFIED.md) ("Design pivot").
 
-The fix is verified and in place: `kit-plugins/` is a real dsh bundle, installed
-with `dsh plugin --profile <name> add file:<kit>/kit-plugins`, with rows referenced
-by package name. Lesson 2's plugin loads and mounts its tool through it.
+The fix is verified and in place: `kit-plugins/` is a real dsh bundle, installed with `dsh plugin --profile <name> add file:<kit>/kit-plugins`, with rows referenced by package name. Lesson 2's plugin loads and mounts its tool through it.
 
 - [x] Reproduce and confirm the failure mode (outside and inside the checkout)
 - [x] Build `kit-plugins/` as a bundle and verify the plugin loads
@@ -93,10 +74,7 @@ by package name. Lesson 2's plugin loads and mounts its tool through it.
 
 ## Phase 1 — Build, test, and review each lesson
 
-The substance of the project. Repeat this block for each lesson. **Order is
-independence, not number: do lessons 1, 2, 3, 6, 4, 5, 7, 8, 9.** Lessons 1–3 and
-6 need no model API key and can be finished first; 4 is testable with a provider
-or via PTC; 5 and 7–9 need a configured provider.
+The substance of the project. Repeat this block for each lesson. **Order is independence, not number: do lessons 1, 2, 3, 6, 4, 5, 7, 8, 9.** Lessons 1–3 and 6 need no model API key and can be finished first; 4 is testable with a provider or via PTC; 5 and 7–9 need a configured provider.
 
 ### Lesson 1 — Mount your first plugin
 
@@ -293,8 +271,7 @@ Turn the verified lessons into something CI can defend.
 - [x] **Decided against regenerating `VERIFIED.md`**: its rows carry human judgement about
       what was executed, which is not derivable from a version string. The harness-state
       *identifiers* are gated instead (see ADR-0017), which is the part that can drift mechanically.
-- [x] Decided: the scheduled full-verification workflow **fails** on upstream drift, and
-the response is to re-verify and either fix the lesson or demote its `VERIFIED.md` row.
+- [x] Decided: the scheduled full-verification workflow **fails** on upstream drift, and the response is to re-verify and either fix the lesson or demote its `VERIFIED.md` row.
 
 ## Phase 3 — Whole-kit review
 
@@ -319,9 +296,7 @@ the response is to re-verify and either fix the lesson or demote its `VERIFIED.m
 
 ## Blocking defect — L6 must stop inventing an event type
 
-Found in this round by a two-boot experiment (ADR-0024): a plugin-declared `SessionEventMap`
-type is writable and foldable, and makes the session **unopenable after a restart**. The
-lesson text is already corrected; the shipped code is not.
+Found in this round by a two-boot experiment (ADR-0024): a plugin-declared `SessionEventMap` type is writable and foldable, and makes the session **unopenable after a restart**. The lesson text is already corrected; the shipped code is not.
 
 - [x] Rebuilt `l6/fold.js` to fold a **known** event type — `sandbox/mode`, which the
       harness itself folds in a `sandboxMode` unit — replacing the invented `l6/step`.
@@ -338,42 +313,21 @@ lesson text is already corrected; the shipped code is not.
 
 ## Phase 3 — outcome: editorial review complete
 
-An independent editorial review of all nine lessons was run as a separate reviewer
-pass (structure, clarity, ramp, terminology, stale cross-references, verification
-quality, tone, concepts tables). Its findings were triaged and fixed in this pass:
+An independent editorial review of all nine lessons was run as a separate reviewer pass (structure, clarity, ramp, terminology, stale cross-references, verification quality, tone, concepts tables). Its findings were triaged and fixed in this pass:
 
 **Fixed — the findings that would have misled a reader:**
 
-1. **L2's learner-written tool was never mounted (BLOCKER).** The lesson told readers
-   to create a scratch file that nothing referenced; every verification outcome came
-   from the pre-shipped file. Step 1 now has the reader write **into the bundle** — the
-   only location that can import dsh packages — and states that deleting their version
-   removes the lesson's outcomes, which is the test that they are running their own
-   code.
-2. **L1's exit check demanded two explanations the lesson never taught** (load order,
-   shape vs instance). Both moved to L3, where each is actually taught, and L3's exit
-   check now names the `Service` subclass as the second plugin shape.
-3. **L7's profile story was wrong**: `session-stats` is web-bundle-only but the lesson
-   booted a base-backed profile. The step now names the profile and cites ADR-0016;
-   the overlay description also said "two inserts" where there are three.
-4. **The `link:`/`file:` rule was violated by three reader-facing instructions**,
-   including the first install command a reader runs (README) and a "Verified fix"
-   block in the ledger itself. All unified on `link:`; remaining `file:` mentions are
-   descriptions of its behaviour, not instructions.
-5. **L6's step 1 showed a `declare module` block inside a `.js` file** and described an
-   import that does not exist. It now shows the shipped JSDoc pattern with the
-   TypeScript merge as an aside.
-6. **L2 and L3 claimed "every step above has been executed"** where their `VERIFIED.md`
-   rows record provider-dependent gaps. Narrowed to match the ledger exactly.
-7. **Stale cross-references**: L2's `!!js` promise pointed at L3 (the real next use is
-   L4); the lessons index still described L1 as using a patch overlay; the learning
-   path claimed lessons were verified by `dsh headless`, which the ledger explicitly
-   records as never having been run.
-8. **Concepts tables over-promised** in L1 (three shapes, one taught), L3 (Service
-   isolation, further exploration only), and L8 (agent presets, met in L9).
-9. **Tone**: working-note narration ("the lesson's original premise was wrong") was
-   rewritten to state the reader-usable fact, while the failure signatures a reader
-   must recognize were kept.
+1. **L2's learner-written tool was never mounted (BLOCKER).** The lesson told readers to create a scratch file that nothing referenced; every verification outcome came from the pre-shipped file. Step 1 now has the reader write **into the bundle** — the only location that can import dsh packages — and states that deleting their version removes the lesson's outcomes, which is the test that they are running their own code.
+2. **L1's exit check demanded two explanations the lesson never taught** (load order, shape vs instance). Both moved to L3, where each is actually taught, and L3's exit check now names the `Service` subclass as the second plugin shape.
+3. **L7's profile story was wrong**: `session-stats` is web-bundle-only but the lesson booted a base-backed profile. The step now names the profile and cites ADR-0016; the overlay description also said "two inserts" where there are three.
+4. **The `link:`/`file:` rule was violated by three reader-facing instructions**, including the first install command a reader runs (README) and a "Verified fix" block in the ledger itself. All unified on `link:`; remaining `file:` mentions are descriptions of its behaviour, not instructions.
+5. **L6's step 1 showed a `declare module` block inside a `.js` file** and described an import that does not exist. It now shows the shipped JSDoc pattern with the TypeScript merge as an aside.
+6. **L2 and L3 claimed "every step above has been executed"** where their `VERIFIED.md` rows record provider-dependent gaps. Narrowed to match the ledger exactly.
+7. **Stale cross-references**: L2's `!!js` promise pointed at L3 (the real next use is L4); the lessons index still described L1 as using a patch overlay; the learning path claimed lessons were verified by `dsh headless`, which the ledger explicitly records as never having been run.
+8. **Concepts tables over-promised** in L1 (three shapes, one taught), L3 (Service isolation, further exploration only), and L8 (agent presets, met in L9).
+9. **Tone**: working-note narration ("the lesson's original premise was wrong") was rewritten to state the reader-usable fact, while the failure signatures a reader must recognize were kept.
+
+10. **Prose was column-wrapped in every markdown file.** A reader reported the files as having "weird hardcoded carriage returns". There were none — no CR bytes, no hard breaks — and this repository's own site flowed the wraps into spaces. The artifact was the *soft* break: a renderer that shows raw text or honours single newlines turns each wrap into a visible break, so the same file looked different depending on where it was read. Prose is now one line per paragraph, with `pnpm run reflow` as the formatter and `check:wrapping` as the gate ([ADR-0031](decisions/0031-prose-is-not-column-wrapped.md)).
 
 **Left open deliberately:**
 
@@ -385,17 +339,11 @@ quality, tone, concepts tables). Its findings were triaged and fixed in this pas
       `$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd` — workspace-scoped,
       one directory per session, and compressed. The old text would have failed three ways.
 
-**Protected as intentional (do not edit away):** the uniform lesson skeleton; the
-compounding artifact chain (`diagnose` instrument → `l6/step` events → read back in L7 →
-consumed by L8's fork); the offline-vs-provider split with its explicit warning;
-real quoted output instead of invented samples; the upstream-tutorial corrections.
+**Protected as intentional (do not edit away):** the uniform lesson skeleton; the compounding artifact chain (`diagnose` instrument → `l6/step` events → read back in L7 → consumed by L8's fork); the offline-vs-provider split with its explicit warning; real quoted output instead of invented samples; the upstream-tutorial corrections.
 
 ## Verification-suite performance
 
-The full suite boots the harness 27-odd times, once or twice per lesson. It runs in about two
-minutes (measured: **256s**, 19 passed / 0 failed, after adding the phases that make the remaining
-"needs a model-driven tool call" claims checkable): each boot ends when its probe reports completion
-rather than after a fixed wait.
+The full suite boots the harness 27-odd times, once or twice per lesson. It runs in about two minutes (measured: **256s**, 19 passed / 0 failed, after adding the phases that make the remaining "needs a model-driven tool call" claims checkable): each boot ends when its probe reports completion rather than after a fixed wait.
 
 - [x] **Replaced the blind wait with a readiness poll.** `solutions/lib.sh` provides
       `boot_and_wait <checkout> <profile> <log> <pattern> <timeout> [overlay...]`, which polls
@@ -418,8 +366,7 @@ rather than after a fixed wait.
       distinct overlays, so they are independent; the only shared resource is the harness home.
       That would need a profile or home per worker.
 
-Neither is blocking publication. Both matter because a suite that takes eleven minutes is a
-suite people skip.
+Neither is blocking publication. Both matter because a suite that takes eleven minutes is a suite people skip.
 
 ## Phase 4 — Publication readiness
 
@@ -465,11 +412,7 @@ suite people skip.
 
 ## Phase 4.5 — Tag the release against a harness state
 
-**The kit is verified against one DeepSeek Harness commit, and a release must say
-which.** Without this, "the lessons work" is a claim about a moving target, and a
-reader on a different harness state has no way to tell whether a failure is theirs or
-upstream's. The policy and tag format are in
-[VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets).
+**The kit is verified against one DeepSeek Harness commit, and a release must say which.** Without this, "the lessons work" is a claim about a moving target, and a reader on a different harness state has no way to tell whether a failure is theirs or upstream's. The policy and tag format are in [VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets).
 
 - [ ] Confirm the upstream checkout was **clean** when the verification was captured.
       Debris in the harness tree invalidates the commit as an identifier of what was
@@ -532,10 +475,7 @@ upstream's. The policy and tag format are in
 
 ## Audit findings — defect register
 
-Two independent audits were run against the scaffold: a per-lesson technical
-accuracy audit against the DSH source, and a publication-readiness audit. Every
-item below was verified against source before being accepted. **Closed** means
-fixed and re-verified.
+Two independent audits were run against the scaffold: a per-lesson technical accuracy audit against the DSH source, and a publication-readiness audit. Every item below was verified against source before being accepted. **Closed** means fixed and re-verified.
 
 ### Content defects (from the technical audit)
 
@@ -631,14 +571,9 @@ fixed and re-verified.
 
 ## Decision records (ADRs)
 
-The durable engineering lessons of this project are recorded in
-[`decisions/`](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/README.md) as ADRs, each with Status, Context, Decision,
-Consequences, and Evidence. They exist so a future agent or contributor reads the
-reason *before* acting and does not repeat a mistake that cost real debugging time.
+The durable engineering lessons of this project are recorded in [`decisions/`](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/README.md) as ADRs, each with Status, Context, Decision, Consequences, and Evidence. They exist so a future agent or contributor reads the reason *before* acting and does not repeat a mistake that cost real debugging time.
 
-`AGENTS.md` requires reading them first, `CONTRIBUTING.md` requires adding one when
-a new lesson is learned, and `scripts/check-decisions.mjs` (wired into CI) keeps the
-corpus well-formed and indexed.
+`AGENTS.md` requires reading them first, `CONTRIBUTING.md` requires adding one when a new lesson is learned, and `scripts/check-decisions.mjs` (wired into CI) keeps the corpus well-formed and indexed.
 
 The relationship between the records:
 
@@ -648,14 +583,11 @@ The relationship between the records:
 | `VERIFIED.md` | What has actually been executed? | Prevent overclaiming, at claim time |
 | `PLAN.md` | What is left to do? | Track the work |
 
-A defect found while building a lesson belongs in both: the ADR records the durable
-decision; the lesson and `VERIFIED.md` record what was observed. The PLAN audit
-register is the task-level view and links to the ADRs where they exist.
+A defect found while building a lesson belongs in both: the ADR records the durable decision; the lesson and `VERIFIED.md` record what was observed. The PLAN audit register is the task-level view and links to the ADRs where they exist.
 
 ## Open decisions
 
-Record decisions here as they are made, with the reason — a decision without a
-reason gets re-litigated.
+Record decisions here as they are made, with the reason — a decision without a reason gets re-litigated.
 
 | Decision | Options | Status |
 |---|---|---|
@@ -668,7 +600,4 @@ reason gets re-litigated.
 
 ## Audit findings integration
 
-Two independent audits were run against the scaffold: a per-lesson technical
-accuracy audit against the DSH source, and a publication-readiness audit. Their
-findings are folded into the phase tasks above; anything that could not be
-verified from source is recorded as an open question rather than a task.
+Two independent audits were run against the scaffold: a per-lesson technical accuracy audit against the DSH source, and a publication-readiness audit. Their findings are folded into the phase tasks above; anything that could not be verified from source is recorded as an open question rather than a task.
