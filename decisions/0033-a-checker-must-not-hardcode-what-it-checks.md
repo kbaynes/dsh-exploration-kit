@@ -14,7 +14,7 @@ Accepted
 
 ## Context
 
-Every DeepSeek Harness link in this kit pointed at `https://github.com/deepseek-ai/deepseek-harness/blob/main/...`. The repository's default branch is **`master`** — `origin/HEAD -> origin/master`, one branch, no `main` — so all 42 of those links were 404s. A reader reported it.
+Every DeepSeek Harness link in this kit pointed at `deepseek-ai/deepseek-harness/blob/main/...`. The repository's default branch is **`master`** — `origin/HEAD -> origin/master`, one branch, no `main` — so all 42 of those links were 404s. A reader reported it.
 
 Three separate things had to be true for that to survive:
 
