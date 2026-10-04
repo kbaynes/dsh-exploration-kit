@@ -46,9 +46,11 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        # shamefully-hoist is set in .npmrc and is required: the VitePress source
-        # root (content/) is outside website/, so vue must resolve from the root.
-        run: pnpm install --frozen-lockfile
+        # Two dependency roots: the root (site tooling) and kit-plugins/ (the lesson
+        # plugins' own imports). `setup` does both. shamefully-hoist is set in
+        # .npmrc and is required because the VitePress source root (content/) is
+        # outside website/, so vue must resolve from the root.
+        run: pnpm run setup
 
       - name: Check for pre-publication placeholders
         run: pnpm run check:placeholders

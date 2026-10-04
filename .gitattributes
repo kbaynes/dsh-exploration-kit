@@ -1,0 +1,15 @@
+# Normalize line endings so a Windows checkout does not produce a diff on every file.
+* text=auto eol=lf
+
+# Generated and vendored content, kept out of diffs and language stats.
+content/VERIFIED.md      linguist-generated=true
+content/CONTRIBUTING.md  linguist-generated=true
+content/THIRD-PARTY.md   linguist-generated=true
+examples/**              linguist-generated=true
+pnpm-lock.yaml           linguist-generated=true
+kit-plugins/pnpm-lock.yaml linguist-generated=true
+
+# Binary-ish assets
+*.png binary
+*.jpg binary
+*.woff2 binary

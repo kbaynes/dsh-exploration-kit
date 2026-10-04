@@ -28,6 +28,10 @@
   "bugs": {
     "url": "https://github.com/REPLACE_OWNER/dsh-exploration-kit/issues"
   },
+  "kit": {
+    "repositoryOwner": "REPLACE_OWNER",
+    "repositoryName": "dsh-exploration-kit"
+  },
   "scripts": {
     "dev": "node scripts/sync-site-docs.mjs && vitepress dev website --host 127.0.0.1 --port 5173",
     "build": "node scripts/sync-site-docs.mjs && vitepress build website",
@@ -40,18 +44,16 @@
     "sync:examples": "node scripts/sync-examples.mjs",
     "check:examples": "node scripts/sync-examples.mjs --check",
     "check:decisions": "node scripts/check-decisions.mjs",
-    "check:units": "cd kit-plugins && node --test l6/fold.test.mjs l8/audit-workflow.test.mjs",
+    "check:units": "node scripts/check-units.mjs",
     "check:kit": "node scripts/check-kit.mjs",
     "check:target": "node scripts/check-target.mjs",
     "check:pins": "bash scripts/verify-target.sh",
-    "check:lessons": "node scripts/check-lessons.mjs"
+    "check:lessons": "node scripts/check-lessons.mjs",
+    "install:plugins": "pnpm --dir kit-plugins install --frozen-lockfile",
+    "setup": "pnpm install && pnpm run install:plugins"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",
     "vue": "^3.5.13"
-  },
-  "kit": {
-    "repositoryOwner": "REPLACE_OWNER",
-    "repositoryName": "dsh-exploration-kit"
   }
 }

@@ -328,7 +328,12 @@ real quoted output instead of invented samples; the upstream-tutorial correction
 - [ ] Confirm the DeepSeek AI non-affiliation disclaimer is accurate and prominent
 - [ ] Add a `CHANGELOG.md` or confirm `content/log.md` serves that purpose
 - [ ] Confirm the Pages workflow works on a real repository (not just locally)
-- [ ] Dry-run: clone the repo fresh, install, build, and complete Lesson 1
+- [x] Dry-run: export the committed tree fresh, `pnpm run setup`, and run every check
+      that needs no checkout. It found two real defects — a second dependency root that
+      was never provisioned, and a pristine install exiting 1 on pnpm's ignored-build
+      error while still populating `node_modules` (see
+      [ADR-0018](decisions/0018-a-pristine-install-must-succeed.md)). Both fixed; the
+      dry run now reports `setup exit=0` and 8 passed / 0 failed.
 - [ ] Confirm `examples/` and `solutions/` are populated and accurate
 - [ ] Decide on a support/feedback channel and state it in `README.md`
 - [ ] Review the issue/PR templates for usefulness

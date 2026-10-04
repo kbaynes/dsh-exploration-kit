@@ -78,11 +78,24 @@ mostly require) a configured provider.
 From the repository root:
 
 ```sh
-pnpm install        # see the hoisting note below
+pnpm run setup      # installs BOTH dependency roots (see below)
 pnpm run dev        # local preview at http://127.0.0.1:5173
 pnpm run build      # static build into website/.vitepress/dist
 pnpm run preview    # serve the production build at http://127.0.0.1:4173
 ```
+
+> **pnpm approves build scripts explicitly.** `pnpm-workspace.yaml` (and a second one in
+> `kit-plugins/`) approves esbuild's postinstall by name. Without it a pristine install
+> exits 1 with `ERR_PNPM_IGNORED_BUILDS` while still populating `node_modules` — easy to
+> miss locally, fatal in CI.
+
+> **There are two dependency roots, deliberately.** The repository root holds the site
+> tooling; `kit-plugins/` holds the lesson plugins' own dependencies. The bundle is not
+> a workspace member, because its packages are what a *profile* resolves at runtime, and
+> folding it into the root workspace would change that resolution
+> ([ADR-0003](decisions/0003-plugins-ship-as-a-bundle.md)). The cost is that a fresh
+> clone needs both installs — `pnpm run setup` does both. If you run only `pnpm install`,
+> `pnpm run check:units` says so explicitly rather than failing with an import error.
 
 Use `preview` rather than `dev` when you care about the deployed URL: `dev` serves
 from the site root, which hides mistakes in the VitePress `base` path.

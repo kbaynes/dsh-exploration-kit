@@ -1,0 +1,5 @@
+# The bundle is a separate dependency root, so it needs its own build approval: this
+# directory does not inherit the repository root's pnpm settings. Same reason as the
+# root file — see ADR-0018.
+allowBuilds:
+  esbuild: true

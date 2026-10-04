@@ -1,0 +1,9 @@
+# pnpm 11 approves dependency build scripts explicitly rather than running them by
+# default. esbuild is the only package here with a postinstall, and Vite needs its
+# platform binary, so it is approved by name.
+#
+# This is NOT cosmetic: without it, a pristine `pnpm install` exits 1 with
+# ERR_PNPM_IGNORED_BUILDS. The install still populates node_modules, which is why the
+# failure is easy to miss locally and fatal in CI. See ADR-0018.
+allowBuilds:
+  esbuild: true

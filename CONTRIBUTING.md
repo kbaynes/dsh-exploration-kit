@@ -109,7 +109,7 @@ booting code is exactly the bug this project exists to avoid.
 
 ```sh
 # from the repository root
-pnpm install          # see README on the required hoisting setting
+pnpm run setup        # installs both dependency roots; see README
 
 # everything that needs no DSH checkout:
 pnpm run check:kit

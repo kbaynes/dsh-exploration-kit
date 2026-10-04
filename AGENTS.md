@@ -73,7 +73,7 @@ that forced it. `pnpm run check:decisions` enforces the format and the index.
 ## Validation
 
 ```sh
-pnpm install             # required once; see README on hoisting
+pnpm run setup           # both dependency roots; see README
 pnpm run check:links      # every relative link inside content/ must resolve
 pnpm run check:decisions  # ADRs are well-formed and indexed
 pnpm run validate         # OKF conformance (needs okflint on PATH)
