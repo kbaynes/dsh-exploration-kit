@@ -236,13 +236,16 @@ Turn the verified lessons into something CI can defend.
 
 - [ ] Write `scripts/verify.sh` (or `scripts/verify.mjs`) that, per lesson, boots
       the overlay headlessly and asserts on `--json` output
-- [ ] Add a DSH version gate: read the installed `dsh` version and fail loudly when
-      it does not match the version recorded in `VERIFIED.md`
+- [x] Add a DSH version gate: `kit.target.json` is the single source of truth and
+      `scripts/check-target.mjs` holds every other record of the harness state to it,
+      including the live checkout's commit, tag, cleanliness, and the profiles' pins.
+      Proven by injecting a drift and confirming it named the disagreeing file.
 - [ ] Split the suite into **no-key** and **needs-provider** groups so CI can run
       the first without secrets
 - [ ] Add a CI workflow for the kit's own checks (links, OKF, build)
-- [ ] Have `VERIFIED.md` regenerated (or validated) by the suite rather than
-      hand-edited, so the ledger cannot drift from reality
+- [x] **Decided against regenerating `VERIFIED.md`**: its rows carry human judgement about
+      what was executed, which is not derivable from a version string. The harness-state
+      *identifiers* are gated instead (see ADR-0017), which is the part that can drift mechanically.
 - [ ] Decide what CI does when DSH upstream changes: warn, or fail the build
 
 ## Phase 3 — Whole-kit review

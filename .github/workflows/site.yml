@@ -62,6 +62,9 @@ jobs:
       - name: Check decision records are well-formed and indexed
         run: pnpm run check:decisions
 
+      - name: Check harness-state records agree
+        run: pnpm run check:target
+
       - name: Build site
         run: pnpm run build
 

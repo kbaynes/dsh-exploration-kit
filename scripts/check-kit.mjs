@@ -27,6 +27,10 @@ const checkout = process.argv[2] ?? process.env.DSH_CHECKOUT ?? ''
 
 /** Each check: what to run, and what it needs to be meaningful. */
 const checks = [
+  {
+    name: 'harness-state records',
+    cmd: ['node', 'scripts/check-target.mjs', checkout],
+  },
   { name: 'internal links', cmd: ['pnpm', 'run', '-s', 'check:links'] },
   { name: 'decision records', cmd: ['pnpm', 'run', '-s', 'check:decisions'] },
   { name: 'examples mirror', cmd: ['pnpm', 'run', '-s', 'check:examples'] },

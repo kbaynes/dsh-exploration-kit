@@ -1,0 +1,25 @@
+{
+  "$comment": "The single source of truth for WHICH DeepSeek Harness state this kit was verified against. scripts/check-target.mjs holds the other records to this one. Update this file and re-verify in the same pass \u2014 see PLAN.md Phase 4.5 and ADR-0014.",
+  "$pinnedPackagesComment": "Optional packages installed INTO A PROFILE, not dependencies of the kit bundle. The bundle declares only what its own plugins import; these are mounted by lesson overlays, so their pins live in the profile manifests and are asserted by scripts/verify-target.sh.",
+  "dsh": {
+    "version": "0.2.0-rc.2",
+    "tag": "dsh-v0.2.0-rc.2",
+    "commit": "639ed015397290b3745d163aafe02ffee4aa3f84",
+    "commitShort": "639ed01539",
+    "branch": "master",
+    "capturedOn": "2026-10-01"
+  },
+  "profiles": {
+    "base": "kitdemo",
+    "web": "web"
+  },
+  "pinnedPackages": {
+    "@deepseek-ai/dsh-schedule": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-webhook": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-tool-session-query": "0.2.0-rc.2"
+  },
+  "toolchain": {
+    "node": "22.23.1",
+    "pnpm": "11.7.0"
+  }
+}

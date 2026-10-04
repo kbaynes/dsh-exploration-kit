@@ -16,7 +16,7 @@ A fast status view. The detailed task list with checkboxes lives in
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
 | 0.5 | Rewrite lessons for the verified bundle mechanism | ✅ All nine rewritten |
 | 1 | Build, test, and review each lesson | 🔄 In progress (1–2 of 9) |
-| 2 | Test infrastructure — automated verification in CI | 🔄 `check:kit` runner + unit tests landed |
+| 2 | Test infrastructure — automated verification in CI | ✅ 15 checks, version gate |
 | 3 | Whole-kit review — editorial and technical pass | ⬜ Not started |
 | 4 | Publication readiness — placeholders, licensing, metadata | ⬜ Not started |
 | 4.5 | Tag the release against a harness state | ⬜ Not started |

@@ -1,5 +1,14 @@
 # Update Log
 
+## 2026-10-01
+- **Update**: Added `kit.target.json` as the single source of truth for the harness state
+  this kit was verified against, with `scripts/check-target.mjs` holding every other
+  record to it and `scripts/verify-target.sh` asserting the live profiles' pins. An
+  injected-drift probe confirmed the gate fires and names the disagreeing file. Recorded
+  as ADR-0017.
+- **Update**: All nine lessons are now built and executed against DSH `0.2.0-rc.2`
+  (commit `639ed015397290b3745d163aafe02ffee4aa3f84`); `check:kit` reports 15 checks.
+
 ## 2026-09-30
 - **Creation**: Repository scaffold established, with the curriculum promoted from
   the author's workspace knowledge bundle to a standalone, publishable project.

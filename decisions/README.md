@@ -47,3 +47,4 @@ without re-running the experiment.
 - [ADR-0014 — Tag each release to the DeepSeek Harness commit it was verified against](0014-tag-releases-to-a-harness-commit.md)
 - [ADR-0015 — A capability named in the docs is not necessarily mounted](0015-capability-tools-may-be-unmounted.md)
 - [ADR-0016 — Which profile a row is applied to decides whether it activates](0016-profile-choice-is-load-bearing.md)
+- [ADR-0017 — The harness state has one source of truth, and a gate holds the rest to it](0017-one-source-of-truth-for-the-harness-state.md)

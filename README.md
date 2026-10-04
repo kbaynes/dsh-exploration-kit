@@ -151,6 +151,11 @@ Releases are tagged for the harness state they target —
 whether a lesson was verified against the harness you have. See
 [VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets) for the policy.
 
+The kit records that state in one place, [`kit.target.json`](kit.target.json), and
+`pnpm run check:target` holds every other record of it — the ledger, this README, the
+roadmap, the tag example, the bundle's pins, the verify scripts' defaults — to that file.
+A drift between any two of them would be a false claim about what was verified.
+
 DSH is a developer preview and will change. [VERIFIED.md](VERIFIED.md) records exactly
 which steps have been executed against that commit and which are documented but
 unverified — read it before trusting a lesson's stronger claims.
