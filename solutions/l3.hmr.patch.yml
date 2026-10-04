@@ -1,0 +1,4 @@
+# Watch the kit's plugin sources so an edit reloads the plugin in place.
+- id: hmr
+  config:
+    root: ['/Users/kevinbaynes/MyDocs/DeepSeekHarness/dsh-exploration-kit/kit-plugins']

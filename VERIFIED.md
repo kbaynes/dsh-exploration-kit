@@ -34,7 +34,7 @@ version, expect to adjust commands and package import paths.
 |---|---|---|
 | L1 — Mount your first plugin | **Mostly executed** | Lifecycle cycle verified twice: originally via a patch overlay, and again after the bundle pivot (`dsh --profile kitdemo`), which is what the lesson now teaches. Both the `FAILED` throw and the `PENDING` inject experiments **are** executed, and their real output corrected two draft assumptions. See evidence below. |
 | L2 — Register a tool, compose with config | **Mostly executed** | Executed: the plugin loads through the installed bundle and logs `ACTIVE — defaultUnit=lines`; the Schemastery schema rejects `paragraphs` with a field-naming error; an overlay patch on the *installed* row changes the value to `chars`. Still **not** executed: an actual model tool call (needs a provider). See evidence below. |
-| L3 — Services, isolation, and hot reload | **Partly executed** | `PENDING` semantics and the fiber state machine read from `docs/cordis-tutorial/02..03`; the `diagnose.ts` registry walk and the HMR reload observation are **documented, not run**. |
+| L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
 | L4 — Build a policy gate | **Partly executed** | The `PreToolDecision` union and pipeline order are verified against `packages/core/tools/src/index.ts` and `packages/core/tools/README.md`. The example gate plugin has **not** been executed. |
 | L5 — Assemble context deliberately | **Documented** | Verified against `docs/architecture.md`, `docs/cookbook/adding-a-tool.md` (`agent.inject()` semantics), `packages/skill/skill-filesystem/README.md`, and `packages/interaction/commands/README.md`. Not run; needs a model. |
 | L6 — Give the session durable state | **Documented** | `SessionEventMap` merge shape and `session.append` signature verified against `packages/deliverables/tool-present/src/types.ts` and `packages/core/session/src/index.ts`; projection rules from `packages/session/session-projection/README.md`. The JSONL replay experiment has **not** been run. |
@@ -137,6 +137,47 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L3 executed (except the runtime-management extras)
+
+**Service provision and consumption**, healthy composition:
+
+```
+[l3-clock] service provided as ctx.lessonClock
+[l3-uses-clock] 2026-10-01T12:21:13.309Z
+[l3-diagnose] 0 stranded fiber(s) matching "l3-"
+```
+
+**Stranding the consumer** by setting `disabled: true` on the provider row:
+
+```
+[l3-diagnose] PENDING: l3-uses-clock — a required service is missing
+dsh: warning: 1 entry did not activate
+```
+
+Worth recording: with the filter removed, the same sweep also reported
+`AuthorizationService`, `PlatformAccount`, `llm-pi-ai`, and `TypertGatewayService`
+as PENDING **in a healthy profile**. None are broken. That is why the diagnose row
+is scoped by config — a diagnostic that cries wolf is worse than none.
+
+**Hot reload**, editing `l3/uses-clock.js` while the process ran under the `hmr`
+overlay with `root` set to the kit's plugin directory:
+
+```
+[l3-uses-clock] 2026-10-01T12:21:49.606Z          <- before the edit
+[l3-uses-clock-EDITED] 2026-10-01T12:22:07.232Z   <- after saving, no restart
+```
+
+### Two upstream-tutorial traps found by running it
+
+1. **`FiberState` is a `const enum`.** TypeScript erases it and the published
+   `@deepseek-ai/cordis` does not export it, so the upstream Cordis tutorial's
+   `import { FiberState, type Context } from '@deepseek-ai/cordis'` fails at load.
+   Verified: `node -e "import('@deepseek-ai/cordis').then(c => console.log(c.FiberState))"`
+   prints `undefined`. The lesson compares the stable numeric states instead.
+2. **`Config` must be a real Standard Schema.** A hand-rolled `{ parse }` object
+   fails with `TypeError: Cannot read properties of undefined (reading 'validate')`.
+   Schemastery works and is already a bundle dependency.
 
 ## Evidence: L2 executed (except the model call)
 

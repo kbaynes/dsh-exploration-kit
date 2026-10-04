@@ -16,3 +16,17 @@
       name: dsh-exploration-kit-plugins/l2/wordcount.js
       config:
         defaultUnit: lines
+
+    # Lesson 3: provide a service, then consume it in a separate plugin.
+    # Set `disabled: true` here to strand the consumer in PENDING and watch
+    # l3-diagnose report it.
+    - id: l3-clock
+      name: dsh-exploration-kit-plugins/l3/clock.js
+
+    - id: l3-uses-clock
+      name: dsh-exploration-kit-plugins/l3/uses-clock.js
+
+    - id: l3-diagnose
+      name: dsh-exploration-kit-plugins/l3/diagnose.js
+      config:
+        match: 'l3-'

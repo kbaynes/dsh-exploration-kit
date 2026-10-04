@@ -26,7 +26,7 @@ iterate on.
 | `inject` ordering | Dependencies, not file position, decide load order |
 | `PENDING` as a legitimate state | A missing provider is silent, not an error |
 | Service isolation | Two groups seeing different instances of one service name |
-| Hot module replacement | `dsh-hmr` unloads and reloads a changed plugin |
+| Hot module replacement | `dsh-hmr` unloads and reloads a changed plugin in place |
 | Live tree inspection | Plugin inventory, the registry API, and `plugin_manager` |
 
 Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) and the repository's
@@ -34,135 +34,202 @@ Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/m
 
 ## Prerequisites
 
-L1 and L2 complete, including the patch-file mechanics and the meaning of `PENDING`.
+L1 and L2 complete: the kit bundle is installed with `link:`, and you know how a
+row's `config` is supplied and overridden.
 
 ## Step 1 — Provide a service
 
-Create `<kit>/plugins/l3/clock.ts`:
+Open `<kit>/kit-plugins/l3/clock.js`, already wired into the bundle:
 
-```ts
-import { Service, type Context } from '@deepseek-ai/cordis'
-
-declare module '@deepseek-ai/cordis' {
-  interface Context {
-    lessonClock: LessonClockService
-  }
-}
+```js
+import { Service } from '@deepseek-ai/cordis'
 
 export class LessonClockService extends Service {
-  constructor(ctx: Context) {
+  constructor(ctx) {
     super(ctx, 'lessonClock')
   }
 
-  stamp(label: string) {
+  stamp(label) {
     return `[${label}] ${new Date().toISOString()}`
   }
 }
 
 export const name = 'l3-clock'
 
-export function apply(ctx: Context) {
+export function apply(ctx) {
   ctx.plugin(LessonClockService)
+  console.log('[l3-clock] service provided as ctx.lessonClock')
 }
 ```
 
-Two independent pieces are doing work: `super(ctx, 'lessonClock')` registers the
-runtime service under that key, and the `declare module` block is TypeScript
-declaration merging that makes `ctx.lessonClock` typecheck everywhere. The merge
-generates no code — without it the service still works, but consumers lose types.
+Two independent pieces are doing work:
+
+- **Runtime:** `super(ctx, 'lessonClock')` registers the instance under that name,
+  so any plugin can reach it as `ctx.lessonClock`. The registration is an effect —
+  unloading the provider removes the service.
+- **Compile time:** in the TypeScript original this is accompanied by
+  `declare module '@deepseek-ai/cordis' { interface Context { lessonClock: LessonClockService } }`.
+  That block is declaration merging: it adds the key to the `Context` interface so
+  `ctx.lessonClock` typechecks everywhere. It generates no code, and without it the
+  service still works but consumers lose type safety.
+
 A `Service` subclass **is** a plugin, so `ctx.plugin(...)` mounts it like any other.
 
-## Step 2 — Consume it, and lose it
+## Step 2 — Consume it, then strand it
 
-Create `<kit>/plugins/l3/uses-clock.ts`:
+`<kit>/kit-plugins/l3/uses-clock.js` consumes the service:
 
-```ts
-import type { Context } from '@deepseek-ai/cordis'
-
+```js
 export const name = 'l3-uses-clock'
 export const inject = ['lessonClock']
 
-export function apply(ctx: Context) {
+export function apply(ctx) {
   console.log(ctx.lessonClock.stamp('l3-uses-clock'))
 }
 ```
 
-Mount both from `<kit>/plugins/l3.patch.yml`:
+`inject` lists the services this plugin requires. Cordis holds the plugin in
+`PENDING` until every listed service exists, so inside `apply`, `ctx.lessonClock` is
+guaranteed ready. **Load order does not matter** — dependencies, not file order,
+decide when plugins start.
 
-```yaml
-- insert:
-    - id: l3-clock
-      name: './l3/clock.ts'
-    - id: l3-uses-clock
-      name: './l3/uses-clock.ts'
+Boot and confirm the stamp prints:
+
+```sh
+dsh --profile kitdemo --port 0 --no-open
 ```
 
-Boot and confirm the stamp prints. Now the experiment: comment out the `l3-clock`
-entry and boot again. The consumer prints **nothing at all** and the process does
-not error. It is `PENDING`, because a required service is unavailable and Cordis
-cannot know whether the provider will appear later.
+```
+[l3-clock] service provided as ctx.lessonClock
+[l3-uses-clock] 2026-10-01T12:21:13.309Z
+```
 
-This is the lesson's most valuable moment. In L1 you learned that a throwing
-`apply` is loud; here you learn that a missing dependency is silent. Almost every
-"my plugin does nothing" report is this state.
+Now the experiment. Open `<kit>/kit-plugins/cordis.patch.yml` and add
+`disabled: true` to the `l3-clock` row:
+
+```yaml
+    - id: l3-clock
+      name: dsh-exploration-kit-plugins/l3/clock.js
+      disabled: true
+```
+
+Boot again. The consumer prints **nothing at all**, and the stamp is gone:
+
+```
+[l3-diagnose] PENDING: l3-uses-clock — a required service is missing
+...
+dsh: warning: 1 entry did not activate
+```
+
+That is this lesson's most valuable moment, and it sharpens what L1 taught. A
+throwing `apply` is loud and names your file. A missing dependency produces **no
+output of its own** — the consumer's `apply` never runs — and the only signal is a
+line in the startup summary. Nearly every "my plugin does nothing" report is this
+state.
+
+Revert `disabled` before continuing.
 
 ## Step 3 — Enumerate the states directly
 
-Create `<kit>/plugins/l3/diagnose.ts` to stop guessing:
+The startup summary is a hint; the registry is the source of truth. Open
+`<kit>/kit-plugins/l3/diagnose.js`:
 
-```ts
-import { FiberState, type Context } from '@deepseek-ai/cordis'
-
+```js
 export const name = 'l3-diagnose'
 
-export function apply(ctx: Context) {
-  setTimeout(() => {
+// FiberState is a `const enum`: TypeScript erases it, and it is NOT a runtime
+// export of the published @deepseek-ai/cordis package. Importing it — as the
+// upstream Cordis tutorial does — throws at load. Compare the stable numbers.
+const STATE_NAMES = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING']
+
+export function apply(ctx, config) {
+  const filter = config?.match ?? ''
+  const timer = setTimeout(() => {
+    let reported = 0
     for (const runtime of ctx.registry.values()) {
       for (const fiber of runtime.fibers) {
-        if (fiber.state === FiberState.PENDING) {
-          console.log(`${fiber.name} is PENDING — a required service is missing`)
+        const name = fiber.name ?? '(unnamed)'
+        if (filter && !name.includes(filter)) continue
+        if (fiber.state === 0) {
+          console.log(`[l3-diagnose] PENDING: ${name} — a required service is missing`)
+          reported += 1
+        } else if (fiber.state === 3) {
+          console.log(`[l3-diagnose] FAILED: ${name}`)
+          reported += 1
         }
       }
     }
-  }, 1000)
+    console.log(`[l3-diagnose] ${reported} stranded fiber(s)`)
+  }, 800)
+  ctx.effect(() => () => clearTimeout(timer))
 }
 ```
 
-Mount it alongside the others, remove the clock provider again, and boot. The
-diagnostic names the stranded plugin. Keep this file — it is your instrument for
-the rest of the path.
+Its row carries `config: { match: 'l3-' }`, which scopes the sweep to the fibers
+you are working on. **Do not skip the filter when you adapt this.** A real profile
+has services legitimately waiting on optional providers — on the profile used here,
+a full sweep reported `TypertGatewayService`, `AuthorizationService`,
+`PlatformAccount`, and `llm-pi-ai` as PENDING at the same time. None of them are
+broken. A diagnostic that cries wolf is worse than none.
+
+Two traps worth recording, both hit while building this lesson:
+
+- **`FiberState` is a `const enum`.** TypeScript erases it at compile time and the
+  published `@deepseek-ai/cordis` does not export it, so
+  `import { FiberState } from '@deepseek-ai/cordis'` — exactly what the upstream
+  tutorial shows — fails at load with a `TypeError`. Compare the numbers.
+- **`Config` must be a real schema.** A hand-rolled `{ parse }` object is not a
+  Standard Schema and fails as `TypeError: Cannot read properties of undefined
+  (reading 'validate')`. Use Schemastery, as L2 does.
+
+With the provider restored, the scoped sweep reports the healthy case:
+
+```
+[l3-clock] service provided as ctx.lessonClock
+[l3-uses-clock] 2026-10-01T12:21:13.309Z
+[l3-diagnose] 0 stranded fiber(s) matching "l3-"
+```
+
+Keep this file. It is your instrument for the rest of the path.
 
 ## Step 4 — Turn on hot reload
 
 The base bundle mounts `dsh-hmr` with `root: []`, which retains only explicit
-configuration watches. To watch a source tree, configure the existing entry from
-your overlay rather than inserting a second one:
-
-`<kit>/plugins/l3.hmr.patch.yml`:
+configuration watches. To watch the kit's plugin sources, configure the existing
+entry from an overlay rather than inserting a second one. The kit ships one at
+`<kit>/solutions/l3.hmr.patch.yml`:
 
 ```yaml
 - id: hmr
   config:
-    root: ['./<kit>/plugins']
+    root: ['<absolute path to>/dsh-exploration-kit/kit-plugins']
 ```
 
-Boot with the plugins patch and this one. Then, **with the process running**, edit
-`uses-clock.ts` — change the label inside `stamp('...')` and save. Expected:
+Substitute your absolute kit path (the loader wants a real directory, not a
+placeholder), then boot with it:
 
-```
-[l3-uses-clock] ...        <- old instance
-... hmr reload plugin at .../uses-clock.ts
-[l3-...] ...               <- new output from the reloaded instance
+```sh
+dsh --profile kitdemo --patch <kit>/solutions/l3.hmr.patch.yml --port 0 --no-open
 ```
 
-What actually happened: HMR unloaded your plugin (all its effects unwound — this
-is why they are *effects*), re-read the module, and called `apply` again. The same
-machinery reloads the config file itself, which is why entries need stable `id`s
-from L1.
+Now, **with the process still running**, edit `l3/uses-clock.js` and change the
+label inside `stamp('...')`. Watched live, this produced:
+
+```
+[l3-uses-clock] 2026-10-01T12:21:49.606Z          <- before the edit
+[l3-uses-clock-EDITED] 2026-10-01T12:22:07.232Z   <- after saving, no restart
+```
+
+What happened: HMR unloaded your plugin — every effect it owned unwound, which is
+what *effect* means — re-read the module, and called `apply` again. The same
+machinery reloads the config file itself, which is why entries need stable `id`s.
 
 If you see nothing, HMR is probably disabled in your composition: the base bundle
 gates it behind the launcher's `profileContext`, and the headless, SDK, and ACP
-bundles disable it in YAML. Restart after an edit is the fallback behavior.
+bundles disable it in YAML. Restarting after an edit is the fallback behavior.
+
+Revert your edit — or keep it, and confirm the scoped sweep still reports zero
+stranded fibers.
 
 ## Step 5 — Inspect the live tree
 
@@ -182,16 +249,22 @@ Three read-only ways in, cheapest first:
    present, the `cordis_inspect_list` and `cordis_inspect_query` tools read the
    live registry.
 
-Then do the reverse experiment: disable your `l3-uses-clock` row from
-`plugin_manager` and observe the consumer disappear without a restart.
+Then do the reverse experiment: disable the `l3-uses-clock` row from
+`plugin_manager` and observe the consumer disappear without a restart — the same
+stranding you produced by hand in step 2, but applied at runtime.
 
 ## Verification
 
-1. With the provider present, the consumer prints a stamp on boot.
-2. With the provider removed, the consumer prints nothing and no error appears.
-3. Your `diagnose.ts` instrument names the stranded plugin as `PENDING`.
-4. Editing `uses-clock.ts` while running produces a reload line and new output.
-5. `list_plugins` shows your entry ids and their enablement.
+1. With the provider present, the consumer prints a stamp on boot and the scoped
+   sweep reports `0 stranded fiber(s) matching "l3-"`.
+2. With the provider disabled, the consumer prints **nothing** and the sweep names
+   `l3-uses-clock` as `PENDING`.
+3. You can explain why the full (unscoped) sweep reports several unrelated PENDING
+   services in a healthy profile.
+4. Editing `l3/uses-clock.js` while the process runs changes the printed stamp
+   without a restart.
+5. `dsh plugin --profile kitdemo list` shows the bundle, and `--dump-config` shows
+   your entry ids and their enablement.
 
 ## Exit check — you should now be able to explain
 
@@ -203,6 +276,9 @@ Then do the reverse experiment: disable your `l3-uses-clock` row from
 
 ## Further exploration
 
+- **Re-read the diagnose plugin's two traps.** Both were found by running it, and
+  both contradict the upstream Cordis tutorial as written. Finding that a tutorial
+  is stale is itself a skill worth practising.
 - **Service isolation.** Define a group with an `isolate` realm and mount two
   differently configured providers of one service name. This is the mechanism
   behind per-session capability sets, which L8 uses for agent presets.
