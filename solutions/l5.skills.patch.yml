@@ -1,0 +1,12 @@
+# Point the skill provider at the kit's own skill directory.
+#
+# `customSkillDirs` is a config field on an existing base row, so this is an
+# override (no `insert`, no `name`). `includeDefaultRoots: false` makes the
+# experiment unambiguous — only the kit's skills appear.
+#
+# The path is computed at load time from KIT_ROOT, the same convention Lesson 4
+# uses, so no absolute path is baked into the repository.
+- id: skill-filesystem
+  config:
+    customSkillDirs: [!!js "process.env.KIT_ROOT ? process.env.KIT_ROOT + '/kit-plugins/l5/skills' : undefined"]
+    includeDefaultRoots: false

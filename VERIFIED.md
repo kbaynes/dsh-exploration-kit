@@ -36,7 +36,7 @@ version, expect to adjust commands and package import paths.
 | L2 — Register a tool, compose with config | **Mostly executed** | Executed: the plugin loads through the installed bundle and logs `ACTIVE — defaultUnit=lines`; the Schemastery schema rejects `paragraphs` with a field-naming error; an overlay patch on the *installed* row changes the value to `chars`. Still **not** executed: an actual model tool call (needs a provider). See evidence below. |
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
 | L4 — Build a policy gate | **Partly executed** | Executed: both policy plugins load (`l4-write-scope` reports its confinement root, `l4-guard` registers its monotonic guard), and the missing-`inject` failure was reproduced. **Not** executed: any allow/deny decision, which needs a model tool call. |
-| L5 — Assemble context deliberately | **Documented** | Verified against `docs/architecture.md`, `docs/cookbook/adding-a-tool.md` (`agent.inject()` semantics), `packages/skill/skill-filesystem/README.md`, and `packages/interaction/commands/README.md`. Not run; needs a model. |
+| L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
 | L6 — Give the session durable state | **Documented** | `SessionEventMap` merge shape and `session.append` signature verified against `packages/deliverables/tool-present/src/types.ts` and `packages/core/session/src/index.ts`; projection rules from `packages/session/session-projection/README.md`. The JSONL replay experiment has **not** been run. |
 | L7 — Operate the harness | **Documented** | Bundle rows, `tool-session-query` contract, and telemetry env vars verified against the bundle patches and package READMEs. Query authorization and cost measurement not run; needs a model. |
 | L8 — Orchestrate multiple agents | **Documented** | Subagent provider rows verified against `packages/bundle/base/cordis.patch.yml`; agent-team caps verified against `packages/experimental/agent-team-profile/cordis.patch.yml`. Needs a model. |
@@ -137,6 +137,36 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L5 plugins load (session-dependent claims unverified)
+
+```
+[l5-observer] ACTIVE — watching agent/pre-step
+[l5-inject] ACTIVE — appends durable context on agent/created
+[l5-commands] ACTIVE — /l5-facts registered
+```
+
+The skills overlay composes as an in-place override of the base row:
+
+```
+- id: skill-filesystem
+  name: '@deepseek-ai/dsh-skill-filesystem'
+  config:
+    customSkillDirs:
+      - !!js >-
+        process.env.KIT_ROOT ? process.env.KIT_ROOT + '/kit-plugins/l5/skills' : undefined
+```
+
+**A stale upstream example was corrected.** `docs/cookbook/adding-a-tool.md` shows
+`agent.inject({ content, source: { kind: 'plugin', plugin: '<name>' } })`. That is not
+a `UserMessage`: `inject()` requires one, and there is deliberately no catch-all
+`plugin` source kind — each producer declares its own. The kit's plugin uses
+`createUserMessage` with a declared kind, and `solutions/verify-l5.sh` asserts that
+the stale shape is absent.
+
+**Deliberately unverified:** the pre-step payload shape, whether injected text
+survives replay, what the model's skill catalog contains, and whether `/l5-facts`
+answers without a turn. Each requires a session and therefore a provider.
 
 ## Evidence: L4 plugins load (decisions unverified)
 

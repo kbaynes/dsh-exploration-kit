@@ -37,59 +37,55 @@ and
 
 ## Prerequisites
 
-L1–L4 complete. You need your `diagnose.ts` instrument and the reload loop.
+L1–L4 complete. You need the `diagnose` instrument, the reload loop, and the
+habit of separating what a boot proves from what a session proves.
 
 ## Step 1 — Watch the turn flow before touching it
 
-Create `<kit>/plugins/l5/turn-observer.ts` and mount it:
+Open `<kit>/kit-plugins/l5/turn-observer.js`, wired into the bundle:
 
-```ts
-import type { Context } from '@deepseek-ai/cordis'
-
+```js
 export const name = 'l5-turn-observer'
 
-export function apply(ctx: Context) {
+export function apply(ctx) {
   ctx.on('agent/pre-step', async (payload, next) => {
-    console.log('[l5] pre-step', JSON.stringify(payload).slice(0, 120))
+    console.log('[l5-observer] pre-step', JSON.stringify(payload).slice(0, 160))
     return next()
   })
+
+  ctx.on('agent/created', (agent) => {
+    console.log('[l5-observer] agent created')
+  })
+
+  console.log('[l5-observer] ACTIVE — watching agent/pre-step')
 }
 ```
 
-Run one conversation turn and read what actually arrives. Do this before writing
-any injection logic — the shape of the payload tells you what is available at this
-stage, and guessing it is the usual source of broken context plugins.
+Boot the profile and start a conversation, then read what actually arrives. Do this
+**before** writing any injection logic — the payload's shape tells you what is
+available at this stage, and guessing it is the usual source of broken context
+plugins.
 
 `agent/pre-step` is a **waterfall**: return `next()` to delegate. Several
 first-party plugins already listen here, including `agent-instructions`, `plan-mode`,
 `tool-skill`, `time-context`, and `session-checkpoint-policy`. You are joining an
 existing layer, not replacing it.
 
+**No API key?** The registration is observable at boot — the plugin prints that it is
+watching. What the payload *contains* needs a turn, and therefore a provider; that
+part is recorded as unverified rather than described from memory.
+
 ## Step 2 — Inject context deliberately
 
-Now add an injection to the same plugin:
+`<kit>/kit-plugins/l5/inject.js` appends context:
 
-```ts
-import type { Context } from '@deepseek-ai/cordis'
+```js
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 
-// A source kind belongs to its producer, so declare yours. There is deliberately
-// no shared catch-all `plugin` kind.
-declare module '@deepseek-ai/dsh-llm' {
-  interface MessageSourceMap {
-    'l5-turn-observer': { kind: 'l5-turn-observer' }
-  }
-}
+export const name = 'l5-inject'
+export const inject = ['agents']
 
-export const name = 'l5-turn-observer'
-
-export function apply(ctx: Context) {
-  ctx.on('agent/pre-step', async (payload, next) => {
-    const decision = await next()
-    // after delegating, append durable context for the next admitted request
-    return decision
-  })
-
+export function apply(ctx) {
   ctx.on('agent/created', (agent) => {
     try {
       agent.inject(createUserMessage({
@@ -99,113 +95,133 @@ export function apply(ctx: Context) {
             text: 'Exploration mode: when you explain a change, name the file it lands in.',
           },
         ],
-        source: { kind: 'l5-turn-observer' },
+        source: { kind: 'l5-inject' },
       }))
-    } catch {
-      // the agent may already be disposed; never let a notification kill a plugin
+      console.log('[l5-inject] context appended to the next admitted request')
+    } catch (error) {
+      // The agent may already be disposed; never let a notification kill a plugin.
+      console.log(`[l5-inject] skipped: ${error.message}`)
     }
   })
+
+  console.log('[l5-inject] ACTIVE — appends durable context on agent/created')
 }
 ```
 
-`agent.inject()` takes a complete `UserMessage`, not a loose `{ content, source }`
-object. Build it with `createUserMessage`, which fills in the role and a stable
-identity. The **source kind is producer-owned**: each producer declares its own
-kind by merging into `MessageSourceMap`, and there is no catch-all kind to reuse.
+Three contract points, each verified against the runtime's own types:
 
-The contract that matters here is that the injected message appends durable context
-the **next** model request sees — and it is **not a wake-up**. An idle agent stays
-idle. Guard against disposed agents.
+- **`agent.inject()` takes a complete `UserMessage`, not a loose object.** Build it
+  with `createUserMessage`, which fills in the role and a stable identity.
+- **The source kind is producer-owned.** Each producer declares its own kind; there
+  is deliberately no catch-all `plugin` kind to reuse. The upstream cookbook shows
+  `source: { kind: 'plugin', plugin: '…' }`, which is stale — that shape is not a
+  `UserMessage` source and will not typecheck.
+- **It is not a wake-up.** Injected context lands in the *next* admitted request; an
+  idle agent stays idle. Guard against a disposed agent, as above.
 
 To confirm the durability claim yourself, inject a distinctive sentence, run one
 turn, close the session, reopen it, and search the replayed history for your text.
-It is in the session log because the log is the source of truth — which is exactly
-what L6 builds on.
+It is in the session log because the log is the source of truth — which is what L6
+builds on.
 
 ## Step 3 — A skill the agent discovers on its own
 
 Skills are the right delivery mechanism for knowledge too large to inject on every
-turn and too specific to put in `AGENTS.md`. Create a skill bundle:
-
-`<kit>/plugins/l5/skills/repo-onboarding/SKILL.md`:
+turn and too specific to put in `AGENTS.md`. The kit ships one at
+`<kit>/kit-plugins/l5/skills/repo-onboarding/SKILL.md`:
 
 ```md
 ---
 name: repo-onboarding
-description: Use when asked to explain how this workspace is organized, where knowledge lives, or how to get started reading it.
+description: Use when asked to explain how the DSH exploration kit is organized, where its knowledge lives, or how to get started reading it.
 ---
 
-# Repo onboarding
+# Kit onboarding
 
-This workspace keeps its agent-facing knowledge in an Open Knowledge Format bundle
-under `doc/`. Start at `doc/index.md`; it fans out to `harness/` (architecture and
-plugin model) and `operations/` (deploy-time checklists).
-
-The exploration curriculum is `doc/exploration/`; its capability inventory is
-`doc/exploration/feature-map.md`.
-
-Before answering an architecture question, read the relevant concept instead of
-reasoning from memory.
+The DSH Exploration Kit is a nine-lesson curriculum for learning DeepSeek Harness by
+building real plugins. Its layout:
+...
 ```
 
-Frontmatter rules that will bite if ignored: `name` must be kebab-case and match
-the directory, `description` is **required**, and discovery is exactly one level
-deep — `<root>/<name>/SKILL.md` or `<root>/<name>.md`. A nested `**/SKILL.md` is
-deliberately not discovered. An invalid skill is skipped with a warning, so a
-broken skill looks *identical to an absent one* from the model's point of view.
+Frontmatter rules that bite if ignored: `name` must be kebab-case, `description` is
+**required**, and discovery is exactly one level deep — `<root>/<name>/SKILL.md` or
+`<root>/<name>.md`. A nested `**/SKILL.md` is deliberately not discovered. An invalid
+skill is skipped with a warning, so from the model's point of view a broken skill
+looks **identical to an absent one** — a genuinely nasty failure mode, and the reason
+the `description` deserves care.
 
-Now point a scanned root at it. The shipped `skill-filesystem` row carries no
-`config` at all, so your overlay supplies the first `customSkillDirs` by overriding
-that existing row rather than inserting a second provider:
-
-`<kit>/plugins/l5.skills.patch.yml`:
+Point a scanned root at the kit's skills with the shipped overlay,
+`<kit>/solutions/l5.skills.patch.yml`:
 
 ```yaml
 - id: skill-filesystem
   config:
-    customSkillDirs: ['<absolute path to>/dsh-exploration-kit/plugins/l5/skills']
+    customSkillDirs: [!!js "process.env.KIT_ROOT ? process.env.KIT_ROOT + '/kit-plugins/l5/skills' : undefined"]
     includeDefaultRoots: false
 ```
 
-Root resolution order is project roots, then `customSkillDirs`, then user roots;
-`includeDefaultRoots: false` makes the experiment unambiguous. The directory
-**need not exist yet** — a missing root is probed until it appears, and existing
-roots are watched, so adding or renaming a skill reaches the next catalog without
-a restart.
+Two things about that shape:
 
-Verify by asking the agent what onboarding skills it has, or by reading the
-session's first request in the log. A model-invocable skill receives a durable
-catalog of names and capped descriptions before the first request; the body loads
-only when the agent calls the `skill` tool. That two-phase split — catalog versus
-body — is the design worth noticing, and it is why `description` quality decides
-whether a skill is ever used.
+- **It is an override, not an insert.** `customSkillDirs` is a config field on an
+  existing base-bundle row, so the entry has no `insert` and no `name`. This is the
+  same in-place override you used in L2.
+- **`includeDefaultRoots: false` makes the experiment unambiguous.** Root resolution
+  order is project roots, then `customSkillDirs`, then user roots; disabling the
+  default roots means only the kit's skill can appear.
+
+Boot with it:
+
+```sh
+KIT_ROOT=<kit> dsh --profile kitdemo --patch <kit>/solutions/l5.skills.patch.yml --port 0 --no-open
+```
+
+The directory **need not exist yet** — a missing root is probed until it appears, and
+existing roots are watched, so adding or renaming a skill reaches the next catalog
+without a restart.
+
+The catalog/body split is the design worth noticing: a model-invocable skill gets a
+durable catalog of names and capped descriptions before the first request, and the
+body loads only when the agent calls the `skill` tool. That is why `description`
+quality decides whether a skill is ever used.
+
+**No API key?** The overlay composes (visible in `--dump-config`) and the profile
+boots with it. What the *model* sees in its catalog needs a session, and is recorded
+as unverified.
 
 ## Step 4 — A command that needs no model turn
 
-`ctx.commands.register()` gives a human a deterministic entry point:
+`ctx.commands.register()` gives a human a deterministic entry point.
+`<kit>/kit-plugins/l5/commands.js` registers one:
 
-```ts
+```js
 export const name = 'l5-commands'
 export const inject = ['commands']
 
-export function apply(ctx: Context) {
+export function apply(ctx) {
   ctx.commands.register({
     name: 'l5-facts',
-    description: 'Print how this exploration bundle is laid out',
+    description: 'Print how the DSH exploration kit is laid out',
     handler: () => ({
       kind: 'success',
-      text: 'doc/exploration/{feature-map,learning-path}.md + lessons/01..09',
+      text: [
+        'content/      the curriculum (OKF bundle) — start at content/index.md',
+        ...
+      ].join('\n'),
     }),
   })
+
+  console.log('[l5-commands] ACTIVE — /l5-facts registered')
 }
 ```
 
 A command line starts with `/`, a lowercase name, then either end-of-input or
-whitespace; everything after the name is `rawInput` and the command owns its
-grammar. Registering the same name twice in one scope throws. The handler returns
-`success` or `error` plus optional UI text. Type `/l5-facts` in the composer and
-confirm the reply appears **without** a model call — you can check that by watching
-your `pre-step` observer stay silent.
+whitespace; everything after the name is `rawInput` and the command owns its grammar.
+Registering the same name twice in one scope throws. The handler returns `success` or
+`error` plus optional UI text.
+
+Type `/l5-facts` in the composer and confirm the reply is immediate. Because the
+handler is plain code, no model turn occurs — you can watch your `pre-step` observer
+stay silent as proof.
 
 ## Step 5 — Decide where knowledge belongs
 
@@ -229,11 +245,26 @@ the convenience of "always loads".
 
 ## Verification
 
-1. Your observer prints the `pre-step` payload shape for a real turn.
-2. Injected text is present in the replayed session after a restart.
-3. Your skill appears in the catalog, and `name`/`description` are exactly right.
-4. Renaming the skill directory changes the catalog without a restart.
-5. `/l5-facts` responds with no model turn and no `pre-step` log line.
+Observable without a model:
+
+1. The boot prints all three activation lines:
+   `[l5-observer] ACTIVE`, `[l5-inject] ACTIVE`, `[l5-commands] ACTIVE`.
+2. `--dump-config` with the skills overlay shows the composed `skill-filesystem`
+   row carrying your `customSkillDirs` and `includeDefaultRoots: false`.
+3. Removing `inject = ['agents']` or `['commands']` makes the load fail loudly, as
+   L4 showed — proof neither service is ambient.
+
+Requires a session, and therefore a provider:
+
+4. Your observer prints the `pre-step` payload shape for a real turn.
+5. Injected text is present in the replayed session after a restart.
+6. Your skill appears in the catalog, and `name`/`description` are exactly right.
+7. Renaming the skill directory changes the catalog without a restart.
+8. `/l5-facts` responds with no model turn and no `pre-step` log line.
+
+Items 4–8 are recorded as unverified in
+[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+Do not read 1–3 as evidence for them.
 
 ## Exit check — you should now be able to explain
 

@@ -41,3 +41,14 @@
 
     - id: l4-guard
       name: dsh-exploration-kit-plugins/l4/guard.js
+
+    # Lesson 5: a human command that needs no model turn.
+    - id: l5-commands
+      name: dsh-exploration-kit-plugins/l5/commands.js
+
+    # Lesson 5: observe the turn flow, then inject durable context.
+    - id: l5-observer
+      name: dsh-exploration-kit-plugins/l5/turn-observer.js
+
+    - id: l5-inject
+      name: dsh-exploration-kit-plugins/l5/inject.js
