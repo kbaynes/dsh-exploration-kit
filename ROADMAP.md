@@ -13,7 +13,7 @@ A turn-killing bug in the kit's **own** Lesson 5 listener (`JSON.stringify` of a
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
 | 0.5 | Rewrite lessons for the verified bundle mechanism | ✅ All nine rewritten |
 | 1 | Build, test, and review each lesson | ✅ All nine built and executed |
-| 2 | Test infrastructure — automated verification in CI | ✅ 20 checks, version gate, full CI run (~4m15s + one fast static check) |
+| 2 | Test infrastructure — automated verification in CI | ✅ 20 checks, version gate, full CI run (~2m45s), no leaked processes |
 | 3 | Whole-kit review — editorial and technical pass | ✅ Two independent audits triaged and fixed |
 | 4 | Publication readiness — placeholders, licensing, metadata | 🔄 owner set (`kbaynes`); only the git author identity remains |
 | 4.5 | Tag the release against a harness state | ⬜ Pending publication |

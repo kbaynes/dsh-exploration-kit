@@ -56,6 +56,14 @@ Three rules go with it:
 - A future contributor who "simplifies" the loop by dropping the reporting breaks a rule rather than tidying code; that is why this is written down.
 - The cause of the stall is **not** established here. Either the child's teardown is raced by the parent's turn ending, or its response is dropped. That remains open, and the ledger says so.
 
+## Follow-up — the cause of the stall was found
+
+The stall this ADR was written around is **explained**, and it was not a harness fault. The base bundle's `subagent` uses the `continuable` background mode, so the tool's `run_in_background` **defaults to true**: the parent receives a handle back and the child is scheduled independently. In a one-shot headless task the process then exits while the child is still working, and the child's session is left open with no `assistant/message` and no `turn/end`. Passing `run_in_background: false` in the scripted call closes it every time (3 of 3 runs, 19 events, 26 tokens).
+
+The retry therefore stops being the mechanism and becomes a **guard**. It is kept, and it still prints its attempt count, because that is now the signal that would show the fix had stopped working — a rising attempt count is the only way this regresses visibly. The decision below is unchanged; the intermittency it was written for is not.
+
+The verification had a second fault worth keeping next to this one: its assertion was "at least three model requests", which a spawned-and-abandoned child satisfies, so it passed while the child never finished. It now asserts the child's turn **closed**.
+
 ## Evidence
 
 The retry reporting itself, from a run that needed two attempts:

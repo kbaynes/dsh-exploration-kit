@@ -63,6 +63,17 @@ Details that matter:
 - The stale-lock path is deliberately forgiving, which means a genuine reuse of a *live* pid could in principle block a run. The message names the pid and the file to remove, so the failure is actionable rather than mysterious.
 - The lock's own first bug is the reason this record exists in the shape it does. It was found by running the suite, not by reading the code — the same rule the curriculum applies to everything else ([ADR-0001](0001-verify-by-running.md)).
 
+## Follow-up — removing the lock by hand is a last resort, and only for a DEAD holder
+
+The lock's own message tells the operator to remove the file "if pid X is not a check:kit run". That sentence was tested the hard way: a suite was stopped with `job_kill`, its `check-kit` process survived the cancellation, and the next run removed the lock by hand **without checking whether pid X was alive**. Two suites then shared one harness home for 35 minutes — exactly the corruption this ADR exists to prevent — and the symptom was not an error but *slowness*: every boot waited out its readiness timeout, and the run eventually failed lesson 5.
+
+Two conclusions:
+
+- **Check that the recorded pid is GONE before removing the lock.** `kill -0 <pid>` is the test; the message invites the remedy, it does not assert the holder is dead.
+- **A cancelled background job may not kill its whole process tree.** `job_kill` stops the outer shell; a `node scripts/check-kit.mjs` child can survive it and keep the home. Confirm with `pgrep -fl 'check-kit.mjs'` before starting another run.
+
+This is a procedural guard rather than a code change: the lock already refuses when the holder is alive, which is the correct behaviour. The failure was in bypassing it.
+
 ## Evidence
 
 The failure above, and the clean run that followed it with nothing else touching the home:

@@ -55,3 +55,5 @@ An ADR is not a task and not a test result. It states a decision, the evidence t
 - [ADR-0032 — Do not drive a turn before skill discovery reports a complete catalog](0032-wait-for-skill-discovery-to-complete.md)
 - [ADR-0033 — A checker must not hardcode the value it is supposed to validate](0033-a-checker-must-not-hardcode-what-it-checks.md)
 - [ADR-0034 — A retry must report itself, or it hides the intermittency it exists for](0034-a-retry-must-report-itself.md)
+- [ADR-0035 — A background launch is killed by the pid you started, so make that pid the thing you care about](0035-a-background-launch-is-killed-by-the-pid-you-started.md)
+- [ADR-0036 — Never wait unboundedly on a process you no longer need](0036-never-wait-unboundedly-on-a-process-you-no-longer-need.md)

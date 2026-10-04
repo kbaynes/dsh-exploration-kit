@@ -44,7 +44,15 @@ Use it on a real task in your exploration workspace, for example:
 
 Then ask the follow-up question that matters: **what did the child not know?** A spawned child does not share this conversation's context — that is its value and its cost. Confirm it can `list_agents` and `send_message` to the child afterward, because the base row is continuable, and `interrupt_agent` to stop it.
 
-Choose between the two delegation tools on one axis: `subagent` when the task is self-contained and the parent's context would only be noise; `subagent_fork` when the task genuinely builds on this conversation. Forking to avoid writing a good task description is a common and expensive mistake.
+**Know which scheduling you are asking for.** The base bundle's `subagent` uses the `continuable` background mode, and the tool's default follows it: `run_in_background` defaults to **true**, so the model gets a handle back and the child is scheduled independently. That is the right default for work you want to keep talking to, and the wrong one when you need the answer in this turn — pass `run_in_background: false` and the child runs in the foreground.
+
+The difference is not cosmetic in a one-shot run. A backgrounded child is still working when a `dsh headless` task finishes, so the process exits mid-turn and the child's session is left **open** — no `assistant/message`, no `turn/end` — while the parent reports success. If you drive delegation from a script or a test, say which you mean:
+
+```json
+{ "description": "fan-out check", "prompt": "Report the answer in one short line.", "run_in_background": false }
+```
+
+Choose between the two delegation tools on the other axis: `subagent` when the task is self-contained and the parent's context would only be noise; `subagent_fork` when the task genuinely builds on this conversation. Forking to avoid writing a good task description is a common and expensive mistake.
 
 ## Step 2 — Fan out with a workflow
 
@@ -203,7 +211,7 @@ Items 6 and 8 are executed and recorded in [VERIFIED.md](https://github.com/kbay
 
 What that comparison does **not** establish is the *magnitude*: the mock's input is a constant 3 tokens and its output is a scripted reply's character count, so the totals prove correct attribution across agents, not a realistic price. Items 4, 5, and 7 remain unverified.
 
-**A warning worth carrying into your own runs.** Measuring that comparison surfaced an intermittency: a delegated child's turn is sometimes left open — the child's session ends after `request/context`, with no assistant message and no `turn/end` — while the parent still returns a normal answer. It happened in 5 of 10 observed runs. If you fan out and the child's session looks truncated, that is this, not your workflow. The verification retries and prints how many attempts it needed so the rate stays visible.
+**If your child's session looks truncated, check the scheduling before suspecting the harness.** During this project a delegated child was left open in 5 of 10 runs, and it was not a harness fault: the scripted call took the default background scheduling, the parent finished, and the headless process exited while the child was still working. Passing `run_in_background: false` closed it every time. The verification asks for the result in the same turn, and still retries and prints how many attempts it needed, so that a regression would show up as a rising attempt count rather than as silence.
 
 Item 2 is the reason this lesson is worth more than its prose: the orchestration *contract* is tested even though the agents are not.
 

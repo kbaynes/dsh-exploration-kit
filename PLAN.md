@@ -214,7 +214,7 @@ The substance of the project. Repeat this block for each lesson. **Order is inde
 - [ ] Confirm a failing stage drops that item to `null`
 - [ ] Confirm a misused hook ends the script with a naming error
 - [x] Capture the monolithic-vs-fan-out comparison with real token numbers — `solutions/verify-l8.sh` phase 6 measures **26 tokens for one turn and 57 for the same task as a fan-out** (parent 31 + child 26), summing the parent from the headless `--json` stream and the child from its **own** session log, with each half asserted non-zero. Publishing the *magnitude* stays open: the mock's input is a constant 3 and its output is a scripted reply's character count, so the totals prove attribution across agents, not a realistic price.
-- [ ] **Investigate the intermittent child turn**: a delegated child's session is sometimes left open (no `assistant/message`, no `turn/end`) while the parent returns normally - 5 of 10 observed runs. The cost comparison retries and reports the attempts, but the cause is not established: either the child's teardown is raced by the parent's turn ending, or its response is dropped. Reproduce with `bash solutions/verify-l8.sh` and read the child's session log.
+- [x] **Investigate the intermittent child turn** — solved, and it was not a harness fault. The base bundle's `subagent` uses the `continuable` background mode, so `run_in_background` defaults to **true**: the parent gets a handle back, the child is scheduled independently, and a one-shot headless task exits while the child is still working, leaving its session open with no `assistant/message` and no `turn/end` (5 of 10 observed runs). Passing `run_in_background: false` closes it every time (3/3, and the phase now asserts the child's turn closed rather than counting model requests). The lesson teaches the argument and the symptom.
 - [ ] Confirm `ctx.agents.create({ seed, meta })` fork behaves as described
 - [ ] Read the agent-team profile patch and decide whether L8's optional step
       should stay
@@ -345,7 +345,7 @@ An independent editorial review of all nine lessons was run as a separate review
 
 ## Verification-suite performance
 
-The full suite boots the harness 27-odd times, once or twice per lesson. It runs in about two minutes (measured: **256s**, 19 passed / 0 failed, after adding the phases that make the remaining "needs a model-driven tool call" claims checkable): each boot ends when its probe reports completion rather than after a fixed wait.
+The full suite boots the harness 27-odd times, once or twice per lesson. It runs in about two minutes (measured: **165s**, 20 passed / 0 failed, and it now leaves zero processes behind): each boot ends when its probe reports completion rather than after a fixed wait. Two harness defects made earlier runs slower *and* unreliable — a leaked `dsh` process per boot ([ADR-0035](decisions/0035-a-background-launch-is-killed-by-the-pid-you-started.md)) and an unbounded `wait` that could hang on a process which reached its pattern but outlived `SIGKILL` ([ADR-0036](decisions/0036-never-wait-unboundedly-on-a-process-you-no-longer-need.md)).
 
 - [x] **Replaced the blind wait with a readiness poll.** `solutions/lib.sh` provides
       `boot_and_wait <checkout> <profile> <log> <pattern> <timeout> [overlay...]`, which polls
@@ -354,6 +354,7 @@ The full suite boots the harness 27-odd times, once or twice per lesson. It runs
       killed early used to leave an empty log, which a check asserting on a pattern's *absence*
       would still pass. The motivation was concrete — a fixed 18-second wait made L6's second
       phase fail while its "log is readable" check passed for the wrong reason.
+- [x] **The suite leaked a process per boot, then hung on one.** `boot_and_wait` killed a subshell rather than the harness, so every boot orphaned a live `dsh` — 1166 accumulated across the project and eventually hung a run for over half an hour. Fixed with `exec` plus a TERM-then-KILL grace; the second half of the same hang was an unbounded `wait` on a process that reached its pattern but outlived `SIGKILL`. Both are recorded ([ADR-0035](decisions/0035-a-background-launch-is-killed-by-the-pid-you-started.md), [ADR-0036](decisions/0036-never-wait-unboundedly-on-a-process-you-no-longer-need.md)). The suite now leaves zero processes and runs in 165s.
 - [x] **Flake reproduced, explained, and fixed.** An earlier note here recorded a single 18/1
       observation as unexplained. It recurred in the run that added the L9 delivery phase, and the
       capture made it identifiable: `FAIL solution: lesson 9 — the scheduled work ran: a second

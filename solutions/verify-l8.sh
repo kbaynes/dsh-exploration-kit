@@ -83,7 +83,14 @@ echo "== 5. a REAL delegation, end to end, with no provider key =="
 # What follows is a genuine fan-out - the parent calls the tool, a child runs its own turn, the
 # child reports back, the parent finishes - visible in the mock's request count and in the session
 # log's parent link.
-SUBAGENT_ARGS='{"description":"fan-out check","prompt":"Report the answer in one short line."}'
+# `run_in_background: false` is LOAD-BEARING, not decoration. The base bundle's `subagent` uses the
+# `continuable` background mode, and the tool's own default is therefore to schedule the child and
+# return immediately ("Continuable work is independently scheduled unless the caller explicitly
+# needs the result before its next action"). In a headless run the process then exits while the
+# child is still working, and the child's session is left open with no `assistant/message` and no
+# `turn/end` - which is exactly the stall this check used to report as an intermittent harness
+# problem. Asking for the result in the same turn makes the child finish deterministically.
+SUBAGENT_ARGS='{"description":"fan-out check","prompt":"Report the answer in one short line.","run_in_background":false}'
 MODEL_PATCH="$(mktemp)"
 cat > "$MODEL_PATCH" <<'PATCH'
 - id: agent-default-model
@@ -95,10 +102,8 @@ PATCH
 # One fan-out attempt: run the delegation, then read the parent's usage from the stream and the
 # child's from its own log. Sets FAN_PARENT / FAN_CHILD / parent_session.
 #
-# It is a FUNCTION because a delegated child's turn does not always complete: under this mock the
-# child sometimes ends with no assistant message and no turn/end, while the parent still returns a
-# normal answer. That is recorded as a finding in VERIFIED.md rather than hidden; the cost
-# comparison retries until it has a completed child to measure, and fails if none ever completes.
+# It is a FUNCTION so the cost phase can retry, which is now a guard: the child completes
+# deterministically because the scripted call asks for its result in the same turn.
 #   fanout_once <port> <stream-file>
 fanout_once() {
   local port="$1" out="$2"
@@ -152,6 +157,15 @@ if [[ "$fan_status" -eq 0 || -s "$FAN_OUT" ]]; then
     echo "FAIL  no parent-linked child session appeared ($BEFORE -> $AFTER)"
     failures=$((failures + 1))
   fi
+  # ... and the child's turn CLOSED. Counting model requests alone was too weak: the count was
+  # satisfied by a child that was spawned and then abandoned when the process exited. A child with
+  # recorded usage has an `assistant/message` and a `turn/end`.
+  if [[ "${FAN_CHILD:-0}" -gt 0 ]]; then
+    echo "PASS  the child's turn CLOSED, with usage recorded in its own session"
+  else
+    echo "FAIL  the child's turn did not close (no usage in its session)"
+    failures=$((failures + 1))
+  fi
 
   # The fan-out's cost is the sum across the sessions it created: the parent's own steps from the
   # stream, and the child's turn from its own log.
@@ -192,8 +206,11 @@ else
   echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
 fi
 
-# Retry the fan-out when the child's turn did not complete. The retry is REPORTED, because a check
-# that quietly retries until it is green hides the intermittency that made it necessary.
+# Retry the fan-out if the child's turn did not complete. The cause is now KNOWN - a background
+# child outliving a headless process - and `run_in_background: false` above prevents it, so this is
+# a guard rather than the mechanism. It is still reported, because a check that quietly retries
+# until it is green hides exactly the signal that would tell us the fix stopped working
+# (ADR-0034).
 fan_attempts=1
 while [[ "${FAN_CHILD:-0}" -eq 0 && "$fan_attempts" -lt 4 ]]; do
   fan_attempts=$((fan_attempts + 1))

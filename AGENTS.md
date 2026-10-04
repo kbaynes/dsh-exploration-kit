@@ -49,6 +49,8 @@ This is the **agent-side** convention and nothing more. A human learner working 
 
 **The suite owns the harness home while it runs.** One run at a time, and no manual `dsh` against the same `$DSH_HOME` — two harnesses sharing a home corrupt each other's sessions, and the breakage lands on whichever check is running, which reads as a flaky lesson. `scripts/check-kit.mjs` takes a lock and exits 2 with a message naming the holder rather than reporting the collision as a failure ([ADR-0030](decisions/0030-verification-owns-the-harness-home.md)).
 
+**Reap what you start.** A background launch must be killed by a pid that IS the process: in `( … ) &`, `$!` is a subshell, so `kill "$pid"` orphans the harness and leaks one process per boot — 1166 accumulated before this was found ([ADR-0035](decisions/0035-a-background-launch-is-killed-by-the-pid-you-started.md)). `solutions/lib.sh`'s `boot_and_wait` uses `exec` and a TERM-then-KILL grace; any new launch site needs the same.
+
 Two hygiene rules that come with it:
 
 - **Never create probe/test sessions or throwaway profiles in a real harness home.** If you run against the real home (as earlier rounds of this project did), remove what you created afterwards — a session containing an invented event type (ADR-0024) poisons full-text search for that whole home, and a leftover profile is confusing.

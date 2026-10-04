@@ -25,7 +25,12 @@ boot_and_wait() {
   for overlay in "$@"; do args+=(--patch "$overlay"); done
 
   : > "$log"
-  ( cd "$checkout" && dsh --profile "$profile" "${args[@]}" --port 0 --no-open >>"$log" 2>&1 ) &
+  # `exec` is LOAD-BEARING. Without it, `$!` is a subshell and the TERM below kills the SUBSHELL,
+  # orphaning `dsh`: the harness keeps running, keeps holding its profile, and is never reaped.
+  # Over many suite runs that accumulated 1166 live processes on one machine and eventually hung
+  # the suite (ADR-0035). With `exec`, the subshell BECOMES the harness, so `$!` is the process
+  # that must die.
+  ( cd "$checkout" && exec dsh --profile "$profile" "${args[@]}" --port 0 --no-open ) >>"$log" 2>&1 &
   local pid=$!
 
   local waited=0
@@ -35,8 +40,33 @@ boot_and_wait() {
     waited=$((waited + 1))
   done
 
+  # Ask politely, then insist, then STOP WAITING.
+  #
+  # `wait` has no timeout, and a harness process can survive even SIGKILL - observed here: a
+  # resumed-session boot reached its readiness line in 5s, then outlived `kill -9` and blocked the
+  # caller's `wait` forever, which hung the whole suite with no output for half an hour
+  # (ADR-0036). A verification helper must never be able to block indefinitely on a process it no
+  # longer needs, so the reap is bounded and a survivor is reported rather than waited for.
   kill "$pid" 2>/dev/null
-  wait "$pid" 2>/dev/null
+  local grace=0
+  while kill -0 "$pid" 2>/dev/null && (( grace < 20 )); do
+    sleep 0.5
+    grace=$((grace + 1))
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    echo "      (boot $pid did not exit within 10s of TERM; killing)" >&2
+    kill -9 "$pid" 2>/dev/null
+  fi
+  local reap=0
+  while kill -0 "$pid" 2>/dev/null && (( reap < 10 )); do
+    sleep 0.5
+    reap=$((reap + 1))
+  done
+  if kill -0 "$pid" 2>/dev/null; then
+    echo "      (boot $pid survived SIGKILL and is not reapable; continuing without waiting)" >&2
+  else
+    wait "$pid" 2>/dev/null
+  fi
 
   if grep -qE "$pattern" "$log" 2>/dev/null; then
     return 0

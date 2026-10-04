@@ -183,17 +183,25 @@ cat > "$MODEL_PATCH" <<'PATCH'
 PATCH
 TURN_LOG="$(mktemp)"
 if start_mock_llm "$DSH_CHECKOUT" 8132 success; then
-  ( cd "$DSH_CHECKOUT" && DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
+  # `exec` so `$!` is the harness rather than a subshell that would orphan it (ADR-0035).
+  ( cd "$DSH_CHECKOUT" && exec env DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
       dsh --profile "$PROFILE" --patch "$KIT/solutions/l7.patch.yml" \
       --patch "$MODEL_PATCH" --patch "$KIT/solutions/l7.turn.patch.yml" \
-      --port 0 --no-open >"$TURN_LOG" 2>&1 ) &
+      --port 0 --no-open ) >"$TURN_LOG" 2>&1 &
   turnpid=$!
   waited=0
   while (( waited < 90 )); do
     grep -q '\[l7-turn\] done' "$TURN_LOG" 2>/dev/null && break
     sleep 1; waited=$((waited + 1))
   done
-  kill "$turnpid" 2>/dev/null; wait "$turnpid" 2>/dev/null
+  kill "$turnpid" 2>/dev/null
+  grace=0
+  while kill -0 "$turnpid" 2>/dev/null && (( grace < 20 )); do sleep 0.5; grace=$((grace + 1)); done
+  kill -9 "$turnpid" 2>/dev/null
+  # Bounded: an unkillable harness must not block the check (ADR-0036).
+  reap=0
+  while kill -0 "$turnpid" 2>/dev/null && (( reap < 10 )); do sleep 0.5; reap=$((reap + 1)); done
+  wait "$turnpid" 2>/dev/null
   stop_mock_llm
 
   turn_out="$(grep '\[l7-turn\]' "$TURN_LOG")"

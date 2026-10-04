@@ -49,7 +49,14 @@ stop_mock_llm() {
   # port - the next run then times out waiting for a `ready` record that cannot bind. Kill both.
   if [[ -n "$MOCK_LLM_PID" ]]; then
     kill "$MOCK_LLM_PID" 2>/dev/null
-    wait "$MOCK_LLM_PID" 2>/dev/null
+    # Bounded reap for the same reason as boot_and_wait: an unbounded `wait` is a hang waiting to
+    # happen, and the `pkill` below is what actually clears the server (ADR-0036).
+    local reap=0
+    while kill -0 "$MOCK_LLM_PID" 2>/dev/null && (( reap < 10 )); do
+      sleep 0.5
+      reap=$((reap + 1))
+    done
+    kill -9 "$MOCK_LLM_PID" 2>/dev/null
     MOCK_LLM_PID=""
   fi
   pkill -f 'test-support/llm-mock-server/src/bin.ts' 2>/dev/null
