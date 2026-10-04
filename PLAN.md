@@ -348,6 +348,25 @@ compounding artifact chain (`diagnose` instrument → `l6/step` events → read 
 consumed by L8's fork); the offline-vs-provider split with its explicit warning;
 real quoted output instead of invented samples; the upstream-tutorial corrections.
 
+## Verification-suite performance
+
+The full suite boots the harness 25-odd times, once or twice per lesson. It now runs in about
+two minutes: each boot ends when its probe reports completion rather than after a fixed wait.
+
+- [x] **Replaced the blind wait with a readiness poll.** `solutions/lib.sh` provides
+      `boot_and_wait <checkout> <profile> <log> <pattern> <timeout> [overlay...]`, which polls
+      for the probe's own `[<lesson>-probe] done` line; all eight booting scripts use it.
+      **The suite went from ~11 minutes to 1m50s**, and the silent-failure mode is gone: a boot
+      killed early used to leave an empty log, which a check asserting on a pattern's *absence*
+      would still pass. The motivation was concrete — a fixed 18-second wait made L6's second
+      phase fail while its "log is readable" check passed for the wrong reason.
+- [ ] Consider running the per-lesson checks in parallel. They use distinct session ids and
+      distinct overlays, so they are independent; the only shared resource is the harness home.
+      That would need a profile or home per worker.
+
+Neither is blocking publication. Both matter because a suite that takes eleven minutes is a
+suite people skip.
+
 ## Phase 4 — Publication readiness
 
 - [x] Add `PUBLISHING.md`, the runbook for the steps that no file can carry, and

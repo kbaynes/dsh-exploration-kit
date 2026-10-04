@@ -24,7 +24,8 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
   exit 2
 fi
 
-KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"  # solutions/ -> repo root
+KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"  # solutions/ -> repo root
 
 failures=0
 check() { # check <label> <expected-substring> <haystack>
@@ -95,12 +96,8 @@ echo "== 4. the TOOL itself, called through the real pipeline =="
 # same pipeline a model-direct call runs, so the probe dispatches word_count and the
 # result is inspected directly. See ADR-0021.
 PROBE_LOG="$(mktemp)"
-( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" \
-    --patch "$KIT/solutions/l2.probe.patch.yml" --port 0 --no-open >"$PROBE_LOG" 2>&1 ) &
-probepid=$!
-sleep 24
-kill "$probepid" 2>/dev/null
-wait "$probepid" 2>/dev/null
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$PROBE_LOG" '\[l2-probe\] done' 60 \
+  "$KIT/solutions/l2.probe.patch.yml" || failures=$((failures + 1))
 
 probe() { grep -o "\[l2-probe\] $1: .*" "$PROBE_LOG" | head -1; }
 

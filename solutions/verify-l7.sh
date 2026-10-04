@@ -25,6 +25,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
   exit 2
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 PATCH="$KIT/solutions/l7.patch.yml"
 
 failures=0
@@ -63,11 +64,8 @@ echo
 echo "== 3. the composition activates cleanly =="
 # `timeout` is GNU coreutils and absent on macOS, so bound the boot by hand.
 BOOTLOG="$(mktemp)"
-( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" --patch "$PATCH" --port 0 --no-open >"$BOOTLOG" 2>&1 ) &
-bootpid=$!
-sleep 20
-kill "$bootpid" 2>/dev/null
-wait "$bootpid" 2>/dev/null
+# Readiness here is the web app's URL line: this boot has no probe to wait for.
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:' 60 "$PATCH" || true
 log="$(cat "$BOOTLOG")"
 rm -f "$BOOTLOG"
 if grep -qE 'warning: [0-9]+ entr(y|ies) did not activate' <<<"$log"; then
@@ -104,13 +102,8 @@ echo "== 5. the query service itself, and where the tools register =="
 # prompt, and workspace authorization; the service is what a code caller uses, so the same
 # store and reads can be exercised WITHOUT a model.
 QUERY_LOG="$(mktemp)"
-( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" \
-    --patch "$KIT/solutions/l7.patch.yml" \
-    --patch "$KIT/solutions/l7.probe.patch.yml" --port 0 --no-open >"$QUERY_LOG" 2>&1 ) &
-querypid=$!
-sleep 27
-kill "$querypid" 2>/dev/null
-wait "$querypid" 2>/dev/null
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$QUERY_LOG" '\[l7-probe\] done' 60 \
+  "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l7.probe.patch.yml" || failures=$((failures + 1))
 
 check "listSessions finds the session the probe created" \
   'mine found: true' "$(grep '\[l7-probe\]' "$QUERY_LOG")"

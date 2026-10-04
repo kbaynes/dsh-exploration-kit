@@ -20,6 +20,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
   exit 2
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 failures=0
 check() {
@@ -75,12 +76,10 @@ echo "== 5. the gate's DECISIONS, exercised through the real pipeline =="
 # ctx.tools.execute() takes the same path a model-direct call takes, so the policy probe
 # can dispatch a synthetic call and the denying layer can be identified by its reason.
 PROBE_LOG="$(mktemp)"
-( cd "$DSH_CHECKOUT" && KIT_ROOT="$KIT" dsh --profile "$PROFILE" \
-    --patch "$KIT/solutions/l4.probe.patch.yml" --port 0 --no-open >"$PROBE_LOG" 2>&1 ) &
-probepid=$!
-sleep 24
-kill "$probepid" 2>/dev/null
-wait "$probepid" 2>/dev/null
+# The gate and the probe both derive their tree from KIT_ROOT, so export it for the boot.
+export KIT_ROOT="$KIT"
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$PROBE_LOG" '\[l4-probe\] done' 60 \
+  "$KIT/solutions/l4.probe.patch.yml" || failures=$((failures + 1))
 
 if grep -q '\[l4-probe\] write-outside: GATE-DENIED' "$PROBE_LOG"; then
   echo "PASS  a write outside the root is denied BY THE GATE"

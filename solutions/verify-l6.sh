@@ -22,6 +22,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
   exit 2
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 failures=0
 check() {
   if grep -qF -- "$2" <<<"$3"; then echo "PASS  $1"
@@ -46,13 +47,11 @@ fi
 # Sessions persist, so a fixed id would make the SECOND run fail with "already exists".
 export L6_SESSION_ID="session-l6-verify-$RANDOM$RANDOM"
 
+# Wait for the probe's own completion line rather than for a fixed sleep: the probe's work
+# is the thing being waited for, and a short sleep here is silent rather than loud.
 boot() { # boot <overlay> <logfile>
-  local overlay="$1" log="$2"
-  ( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" --patch "$overlay" --port 0 --no-open >"$log" 2>&1 ) &
-  local pid=$!
-  sleep 26
-  kill "$pid" 2>/dev/null
-  wait "$pid" 2>/dev/null
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$2" '\[l6-probe\] done' 60 "$1" \
+    || failures=$((failures + 1))
 }
 
 echo

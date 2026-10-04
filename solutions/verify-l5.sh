@@ -21,6 +21,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
   exit 2
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
 failures=0
 check() {
@@ -95,12 +96,8 @@ echo "== 6. injected context survives a RESTART =="
 export L5_SESSION_ID="session-l5-verify-$RANDOM$RANDOM"
 
 phase() { # phase <overlay> <logfile>
-  local overlay="$1" log="$2"
-  ( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" --patch "$overlay" --port 0 --no-open >"$log" 2>&1 ) &
-  local pid=$!
-  sleep 25
-  kill "$pid" 2>/dev/null
-  wait "$pid" 2>/dev/null
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$2" '\[l5-probe\] done' 60 "$1" \
+    || failures=$((failures + 1))
 }
 
 L5LOG1="$(mktemp)"; L5LOG2="$(mktemp)"

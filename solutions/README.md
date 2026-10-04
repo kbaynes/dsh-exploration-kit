@@ -22,6 +22,16 @@ PATH=/tmp/dsh-bin:$PATH bash scripts/setup-verify-profiles.sh
 `pnpm run check:kit` runs all of them when `DSH_CHECKOUT` is set, and the
 `verify against dsh` workflow runs them in CI against the pinned commit.
 
+**Boots end when the work is done, not after a fixed sleep.** `lib.sh` provides
+`boot_and_wait`, which polls the boot log for the probe's own `[<lesson>-probe] done` line
+and stops there. A fixed wait has to suit the slowest machine and wastes time on the fastest,
+and when it is too short the failure is *silent*: a boot killed early leaves an empty log, and
+a check asserting on a pattern's **absence** still passes. Polling removed both problems —
+L6's two-phase check went from ~50 seconds to ~7 — and a genuine timeout is now reported
+rather than mistaken for a clean result.
+
+`VERIFY_BOOT_WAIT` is obsolete; the timeout is the last argument to `boot_and_wait`.
+
 **Each script states what it does not check.** Every lesson has claims that need a model
 provider — a real tool call, a payload shape, a fan-out — and no script pretends to cover
 them. Those are listed per lesson in [VERIFIED.md](../VERIFIED.md).

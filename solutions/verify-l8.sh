@@ -20,6 +20,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
   exit 2
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 failures=0
 check() {
   if grep -qF -- "$2" <<<"$3"; then echo "PASS  $1"
@@ -61,13 +62,8 @@ echo "== 4. fork heredity: a seeded child inherits the cut =="
 # l7.patch.yml is applied too: the probe reads the parent's log through ctx.sessionQuery, and
 # that overlay is what opens the store.
 FORK_LOG="$(mktemp)"
-( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" \
-    --patch "$KIT/solutions/l7.patch.yml" \
-    --patch "$KIT/solutions/l8.probe.patch.yml" --port 0 --no-open >"$FORK_LOG" 2>&1 ) &
-forkpid=$!
-sleep 26
-kill "$forkpid" 2>/dev/null
-wait "$forkpid" 2>/dev/null
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$FORK_LOG" '\[l8-probe\] done' 60 \
+  "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l8.probe.patch.yml" || failures=$((failures + 1))
 
 probe_out="$(grep '\[l8-probe\]' "$FORK_LOG")"
 check "the child records the exact inherited prefix" 'child inheritedEventCount: 5' "$probe_out"

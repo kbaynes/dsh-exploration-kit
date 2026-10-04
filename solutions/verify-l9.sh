@@ -24,6 +24,7 @@ if [[ -z "$DSH_CHECKOUT" || ! -d "$DSH_CHECKOUT" ]]; then
   exit 2
 fi
 KIT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 PATCH="$KIT/solutions/l9.patch.yml"
 failures=0
 check() {
@@ -51,11 +52,8 @@ fi
 echo
 echo "== 3. the composition activates cleanly on a web-backed profile =="
 BOOTLOG="$(mktemp)"
-( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" --patch "$PATCH" --port 0 --no-open >"$BOOTLOG" 2>&1 ) &
-bootpid=$!
-sleep 22
-kill "$bootpid" 2>/dev/null
-wait "$bootpid" 2>/dev/null
+# No probe on this boot: the web app's URL line is readiness.
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$BOOTLOG" 'dsh web:' 60 "$PATCH" || true
 if grep -qE 'did not activate' "$BOOTLOG"; then
   echo "FAIL  an entry did not activate:"
   grep -A3 'did not activate' "$BOOTLOG" | head -5
@@ -90,12 +88,10 @@ export L9_SESSION_ID="session-l9-verify-$RANDOM$RANDOM"
 probe_phase() { # probe_phase <overlay> <outfile> <logfile>
   local overlay="$1" out="$2" log="$3"
   rm -f "$out"
-  ( cd "$DSH_CHECKOUT" && L9_PROBE_OUT="$out" dsh --profile "$PROFILE" \
-      --patch "$KIT/solutions/l9.patch.yml" --patch "$overlay" --port 0 --no-open >"$log" 2>&1 ) &
-  local pid=$!
-  sleep 27
-  kill "$pid" 2>/dev/null
-  wait "$pid" 2>/dev/null
+  # The web profile does not surface plugin stdout, so the probe writes here as well.
+  export L9_PROBE_OUT="$out"
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$log" '\[l9-probe\] done' 60 \
+    "$KIT/solutions/l9.patch.yml" "$overlay" || failures=$((failures + 1))
 }
 
 OUT1="$(mktemp)"; OUT2="$(mktemp)"; LOG="$(mktemp)"
