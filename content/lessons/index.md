@@ -5,6 +5,10 @@ each assumes only the artifacts of the lessons before it. The ordering rationale
 is [the learning path](../learning-path.md), and the capability inventory is the
 [feature map](../feature-map.md).
 
+Work them in order. If you have half an hour rather than a weekend, the
+[learning path](../learning-path.md#if-you-only-have-30-minutes) names the two that carry the
+mental model.
+
 - [L1 — Mount your first plugin](./01-plugin-lifecycle.md) - Install the kit's plugin bundle, write a real plugin into it, and observe the fiber lifecycle including a loud failure and a silent `PENDING`.
 - [L2 — Register a tool, compose with config](./02-tool-and-effects.md) - A model-facing tool with a validated schema, a deliberately broken config, and a config override from a second patch layer.
 - [L3 — Services, isolation, and hot reload](./03-service-and-hmr.md) - Provide `ctx.yourService`, force a consumer into `PENDING`, hot-edit a running plugin, and inspect the live loader tree.

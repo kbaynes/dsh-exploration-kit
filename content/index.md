@@ -25,6 +25,9 @@ extension seam in every lesson.
 3. [Lesson 1 — Mount your first plugin](./lessons/01-plugin-lifecycle.md) — needs
    no API key.
 
+**Short on time?** [The learning path](./learning-path.md#if-you-only-have-30-minutes) has a
+defensible 30-minute subset — Lessons 1 and 3 — and says what it leaves out.
+
 ## The nine lessons
 
 | # | Lesson | New mechanism | API key? |

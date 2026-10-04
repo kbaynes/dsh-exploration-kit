@@ -72,6 +72,25 @@ L1 ──> L2 ──> L3 ──> L4 ──> L5 ──> L6 ──> L7
 - L9 closes the loop: it depends on L2 (a bundle to ship), L3 (HMR awareness),
   and L8 (work worth automating).
 
+## If you only have 30 minutes
+
+The path is nine lessons because the harness is nine mechanisms deep, not because you must
+finish it. A defensible short version, in this order:
+
+| # | Lesson | Why it earns the time | ~time |
+|---|---|---|---|
+| 1 | [Mount your first plugin](./lessons/01-plugin-lifecycle.md) | You cannot reason about anything else here until you have watched a plugin load, fail, and unload. It also installs the bundle every later lesson uses. | 15 min |
+| 3 | [Services, isolation, and hot reload](./lessons/03-service-and-hmr.md) | `PENDING` is the failure mode that costs people hours, and the reload loop is what makes every later experiment fast. | 15 min |
+
+That pair gives you the mental model — a plugin tree, effects with a lifecycle, dependencies
+that gate activation, and a loop you can iterate in — which is most of what makes the rest
+readable rather than mysterious.
+
+**What you give up:** Lesson 2's tool and config composition, and everything from Lesson 4
+onward (policy, context, session state, observability, orchestration, automation). If you
+skip ahead afterwards, note that L4 assumes the interception vocabulary from L3 and L6
+assumes L5's "the log is the source of truth".
+
 ## Suggested pacing and checkpoints
 
 | Checkpoint | After | You should be able to, unaided |
