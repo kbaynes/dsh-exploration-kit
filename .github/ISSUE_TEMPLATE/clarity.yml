@@ -1,0 +1,38 @@
+name: Clarity feedback
+description: A lesson works, but an explanation was confusing or a step was unclear.
+title: "clarity: "
+labels: ["clarity"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This is genuinely valuable feedback. If a step confused you, it will confuse
+        others — say which sentence or section did it, and what you expected instead.
+  - type: input
+    id: lesson
+    attributes:
+      label: Which lesson?
+      placeholder: lessons/06-durable-session-state.md
+    validations:
+      required: true
+  - type: input
+    id: section
+    attributes:
+      label: Which section?
+      placeholder: "## Step 3 — Fold it into a projection"
+    validations:
+      required: true
+  - type: textarea
+    id: confused
+    attributes:
+      label: What confused you?
+      description: Quote the text if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: What would have made it clear?
+      description: A better explanation, an extra sentence of motivation, a diagram, a worked example — anything.
+    validations:
+      required: false

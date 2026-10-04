@@ -1,0 +1,70 @@
+name: Lesson defect
+description: A lesson step does not work, or a technical claim is wrong.
+title: "lesson: "
+labels: ["lesson-defect"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this when a lesson **does not work as written** or a technical claim is
+        wrong. For "this step was confusing but it worked", use the *Clarity feedback*
+        template instead.
+
+        Before filing, please check [VERIFIED.md](../blob/main/VERIFIED.md) — it records
+        which lessons have actually been executed, and an unverified lesson is more
+        likely to have defects.
+  - type: input
+    id: lesson
+    attributes:
+      label: Which lesson?
+      description: File or number, e.g. `lessons/04-policy-waterfalls.md`.
+      placeholder: lessons/04-policy-waterfalls.md
+    validations:
+      required: true
+  - type: input
+    id: step
+    attributes:
+      label: Which step or section?
+      placeholder: "Step 3 — Make a denial irreversible"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - A command or step failed
+        - A code sample does not compile or run
+        - A technical claim is wrong
+        - A prerequisite is missing
+        - An upstream link is broken
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What the lesson says should happen
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Paste the exact error output if there is one.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please be specific — version drift is the most common cause.
+      value: |
+        - DSH version (`dsh --version`):
+        - DSH source commit:
+        - OS:
+        - Node.js version:
+        - pnpm version:
+        - Model provider configured (if the lesson needed one):
+    validations:
+      required: true

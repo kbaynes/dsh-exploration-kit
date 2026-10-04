@@ -78,6 +78,23 @@ pnpm run check:links   # every relative link inside content/ resolves
 pnpm run validate      # OKF conformance, if okflint is on your PATH
 ```
 
+Verified from a clean export of the committed tree: `pnpm install --frozen-lockfile`,
+`pnpm run check:links`, and `pnpm run build` all succeed with no inherited
+`node_modules`.
+
+## Deploying the site
+
+The site deploys to GitHub Pages via
+[`.github/workflows/site.yml`](.github/workflows/site.yml) on every push to `main`.
+
+One-time setup: **Settings → Pages → Build and deployment → Source: GitHub
+Actions**. The workflow needs no secrets and no DSH checkout — the curriculum is
+documentation, not executable code.
+
+The site then serves from `https://<owner>.github.io/dsh-exploration-kit/`, which
+must match `base` in [website/.vitepress/config.mts](website/.vitepress/config.mts).
+For a user/org root site or a custom domain, change `base` to `/`.
+
 
 ## Compatibility
 

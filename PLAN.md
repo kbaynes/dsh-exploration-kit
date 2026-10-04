@@ -40,15 +40,17 @@ against it.
 - [x] Establish `VERIFIED.md` as the verification ledger, with only L1 `Executed`
 - [x] Add `scripts/check-links.mjs` and wire `pnpm run check:links`
 - [x] Add the GitHub Pages workflow
-- [ ] Add `repository`, `homepage`, and `bugs` fields to `package.json`
-- [ ] Add issue templates (bug report, lesson feedback) and a PR template
-- [ ] Document the one-time Pages enablement step in `README.md`
-- [ ] Pin the toolchain: record the pnpm major and Node version actually used
-- [ ] Verify `pnpm install && pnpm run build` succeeds from a clean clone
-      (fresh directory, no inherited `node_modules`)
-- [ ] Decide and record the versioning/compatibility policy (see Phase 4)
+- [x] Add `repository`, `homepage`, and `bugs` fields to `package.json`
+- [x] Add issue templates (lesson defect, clarity feedback, template chooser) and a PR template
+- [x] Document the one-time Pages enablement step and deploy topology in `README.md`
+- [x] Pin the toolchain in `engines`: verified on Node 22.23.1 with pnpm 11.7.0; requires Node >=20, pnpm >=10
+- [x] Verify `pnpm install --frozen-lockfile && pnpm run build` succeeds from a clean
+      export of the committed tree (no inherited `node_modules`); links and OKF
+      validation pass there too
+- [ ] Decide and record the versioning/compatibility policy (deferred to Phase 4)
 - [ ] Confirm `content/log.md` is the right home for curriculum history, or move
       development history to `CHANGELOG.md` and keep `log.md` OKF-only
+      *(tracked as an open decision below)*
 
 ## Phase 1 — Build, test, and review each lesson
 

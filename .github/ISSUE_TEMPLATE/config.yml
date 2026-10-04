@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Read the verification ledger first
+    url: https://github.com/kevinbaynes/dsh-exploration-kit/blob/main/VERIFIED.md
+    about: Records exactly which lesson steps have been executed, and against which DSH version. Check it before filing a defect.
+  - name: The implementation plan
+    url: https://github.com/kevinbaynes/dsh-exploration-kit/blob/main/PLAN.md
+    about: What is planned, what is in progress, and what is known to be broken.
+  - name: DeepSeek Harness itself
+    url: https://github.com/deepseek-ai/deepseek-harness/discussions
+    about: Questions or bugs about DeepSeek Harness rather than this curriculum belong upstream.

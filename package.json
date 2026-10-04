@@ -6,7 +6,8 @@
   "description": "A hands-on, nine-lesson curriculum for learning DeepSeek Harness by building real plugins.",
   "license": "MIT",
   "engines": {
-    "node": ">=20"
+    "node": ">=20",
+    "pnpm": ">=10"
   },
   "keywords": [
     "deepseek-harness",
@@ -17,6 +18,15 @@
     "agents",
     "cordis"
   ],
+  "//": "REPLACE BEFORE PUBLISHING: repourl is a placeholder owner. Update repository, homepage, and bugs together with the VitePress `base` path and the placeholder links in README.md, CONTRIBUTING.md, and website/.vitepress/config.mts.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/REPLACE_OWNER/dsh-exploration-kit.git"
+  },
+  "homepage": "https://REPLACE_OWNER.github.io/dsh-exploration-kit/",
+  "bugs": {
+    "url": "https://github.com/REPLACE_OWNER/dsh-exploration-kit/issues"
+  },
   "scripts": {
     "dev": "vitepress dev website --host 127.0.0.1 --port 5173",
     "build": "vitepress build website",
