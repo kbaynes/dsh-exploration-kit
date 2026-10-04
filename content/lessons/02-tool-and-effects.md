@@ -306,7 +306,7 @@ about your tool.
 
 > **Where this lesson stands.** Every step above has been executed against a real harness,
 > and the output is quoted in
-> [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+> [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md).
 > Nothing in this lesson needs a provider; what remains outside it is the model's own
 > behaviour, which is named rather than glossed.
 

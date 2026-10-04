@@ -241,7 +241,7 @@ Revert `inject` before continuing.
 
 > **Where this lesson stands.** Every step above has been executed against a real
 > harness; the exact output is quoted in
-> [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md). What remains unverified there is
+> [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). What remains unverified there is
 > what needs a model provider, and it is named rather than glossed.
 
 ## Exit check — you should now be able to explain

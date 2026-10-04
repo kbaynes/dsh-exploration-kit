@@ -142,7 +142,7 @@ you try the permitted case.
 **No API key?** You can still verify everything except the decision itself: the
 listener registers, the plugin loads, and the configured root reaches `apply`. The
 allow/deny outcome is the one claim that needs a tool call, and it is recorded as
-unverified in [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md)
+unverified in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md)
 rather than asserted.
 
 ## Step 3 — Make a denial irreversible
@@ -221,7 +221,7 @@ confine. Defense in depth means your gate is not the only thing standing.
 **This lesson's decisions do not need a model after all.** `ctx.tools.execute()` takes
 the same pipeline a model-direct call takes — pre-execute policy, guards, dispatch — so a
 probe can dispatch a synthetic call and observe the result. It is the technique
-[ADR-0021](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0021-exercise-the-tool-pipeline-without-a-model.md)
+[ADR-0021](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0021-exercise-the-tool-pipeline-without-a-model.md)
 records, and it ships as `<kit>/kit-plugins/l4/policy-probe.js`.
 
 Run it:

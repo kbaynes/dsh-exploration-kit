@@ -53,7 +53,7 @@ A note on profiles you will see in this lesson: `dsh plugin --profile <name>` cr
 The `web`, `headless`, and `sdk` profiles are *shipped templates* with their own bundle
 stacks — `dsh --profile web` boots one directly, and `dsh rescue --from-default-profile web`
 creates an editable copy of one. Which profile a step targets matters, because Lesson 3
-and [ADR-0016](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0016-profile-choice-is-load-bearing.md)
+and [ADR-0016](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0016-profile-choice-is-load-bearing.md)
 show that the same row activates differently per profile.
 
 ```sh
@@ -393,7 +393,7 @@ Requires a provider:
    happens on a duplicate delivery.
 
 Items 4 and 7 are executed and recorded in
-[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md), along
+[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md), along
 with a scheduled task surviving a restart and a delivery completing the scheduled work. Items 5, 6,
 and 8 are not: item 5 needs the mock scripted into a tool call, item 6 needs the SDK to invoke a
 tool rather than answer, and item 8 needs a webhook credential.

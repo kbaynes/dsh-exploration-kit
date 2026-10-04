@@ -68,7 +68,7 @@ Every lesson assumes:
 row relative to the patch file, and a loose source file cannot import `@deepseek-ai/*`
 packages — pnpm symlinks only declared dependencies. This was verified by running
 it; see the kit's bundle documentation at
-https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/kit-plugins/README.md.
+https://github.com/kbaynes/dsh-exploration-kit/blob/main/kit-plugins/README.md.
 
 **Run boot commands in your own shell, not through a sandboxed agent's bash tool.**
 The default file sandbox blocks `dsh` from writing its composed profile under

@@ -198,7 +198,7 @@ availability.
 
 It is also contagious: full-text search observes whole sessions, so one session carrying an
 unknown type makes `searchSessions` fail for the corpus. See
-[ADR-0024](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md).
+[ADR-0024](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md).
 
 If you need a genuinely new durable fact, the vocabulary has to grow in the harness, not in
 a plugin outside it.
@@ -238,7 +238,7 @@ Item 5 is not decoration: it is the check that would have caught the original le
 defect, and it is the one that fails if anyone reintroduces an invented type.
 
 Every item above has been executed; the exact output is quoted in
-[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md),
+[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md),
 which also records what this lesson does *not* verify: the fold's behaviour under a real
 model turn, which is a question about the model rather than about durable state.
 

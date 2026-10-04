@@ -270,7 +270,7 @@ Requires a real provider:
    the same task.
 
 Items 4–8 are recorded as unverified in
-[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md).
 Item 2 is the reason this lesson is worth more than its prose: the orchestration
 *contract* is tested even though the agents are not.
 

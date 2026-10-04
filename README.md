@@ -212,7 +212,7 @@ written, that is a defect worth an issue — see [CONTRIBUTING.md](CONTRIBUTING.
 ## Getting help and reporting defects
 
 <!-- placeholder-check:allow -->
-Open an [issue](https://github.com/REPLACE_OWNER/dsh-exploration-kit/issues). Two
+Open an [issue](https://github.com/kbaynes/dsh-exploration-kit/issues). Two
 templates are provided:
 
 - **Lesson defect** — a step does not work, or a technical claim is wrong. Include

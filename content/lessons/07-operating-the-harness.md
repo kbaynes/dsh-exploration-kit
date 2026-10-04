@@ -120,7 +120,7 @@ session-search persistence observation failed: session "…" contains event type
 ```
 
 That is Lesson 6's trap seen from this side — see
-[ADR-0024](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md).
+[ADR-0024](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md).
 `readSession` still fails for that session; `listSessions` still lists it.
 
 **An event type the harness does not know is invisible to filters.** `readSession` returns
@@ -171,7 +171,7 @@ moves:
   schemas and fixed guidance on every request, in exchange for retrieval.
   `session-stats` is mounted by the **web** bundle, so this step needs a web-backed
   profile — `--profile web` — not the `kitdemo` one earlier lessons boot (see
-  [ADR-0016](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0016-profile-choice-is-load-bearing.md)).
+  [ADR-0016](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0016-profile-choice-is-load-bearing.md)).
 - Force a compaction (`/compact`, from `command-compact`) on a long session and
   observe the reduction. Compaction is the harness's own answer to context
   pressure, and watching it once teaches more than reading about it.
@@ -276,7 +276,7 @@ Still requiring a model-driven tool call, or a provider that reports real usage:
 12. `/compact` produces a measurable reduction on a long session.
 
 Items 5–8 are executed and recorded in
-[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md).
 Items 9–12 are not. Items 9, 10, and 12 need a model-driven tool call; item 11 needs a provider
 that reports token usage, and the mock purposely scripts the model's output without any — the
 right trade for the contract-shaped claims above, and the wrong one for a cost claim.

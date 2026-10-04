@@ -409,8 +409,13 @@ suite people skip.
       transfer, and state why the description must contain "DeepSeek Harness"
 - [x] Reduced the owner substitution to a single token (`REPLACE_OWNER`) read from
       `package.json`'s `kit` field, instead of hardcoded URLs across five files
-- [ ] Replace the placeholder owner — **needs the real GitHub owner**; then
-      `pnpm run check:placeholders` passes
+- [x] Replace the placeholder owner with `kbaynes` — the substitution was run for real, and
+      `check:placeholders` now passes (`no pre-publication placeholders found`). Running it
+      exposed two definition sites the exclusion list did not know about, both fixed in the
+      command and in [ADR-0026](decisions/0026-a-substitution-must-not-rewrite-its-own-tooling.md):
+      this repository's own ADR-0026 quotes the recipe, and `website/.vitepress/config.mts` holds
+      the token as a fallback sentinel that a fork needs. The substitution also confirmed the
+      gate's remaining teeth: `check:publication` still refuses, now naming only the git author.
 - [ ] Rewrite the git author identity — **needs the maintainer identity**; the history
       currently carries `kit@example.invalid`, which is a placeholder rather than an invented
       real identity. The recipe in `PUBLISHING.md` is **tested**: a non-interactive

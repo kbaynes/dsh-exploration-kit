@@ -48,6 +48,8 @@ The substitution **excludes the files whose purpose is to name the token**, and
 grep -rl 'REPLACE_OWNER' --exclude-dir=node_modules --exclude-dir=.git . \
   | grep -vE '^(\./)?(PUBLISHING|PLAN)\.md$' \
   | grep -vE '^\./scripts/check-(placeholders|publication)\.mjs$' \
+  | grep -vE '^\./decisions/0026-' \
+  | grep -vE '^\./website/\.vitepress/' \
   | xargs sed -i '' 's/REPLACE_OWNER/<your-github-owner>/g'
 ```
 
@@ -60,8 +62,20 @@ them for the token would make "ready to publish" unreachable.
 - The substitution has a file list, not a global reach. That is the point: a global
   find-and-replace across a repository containing its own tooling is a footgun.
 - Every artifact that *does* carry the owner — `package.json`, the lessons, `VERIFIED.md`,
-  `README.md`, `CONTRIBUTING.md`, `THIRD-PARTY.md`, the VitePress config, the issue templates
-  — is still substituted and still scanned, so the gate keeps its teeth.
+  `README.md`, `CONTRIBUTING.md`, `THIRD-PARTY.md`, the issue templates — is still substituted
+  and still scanned, so the gate keeps its teeth.
+- **The exclusion list is part of the mechanism, and it grows.** Two more definition sites were
+  found when the substitution was finally run for real:
+  - **This ADR quotes the recipe**, so it too defines the token. Rewriting it would have left the
+    record showing the real owner where it documents `<owner>` — the same self-rewriting failure
+    described above, in a file written *after* the rule against it.
+  - **`website/.vitepress/config.mts` holds the token only as a fallback sentinel**
+    (`pkg.kit?.repositoryOwner ?? 'REPLACE_OWNER'`). Substituting it would make a fork with no
+    owner configured silently point at this repository's owner. The site needs no substitution:
+    it reads `package.json`. The earlier claim here that the VitePress config is substituted was
+    wrong.
+  Both are now excluded from the command and exempted in `check-placeholders.mjs`'s `skipFiles`
+  (the config directory is skipped wholesale), so the gate and the runbook agree.
 - The runbook must be tested before it is trusted. This was found only by executing it in a
   clean export, which is the same rule the curriculum applies to every mechanism it teaches
   ([ADR-0001](0001-verify-by-running.md)) and which had not been applied to the publication

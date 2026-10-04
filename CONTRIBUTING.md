@@ -79,11 +79,11 @@ Rules for the body:
 If you learn something a future contributor could re-learn the hard way — a mechanism
 that does not work, a tool that behaves differently than its documentation, a design
 constraint that is not obvious — record it as an ADR in
-[`decisions/`](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/README.md), following the existing records' shape (Status,
+[`decisions/`](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/README.md), following the existing records' shape (Status,
 Context, Decision, Consequences, Evidence). Add it to the index there.
 
 Evidence is not optional: if you did not run it, say so in the ADR. A decision record
-that reads confidently but was never verified is the exact failure [ADR-0001](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0001-verify-by-running.md)
+that reads confidently but was never verified is the exact failure [ADR-0001](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0001-verify-by-running.md)
 exists to prevent.
 
 `pnpm run check:decisions` fails when a record is malformed, misnumbered, or missing
@@ -132,7 +132,7 @@ actually did.
 
 ## Code of Conduct
 
-Participation is covered by the [Code of Conduct](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/CODE_OF_CONDUCT.md). Report
+Participation is covered by the [Code of Conduct](https://github.com/kbaynes/dsh-exploration-kit/blob/main/CODE_OF_CONDUCT.md). Report
 unacceptable behavior through the repository's **Security → Report a
 vulnerability** channel or to a maintainer directly.
 

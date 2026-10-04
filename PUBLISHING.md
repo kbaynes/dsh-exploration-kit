@@ -16,23 +16,40 @@ URL on the published site will 404.
 ## 2. Substitute the repository owner
 
 The owner appears as the token `REPLACE_OWNER` in prose and in `package.json`. The **site
-config does not carry it at all** — `website/.vitepress/config.mts` derives the social link,
+config needs no substitution** — `website/.vitepress/config.mts` derives the social link,
 the per-page edit link, and the link-preview URL from `package.json`'s `kit.repositoryOwner`,
-so the site follows one source rather than needing its own substitution. Change the token
-everywhere at once:
+so the site follows one source. It holds the token only as a fallback sentinel, which must stay
+(see the note below). Change the token everywhere else at once:
 
 ```sh
 grep -rl 'REPLACE_OWNER' --exclude-dir=node_modules --exclude-dir=.git . \
   | grep -vE '^(\./)?(PUBLISHING|PLAN)\.md$' \
   | grep -vE '^\./scripts/check-(placeholders|publication)\.mjs$' \
+  | grep -vE '^\./decisions/0026-' \
+  | grep -vE '^\./website/\.vitepress/' \
   | xargs sed -i '' 's/REPLACE_OWNER/<your-github-owner>/g'
 ```
 
-**Excluding those four files is not tidiness — it is required.** This document and
-`scripts/check-placeholders.mjs` are where the token is *defined*: a blanket substitution
-rewrites the checker's own token list, after which it reports the real owner as a placeholder
-and the gate can never pass. The procedure was tested in a clean export; the exclusions are
-what make it work.
+**The exclusions are not tidiness — they are required, and the list has grown twice.**
+This document, `PLAN.md`, and `scripts/check-(placeholders|publication).mjs` are where the
+token is *defined*: a blanket substitution rewrites the checker's own token list, after which
+it reports the real owner as a placeholder and the gate can never pass. Two more
+definition sites were found after the original test:
+
+- **`decisions/0026-*.md` quotes the substitution recipe itself.** Rewriting it would leave the
+  ADR showing `kbaynes` where it documents `<owner>`, quietly destroying the evidence for the
+  rule it exists to record. That is the same self-rewriting failure the ADR is about,
+  reappearing in a file written after it.
+- **`website/.vitepress/config.mts` holds the token only as a FALLBACK**
+  (`pkg.kit?.repositoryOwner ?? 'REPLACE_OWNER'`). It is a sentinel for a fork with no owner
+  configured, not a placeholder for this repository's owner, so it must keep saying
+  `REPLACE_OWNER` — otherwise a fork silently points at your account. The site config needs no
+  substitution at all: it reads `package.json`'s `kit.repositoryOwner`.
+
+Both files are also exempted in `scripts/check-placeholders.mjs`'s `skipFiles` (the config
+directory is skipped wholesale), so the gate and the procedure now agree. The lesson is worth
+stating plainly: **every new file that mentions the token becomes a definition site, and the
+exclusion list is part of the mechanism, not documentation of it.**
 
 Then confirm nothing is left:
 

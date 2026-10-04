@@ -37,14 +37,14 @@ by the upstream commit above. The kit is not versioned against a moving target.
 
 Before a kit release is tagged, all of the following must hold:
 
-- [ ] Every lesson is **Implemented** and **Tested** in [ROADMAP.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/ROADMAP.md).
+- [ ] Every lesson is **Implemented** and **Tested** in [ROADMAP.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/ROADMAP.md).
 - [ ] The upstream tree used for verification was **clean** at capture, so the commit
       identifies exactly what was exercised. Debris in the harness checkout invalidates
       the record.
 - [ ] The table above carries the full upstream commit, its tag, and the capture date.
 - [ ] `package.json`'s `packageManager`, the kit lockfiles, and the pinned optional
       package versions all match the release under test (see
-      [ADR-0013](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0013-pin-optional-package-versions.md)).
+      [ADR-0013](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0013-pin-optional-package-versions.md)).
 - [ ] No pre-publication placeholder remains: `pnpm run check:placeholders` passes.
 - [ ] `pnpm run check:kit` passes in full.
 
@@ -519,7 +519,7 @@ tool-session-query (@deepseek-ai/dsh-tool-session-query): failed to import
 ```
 
 A row name resolves through the profile's installation, so the package must be
-installed. This is [ADR-0003](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0003-plugins-ship-as-a-bundle.md)'s mechanism
+installed. This is [ADR-0003](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0003-plugins-ship-as-a-bundle.md)'s mechanism
 applied to a package the kit does not own.
 
 **An unpinned install resolves a stale version.** The obvious command —
@@ -539,7 +539,7 @@ $ node -e "...profile manifest..."
   "dsh-exploration-kit-plugins": "link:.../kit-plugins" }
 ```
 
-Recorded as [ADR-0013](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0013-pin-optional-package-versions.md).
+Recorded as [ADR-0013](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0013-pin-optional-package-versions.md).
 
 **A third defect was in the kit's own tooling:** `solutions/verify-l7.sh` was written
 with `timeout`, which is GNU coreutils and absent on macOS — the command did not run

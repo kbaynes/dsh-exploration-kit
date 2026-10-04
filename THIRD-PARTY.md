@@ -80,7 +80,7 @@ verifies every such link against a real DSH checkout.
 
 The website uses [VitePress](https://vitepress.dev) (MIT) and its transitive
 dependencies. The exact versions are pinned in the **repository root**
-[`package.json`](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/package.json) and [`pnpm-lock.yaml`](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/pnpm-lock.yaml) — the site
+[`package.json`](https://github.com/kbaynes/dsh-exploration-kit/blob/main/package.json) and [`pnpm-lock.yaml`](https://github.com/kbaynes/dsh-exploration-kit/blob/main/pnpm-lock.yaml) — the site
 is built from the root, not from a manifest under `website/`.
 
 The generated site bundles the Inter typeface (SIL Open Font License 1.1) and

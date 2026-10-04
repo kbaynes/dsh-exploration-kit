@@ -167,7 +167,7 @@ dsh --profile kitdemo --patch <kit>/solutions/l5.read.patch.yml  --port 0 --no-o
 **The carrier is worth noticing: an inbox event, not a `user/message`.** `agent.inject()`
 queues into the agent's inbox, and that is the durable record. It is also a *first-party*
 event type, which is why the log stays readable — the constraint
-[ADR-0024](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md)
+[ADR-0024](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md)
 records, and the reason L6's original approach had to be rebuilt.
 
 `bash <kit>/solutions/verify-l5.sh` runs both phases and asserts the text is still there.
@@ -332,7 +332,7 @@ Requires a session, and therefore a provider:
 8. `/l5-facts` responds with no model turn and no `pre-step` log line.
 
 Items 5, 6, and 8 are executed and recorded in
-[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md), and
+[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md), and
 item 4's payload shape is observed there. Item 7 (a rename reflected without a restart) and the
 step *after* the catalog — a model choosing to invoke the skill — are not: the second needs a
 model-driven tool call, not a scripted one.

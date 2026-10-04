@@ -23,10 +23,12 @@ const skipFiles = new Set([
   // These necessarily contain the tokens they look for.
   join('scripts', 'check-placeholders.mjs'),
   join('scripts', 'check-publication.mjs'),
-  // The runbook names the token it tells you to replace, and the plan records the
-  // substitution as a task. Scanning them would make "ready to publish" unreachable.
+  // The runbook names the token it tells you to replace, the plan records the
+  // substitution as a task, and ADR-0026 QUOTES the recipe that does the replacing.
+  // Scanning them would make "ready to publish" unreachable.
   'PUBLISHING.md',
   'PLAN.md',
+  join('decisions', '0026-a-substitution-must-not-rewrite-its-own-tooling.md'),
 ])
 
 /** A line carrying this marker is intentional documentation of a placeholder. */
