@@ -31,6 +31,7 @@ const checks = [
     name: 'harness-state records',
     cmd: ['node', 'scripts/check-target.mjs', checkout],
   },
+  { name: 'lesson structure', cmd: ['pnpm', 'run', '-s', 'check:lessons'] },
   { name: 'internal links', cmd: ['pnpm', 'run', '-s', 'check:links'] },
   { name: 'decision records', cmd: ['pnpm', 'run', '-s', 'check:decisions'] },
   { name: 'examples mirror', cmd: ['pnpm', 'run', '-s', 'check:examples'] },

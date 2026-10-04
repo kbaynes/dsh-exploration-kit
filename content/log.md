@@ -6,7 +6,7 @@
   record to it and `scripts/verify-target.sh` asserting the live profiles' pins. An
   injected-drift probe confirmed the gate fires and names the disagreeing file. Recorded
   as ADR-0017.
-- **Update**: All nine lessons are now built and executed against DSH `0.2.0-rc.2`
+- **Update**: All nine lessons are now built and executed against DSH `0.2.0-rc.2` (L1 end-to-end; L2–L9 with their provider-dependent claims recorded as unverified)
   (commit `639ed015397290b3745d163aafe02ffee4aa3f84`); `check:kit` reports 15 checks.
 
 ## 2026-09-30

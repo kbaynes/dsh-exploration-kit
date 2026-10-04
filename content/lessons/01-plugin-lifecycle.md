@@ -26,7 +26,7 @@ this sits.
 | The plugin tree | A running dsh is an ordered stack of config rows, each mounting one plugin module |
 | Bundles | A package that ships a layer of plugin rows, installed into a profile |
 | Plugin rows | How the loader resolves a row's `name` to actual code |
-| Plugin shapes | Function, object, and `Service` subclass — and when each is used |
+| Plugin shapes | The function shape now; the `Service` subclass arrives in L3 |
 | The fiber | The runtime handle for one loaded plugin instance |
 | Lifecycle | The six fiber states, including `FAILED` and the silent `PENDING` |
 | Effects | A registration that is undone when the plugin unloads |
@@ -103,7 +103,7 @@ a relative path to a loose source file cannot import dsh packages:
 
 ```
 dsh: warning: 1 entry did not activate
-l2-wordcount (.../wordcount.ts): failed to import
+l2-wordcount (.../wordcount.js): failed to import
 ```
 
 The loader resolves the file outside the dsh installation, and pnpm symlinks only
@@ -232,8 +232,6 @@ Revert `inject` before continuing.
 
 ## Verification
 
-You have passed L1 when all five hold:
-
 1. `dsh plugin --profile kitdemo list` shows the kit's bundle installed.
 2. `--dump-config` shows your `l1-hello` row named by package.
 3. A boot prints the `apply()` line and the effect line.
@@ -241,10 +239,14 @@ You have passed L1 when all five hold:
 5. You can state, without looking it up, why a plugin that imports a dsh package
    cannot be loaded from a loose file by a `--patch` overlay.
 
+> **Where this lesson stands.** Every step above has been executed against a real
+> harness; the exact output is quoted in
+> [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md). What remains unverified there is
+> what needs a model provider, and it is named rather than glossed.
+
 ## Exit check — you should now be able to explain
 
-- Why list position in a config file does not determine load order.
-- The difference between a plugin shape and a plugin *instance*.
+- Why a plugin that imports a dsh package cannot be loaded from a loose file.
 - Why `--dump-config` is not sufficient evidence that a plugin will work.
 - What an "effect" is, and what happens to one when its plugin unloads.
 - Why `link:` and `file:` installs behave differently while you are editing.

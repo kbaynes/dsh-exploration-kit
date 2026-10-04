@@ -107,8 +107,9 @@ Four details are the whole lesson:
 ### Supplying the sandbox root
 
 The path must be absolute, and `process.cwd()` is the **checkout**, not the kit —
-so a relative default would confine writes to the wrong tree. The bundle row
-therefore computes it with `!!js`, evaluated at load time:
+so a relative default would confine writes to the wrong tree. The plugin's own default
+reads `KIT_SANDBOX`, an escape hatch for throwaway experiments; the bundle row
+computes the real value with `!!js` from `KIT_ROOT`, evaluated at load time:
 
 ```yaml
     - id: l4-write-scope

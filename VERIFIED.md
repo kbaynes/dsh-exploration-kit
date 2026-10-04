@@ -122,7 +122,7 @@ path bug.
 
 **Verified fix.** Package the exercises as a real bundle. `kit-plugins/` now
 declares `dsh.bundle`, names its rows by package, and is installed with
-`dsh plugin --profile <name> add file:<kit>/kit-plugins`. Verified end-to-end:
+`dsh plugin --profile <name> add link:<kit>/kit-plugins`. Verified end-to-end:
 
 ```
 $ dsh --profile kitdemo --dump-config | grep -A4 l2-wordcount

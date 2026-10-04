@@ -265,6 +265,58 @@ Turn the verified lessons into something CI can defend.
       helps completion
 - [ ] Re-read [VERIFIED.md](VERIFIED.md) end to end and correct every overstatement
 
+## Phase 3 — outcome: editorial review complete
+
+An independent editorial review of all nine lessons was run as a separate reviewer
+pass (structure, clarity, ramp, terminology, stale cross-references, verification
+quality, tone, concepts tables). Its findings were triaged and fixed in this pass:
+
+**Fixed — the findings that would have misled a reader:**
+
+1. **L2's learner-written tool was never mounted (BLOCKER).** The lesson told readers
+   to create a scratch file that nothing referenced; every verification outcome came
+   from the pre-shipped file. Step 1 now has the reader write **into the bundle** — the
+   only location that can import dsh packages — and states that deleting their version
+   removes the lesson's outcomes, which is the test that they are running their own
+   code.
+2. **L1's exit check demanded two explanations the lesson never taught** (load order,
+   shape vs instance). Both moved to L3, where each is actually taught, and L3's exit
+   check now names the `Service` subclass as the second plugin shape.
+3. **L7's profile story was wrong**: `session-stats` is web-bundle-only but the lesson
+   booted a base-backed profile. The step now names the profile and cites ADR-0016;
+   the overlay description also said "two inserts" where there are three.
+4. **The `link:`/`file:` rule was violated by three reader-facing instructions**,
+   including the first install command a reader runs (README) and a "Verified fix"
+   block in the ledger itself. All unified on `link:`; remaining `file:` mentions are
+   descriptions of its behaviour, not instructions.
+5. **L6's step 1 showed a `declare module` block inside a `.js` file** and described an
+   import that does not exist. It now shows the shipped JSDoc pattern with the
+   TypeScript merge as an aside.
+6. **L2 and L3 claimed "every step above has been executed"** where their `VERIFIED.md`
+   rows record provider-dependent gaps. Narrowed to match the ledger exactly.
+7. **Stale cross-references**: L2's `!!js` promise pointed at L3 (the real next use is
+   L4); the lessons index still described L1 as using a patch overlay; the learning
+   path claimed lessons were verified by `dsh headless`, which the ledger explicitly
+   records as never having been run.
+8. **Concepts tables over-promised** in L1 (three shapes, one taught), L3 (Service
+   isolation, further exploration only), and L8 (agent presets, met in L9).
+9. **Tone**: working-note narration ("the lesson's original premise was wrong") was
+   rewritten to state the reader-usable fact, while the failure signatures a reader
+   must recognize were kept.
+
+**Left open deliberately:**
+
+- [ ] L7: confirm whether `@deepseek-ai/dsh-invariants` resolves in a **fresh** profile,
+      or whether it only resolved here because of an earlier transitive install. One
+      sentence either way closes it.
+- [ ] Decide whether `$DSH_HOME/sessions/` is the documented layout to quote, or whether
+      the lessons should stay at `~/.dsh/sessions/`.
+
+**Protected as intentional (do not edit away):** the uniform lesson skeleton; the
+compounding artifact chain (`diagnose` instrument → `l6/step` events → read back in L7 →
+consumed by L8's fork); the offline-vs-provider split with its explicit warning;
+real quoted output instead of invented samples; the upstream-tutorial corrections.
+
 ## Phase 4 — Publication readiness
 
 - [ ] Replace every placeholder: repo owner, URLs, `base` in the VitePress config

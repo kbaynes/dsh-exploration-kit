@@ -53,6 +53,9 @@ jobs:
       - name: Check for pre-publication placeholders
         run: pnpm run check:placeholders
 
+      - name: Check lesson structure
+        run: pnpm run check:lessons
+
       - name: Check internal links
         run: pnpm run check:links
 

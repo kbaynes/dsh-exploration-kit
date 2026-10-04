@@ -44,7 +44,7 @@ model-facing tools. Both pieces are opt-in, so enable them deliberately rather t
 assuming they are present.
 
 The kit ships the overlay at `<kit>/solutions/l7.patch.yml`. Note its **shape**: one
-override and two inserts, because that is what the base bundles actually provide.
+override and three inserts.
 
 ```yaml
 # already mounted by the web bundle, configured never to open — override in place
@@ -119,7 +119,7 @@ dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml --port 0 --no-open
 Terminal scrollback is not evidence. Reconstruct the run from the log:
 
 1. Ask the agent to `session_event_read` the events of the session you just ran,
-   or read the JSONL yourself under `$DSH_HOME/sessions/`.
+   or read the JSONL yourself under `$DSH_HOME/sessions/` (`~/.dsh` by default).
 2. Find your `l6/step` events from L6 and confirm their sequence position relative
    to `tool/result`.
 3. Use `session_event_trace` on one event to see its positional replacements and
@@ -136,10 +136,12 @@ log is a bug, not a feature.
 Token accounting is always on: `token-meter` is in the base bundle. Two practical
 moves:
 
-- Ask for a **session statistics** view (`session-stats` is mounted by the web
-  bundle) and compare per-turn totals before and after you mount the extra tools
-  from step 1. You have just made a measurable trade: five schemas and fixed
-  guidance on every request, in exchange for retrieval.
+- Ask for a **session statistics** view and compare per-turn totals before and after
+  you mount the extra tools from step 1. You have just made a measurable trade: five
+  schemas and fixed guidance on every request, in exchange for retrieval.
+  `session-stats` is mounted by the **web** bundle, so this step needs a web-backed
+  profile — `--profile web` — not the `kitdemo` one earlier lessons boot (see
+  [ADR-0016](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0016-profile-choice-is-load-bearing.md)).
 - Force a compaction (`/compact`, from `command-compact`) on a long session and
   observe the reduction. Compaction is the harness's own answer to context
   pressure, and watching it once teaches more than reading about it.
@@ -201,10 +203,10 @@ Observable without a session:
    *inserts*.
 2. `openAt: startup` is present — the shipped default is `never`, so without it the
    store never opens.
-3. A boot with the overlay produces **no activation warnings**. The first attempt at
-   this lesson produced
-   `tool-session-query ...: failed to import`, which is how the install requirement
-   was discovered.
+3. A boot with the overlay produces **no activation warnings**. The signature of
+   getting this wrong is worth recognizing on sight:
+   `tool-session-query ...: failed to import` means a row names a package the profile
+   does not have installed.
 4. The profile manifest shows `@deepseek-ai/dsh-tool-session-query` pinned to your dsh
    version — not to npm's stale `latest` tag, which dsh rejects as incompatible.
 

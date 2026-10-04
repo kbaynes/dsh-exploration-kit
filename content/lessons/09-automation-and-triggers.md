@@ -46,7 +46,15 @@ dsh --profile headless "summarize <kit>/content/learning-path.md in five bullets
 ```
 
 The task comes from the positional argument, or from stdin when the argument is
-omitted or is a lone `-`:
+omitted or is a lone `-`.
+
+A note on profiles you will see in this lesson: `dsh plugin --profile <name>` creates a
+**base-backed** profile from a template, which is how `kitdemo` came to exist in L1.
+The `web`, `headless`, and `sdk` profiles are *shipped templates* with their own bundle
+stacks — `dsh --profile web` boots one directly, and `dsh rescue --from-default-profile web`
+creates an editable copy of one. Which profile a step targets matters, because Lesson 3
+and [ADR-0016](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0016-profile-choice-is-load-bearing.md)
+show that the same row activates differently per profile.
 
 ```sh
 { echo "Summarize these changes:"; git diff --stat; } | dsh --profile headless
@@ -133,14 +141,15 @@ Three differences from the TypeScript path are worth knowing before you build:
 - **The SDK starts the bundled `dsh --profile sdk` runtime**, so Python does not
   need system Node.js installed. Persistent plugin customization belongs to that
   profile — pass `patches=[...]` for an invocation-specific change, or install an
-  external bundle with `dsh plugin --profile sdk add file:/path/to/bundle`.
+  external bundle with `dsh plugin --profile sdk add link:/path/to/bundle`.
 
 ## Step 4 — Give it a clock
 
-**Schedules are opt-in, and the lesson's original premise was wrong.** `@deepseek-ai/dsh-schedule`
-is mounted by **no shipped bundle** — the `schedule` and `webhook` names you find in
-the bundle patches are telemetry tuning knobs, not these packages. So there are two
-steps, not one:
+**`@deepseek-ai/dsh-schedule` is mounted by no shipped bundle.** Watch for a trap
+when you check: the `schedule` and `webhook` names that *do* appear in the bundle
+patches are telemetry tuning keys (`scheduledDelayMillis`), not these packages. A
+plausible hit on the wrong symbol can make an unmounted capability look available.
+So there are two steps, not one:
 
 ```sh
 dsh plugin --profile web add @deepseek-ai/dsh-schedule@<dsh version>
@@ -301,10 +310,11 @@ Items 4–8 are recorded as unverified in
 
 ## Where to go next
 
-- **Find plugins before writing them.** Use the `find-dsh-plugins` skill or the
-  recipes in [plugin discovery](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md) — the community
-  registry holds thousands of entries, and the bare GitHub topic filter
-  over-matches badly.
+- **Find plugins before writing them.** The community registry and the npm
+  `deepseek-harness` keyword are better starting points than a bare GitHub topic
+  filter, which matches the ambiguous token `dsh` and returns many unrelated
+  projects. See the [publish guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md)
+  for how a plugin is packaged, so you can judge what you find.
 - **Publish your work.** Bundle your plugins into a package that declares its role
   under a `dsh` field in `package.json` (`dsh.bundle`, `dsh.profile`) so others can
   stack it in a profile.

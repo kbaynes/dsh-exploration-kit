@@ -57,7 +57,7 @@ kit's exercise bundle into a dsh profile:
 
 ```sh
 cd kit-plugins && pnpm install && cd ..
-dsh plugin --profile kitdemo add file:$PWD/kit-plugins
+dsh plugin --profile kitdemo add link:$PWD/kit-plugins
 ```
 
 See [kit-plugins/README.md](kit-plugins/README.md) for why plugins must be shipped

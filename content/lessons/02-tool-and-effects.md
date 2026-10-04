@@ -42,7 +42,24 @@ you can read a plugin's boot output.
 
 ## Step 1 — A tool with a real contract
 
-Create `<kit>/plugins/l2/wordcount.ts`:
+**Write this one yourself, into the bundle.** Open
+`<kit>/kit-plugins/l2/wordcount.js` and replace its contents with the listing below.
+
+Two things about that location are the point, and both follow from L1:
+
+- **It has to be in the bundle.** The plugin imports `@deepseek-ai/dsh-tools` and
+  `@deepseek-ai/schemastery`, and L1 showed what happens to a loose file that imports
+  dsh packages: it fails to activate. The bundle is where a real plugin lives, so this
+  is where you write it.
+- **Saving is enough.** The bundle is installed with `link:`, so your file is what the
+  row mounts the moment you save. If you delete your version, the lesson's verification
+  outcomes disappear with it — that is the test that you are running your own code
+  rather than a shipped artifact.
+
+```js
+import { readFile } from 'node:fs/promises'
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import Schema from '@deepseek-ai/schemastery'
 
 ```ts
 import { readFile } from 'node:fs/promises'
@@ -53,15 +70,13 @@ import Schema from '@deepseek-ai/schemastery'
 export const name = 'l2-wordcount'
 export const inject = ['tools']
 
-export interface Config {
-  defaultUnit: 'words' | 'lines' | 'chars'
-}
-
-export const Config: Schema<Config> = Schema.object({
+// One export is both a TypeScript type and a runtime validator: consumers get the
+// type, Cordis gets the validator that runs before apply().
+export const Config = Schema.object({
   defaultUnit: Schema.union(['words', 'lines', 'chars']).default('words'),
 })
 
-export function apply(ctx: Context, config: Config) {
+export function apply(ctx, config) {
   ctx.tools.register(defineTool({
     name: 'word_count',
     description: 'Count lines, words, and characters in a file.',
@@ -115,7 +130,7 @@ Open `<kit>/kit-plugins/cordis.patch.yml`. It already has a row for this lesson:
 ```yaml
 - insert:
     - id: l2-wordcount
-      name: dsh-exploration-kit-plugins/l2/wordcount.ts
+      name: dsh-exploration-kit-plugins/l2/wordcount.js
       config:
         defaultUnit: lines
 ```
@@ -242,7 +257,7 @@ Patch config values may be computed at load time:
 
 `!!js` is interpolated inside an entry's `config` and its `disabled` field only;
 other entry metadata stays literal. Try it in your override file, then move on — you
-will use `!!js` seriously in L3 for conditional mounting.
+will use `!!js` seriously in L4, to compute a policy plugin's confinement root.
 
 One caution learned the hard way: `--dump-config` prints `!!js` expressions
 **verbatim, unevaluated**. So the dump shows you the expression, not the value it
@@ -250,12 +265,25 @@ produced. To see the evaluated value, read the plugin's own startup line.
 
 ## Verification
 
-1. `--dump-config` shows the tool row with your resolved config.
-2. An invalid enum value makes the boot fail with a validation error naming the
-   field.
-3. Two stacked `--patch` flags show last-write-wins on the config row.
-4. With a model available, `word_count` executes and returns canonical JSON that
-   the model restates correctly — proof the render step is doing its job.
+Observable without a model:
+
+1. The startup line reads `[l2-wordcount] ACTIVE — defaultUnit=lines`, proving the
+   module loaded, the schema validated, and the row's config reached `apply`.
+2. Setting `defaultUnit: paragraphs` stops the plugin activating and names the
+   offending field.
+3. Your overlay patch, applied with `--patch`, changes the startup line to
+   `defaultUnit=chars` without you editing the bundle.
+
+Requires a provider:
+
+4. `word_count` executes and returns canonical JSON that the model restates correctly —
+   proof the render step is doing its job.
+
+> **Where this lesson stands.** Every step that does not need a provider has been
+> executed against a real harness, and the exact output is quoted in
+> [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+> What remains unverified there is exactly the part above marked "Requires a
+> provider" — the model tool call — and it is named rather than glossed.
 
 ## Exit check — you should now be able to explain
 

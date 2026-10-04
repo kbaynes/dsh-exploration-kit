@@ -43,7 +43,8 @@
     "check:units": "cd kit-plugins && node --test l6/fold.test.mjs l8/audit-workflow.test.mjs",
     "check:kit": "node scripts/check-kit.mjs",
     "check:target": "node scripts/check-target.mjs",
-    "check:pins": "bash scripts/verify-target.sh"
+    "check:pins": "bash scripts/verify-target.sh",
+    "check:lessons": "node scripts/check-lessons.mjs"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",

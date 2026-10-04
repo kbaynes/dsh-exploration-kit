@@ -28,7 +28,7 @@ most likely to be over-applied, so it is scheduled *after* you can measure it.
 | Schema-validated results | `opts.schema` turning a child's prose into a checked object |
 | Session forking | `ctx.agents.create({ seed, inheritedEventCount, meta })` at a turn boundary |
 | Testable orchestration | Parametrising the engine hooks so the pipeline is testable with fakes |
-| Agent presets | Per-session capability sets; a service row there needs an `isolate` realm |
+| Agent presets | Per-session capability sets (met properly in L9's webhook request) |
 | Agent teams | Roster, task board, mailbox — opt-in, and it displaces the legacy control names |
 
 Reference: the repository's

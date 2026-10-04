@@ -25,7 +25,7 @@ iterate on.
 | Declaration merging | Making `ctx.yourService` typecheck for consumers |
 | `inject` ordering | Dependencies, not file position, decide load order |
 | `PENDING` as a legitimate state | A missing provider is silent, not an error |
-| Service isolation | Two groups seeing different instances of one service name |
+| Service isolation | (further exploration) Two groups seeing different instances of one service name |
 | Hot module replacement | `dsh-hmr` unloads and reloads a changed plugin in place |
 | Live tree inspection | Plugin inventory, the registry API, and `plugin_manager` |
 
@@ -121,7 +121,9 @@ Boot again. The consumer prints **nothing at all**, and the stamp is gone:
 dsh: warning: 1 entry did not activate
 ```
 
-That is this lesson's most valuable moment, and it sharpens what L1 taught. A
+That is this lesson's most valuable moment, and it sharpens what L1 taught. The
+`[l3-diagnose]` line comes from this lesson's third plugin — step 3 builds it — so you
+can already see the shape of the fix before you write it. A
 throwing `apply` is loud and names your file. A missing dependency produces **no
 output of its own** — the consumer's `apply` never runs — and the only signal is a
 line in the startup summary. Nearly every "my plugin does nothing" report is this
@@ -255,6 +257,8 @@ stranding you produced by hand in step 2, but applied at runtime.
 
 ## Verification
 
+Observable without a model:
+
 1. With the provider present, the consumer prints a stamp on boot and the scoped
    sweep reports `0 stranded fiber(s) matching "l3-"`.
 2. With the provider disabled, the consumer prints **nothing** and the sweep names
@@ -266,9 +270,17 @@ stranding you produced by hand in step 2, but applied at runtime.
 5. `dsh plugin --profile kitdemo list` shows the bundle, and `--dump-config` shows
    your entry ids and their enablement.
 
+> **Where this lesson stands.** Every step above has been executed against a real
+> harness; the exact output is quoted in
+> [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md). What remains unverified there is
+> what needs a model provider, and it is named rather than glossed.
+
 ## Exit check — you should now be able to explain
 
-- Why the loader can declare two plugins "independent" even though one needs the other.
+- Why list position in a config file does not determine load order, and why the loader
+  can still declare two plugins "independent" even though one needs the other.
+- The difference between a plugin shape and a plugin *instance* — L1 showed one shape;
+  this lesson's `Service` subclass is the second.
 - What `inject` buys at runtime versus what the `declare module` block buys at compile time.
 - Why a plugin author should prefer an effect over a manual `try/finally` teardown.
 - What service isolation (`isolate`) changes, and when a deployment needs it — the

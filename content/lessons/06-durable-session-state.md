@@ -41,35 +41,38 @@ your reload loop.
 
 ## Step 1 — Declare a new event
 
-Create `<kit>/kit-plugins/l6/types.js`:
+Open `<kit>/kit-plugins/l6/types.js`:
 
-```ts
-declare module '@deepseek-ai/dsh-session/types' {
-  interface SessionEventMap {
-    /** A counted exploration step, recorded so a reader can replay it. */
-    'l6/step': { label: string; count: number }
-  }
-}
+```js
+/**
+ * Type-only declarations for the `l6/step` session event.
+ *
+ * Declaration merging is erased at runtime, so this file contributes nothing when the
+ * plugin runs — but it is what makes `session.append('l6/step', ...)` and
+ * `event.data.count` typecheck for consumers. Kept beside the producer, because a
+ * session event's vocabulary belongs to whoever produces it.
+ *
+ * In a TypeScript project this is a `.ts` module imported for its types, and the
+ * merge itself looks like this:
+ *
+ *     declare module '@deepseek-ai/dsh-session/types' {
+ *       interface SessionEventMap {
+ *         'l6/step': { label: string; count: number }
+ *       }
+ *     }
+ *
+ * A SessionEventMap entry must NOT carry an `@mode` tag: a log event has no dispatch
+ * mode, and the persistence-catalog generator rejects one.
+ */
+export const name = 'l6-types'
 ```
 
-Put the merge on the **producer's** type-only export and import that export for
-side effects from consumers — the repository's conversation subsystem is explicit
-about this split, and it matters as soon as a client also wants to render your
-event. Unlike a Cordis `Events` declaration, a `SessionEventMap` entry must **not**
-carry an `@mode` tag — a log event has no dispatch mode, and the persistence-catalog
-generator hard-errors on one.
-
-Two rules about this vocabulary decide whether your feature is durable *and*
-replayable:
-
-- **Model-visible means logged.** A runtime invariant checks that model requests
-  are reconstructable from the log. If you want the model to see something, it
-  needs an event; if you only want *readers* to see it, log-only is correct.
-- **Do not extend `SurfaceEventType` casually.** Only message-producing events
-  reach the model's history. Compaction is the instructive precedent: it adds four
-  log-only events and rides its summary on a separate `user/message` with a
-  `surfaceOp: { op: 'replace', startSeq, endSeq }`. The surface mutation is a
-  deliberate, separate act.
+The shipped file is JavaScript with the TypeScript merge documented in a comment,
+because this kit's plugins run as plain `.js` (L1). The merge block is the part to
+carry into your own TypeScript project — put the declaration on the **producer's**
+type-only export and import that export for side effects from consumers, which is the
+repository's conversation-subsystem convention and matters as soon as a client also
+wants to render your event.
 
 ## Step 2 — Append durably
 
@@ -255,7 +258,7 @@ in [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/
 
 - Why "model-visible means logged" is a *checked* invariant rather than advice.
 - When an event needs a `surfaceOp` and when that parameter is forbidden.
-- Why a projection may not use `firstLiveSeq` to infer a fork-inherited cut.
+- (Deferred to L8) Why a projection may not use `firstLiveSeq` to infer a fork-inherited cut.
 - What breaks if `apply` returns a fresh equal object on irrelevant events.
 
 ## Next

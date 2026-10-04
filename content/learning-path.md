@@ -32,8 +32,8 @@ Three rules produced the order:
    point, so a failure is attributable. L2 adds `ctx.tools`, L3 adds a service
    and the reload path, L4 adds `tools/*` events, L5 adds context hooks, L6 adds
    `SessionEventMap`, and so on.
-3. **Cheap feedback loops first.** Every lesson through L6 is verified by
-   running `dsh headless` or the web GUI for a few seconds and reading output.
+3. **Cheap feedback loops first.** Lessons 1–8 are verified by booting a real profile and
+   reading its output; the headless and SDK paths in L9 are documented but not yet run.
    The expensive lessons (L8 orchestration, L9 automation) come last, because by
    then you can debug them with the introspection skills L3 and L7 taught.
 
