@@ -306,11 +306,13 @@ quality, tone, concepts tables). Its findings were triaged and fixed in this pas
 
 **Left open deliberately:**
 
-- [ ] L7: confirm whether `@deepseek-ai/dsh-invariants` resolves in a **fresh** profile,
-      or whether it only resolved here because of an earlier transitive install. One
-      sentence either way closes it.
-- [ ] Decide whether `$DSH_HOME/sessions/` is the documented layout to quote, or whether
-      the lessons should stay at `~/.dsh/sessions/`.
+- [x] L7: confirmed by experiment that `@deepseek-ai/dsh-invariants` **does** resolve in
+      a fresh profile, even though it is not a dependency of the base bundle, because rows
+      resolve against the running installation's package tree. The lesson now teaches the
+      resulting rule; recorded as [ADR-0019](decisions/0019-what-must-be-installed-vs-what-resolves.md).
+- [x] Session layout verified and corrected: it is
+      `$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd` — workspace-scoped,
+      one directory per session, and compressed. The old text would have failed three ways.
 
 **Protected as intentional (do not edit away):** the uniform lesson skeleton; the
 compounding artifact chain (`diagnose` instrument → `l6/step` events → read back in L7 →

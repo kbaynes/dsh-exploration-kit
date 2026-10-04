@@ -119,7 +119,9 @@ dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml --port 0 --no-open
 Terminal scrollback is not evidence. Reconstruct the run from the log:
 
 1. Ask the agent to `session_event_read` the events of the session you just ran,
-   or read the JSONL yourself under `$DSH_HOME/sessions/` (`~/.dsh` by default).
+   or read the log yourself at
+   `$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd` (`$DSH_HOME` is
+   `~/.dsh` by default, and the file is zstd-compressed — `zstd -dc <file>`).
 2. Find your `l6/step` events from L6 and confirm their sequence position relative
    to `tool/result`.
 3. Use `session_event_trace` on one event to see its positional replacements and
@@ -182,8 +184,21 @@ the base, web, or headless bundles (only `sdk-minimal` carries it), which is why
 ```
 
 The shipped composition pairs them; copying only the first leaves the session checks
-unarmed. Both are already in the overlay, so a boot with it runs the checks. An
-invariant failure here is the cheapest possible way to find a design mistake you would
+unarmed. Both are already in the overlay, so a boot with it runs the checks.
+
+**A resolution subtlety worth knowing here.** Neither package is mounted by any shipped
+bundle, but unlike the query tool in step 1 they do **not** need installing: a row naming
+`@deepseek-ai/dsh-invariants` activates even in a profile that never installed it.
+Verified by applying this overlay to a fresh profile, where the invariants rows resolved
+and only the uninstalled query tool failed — `dsh-invariants` is not even a dependency of
+the base bundle. The reason is that rows resolve against the running installation's own
+package tree, and the lessons require a **source checkout**, whose workspace provides it.
+
+So the rule is: a row naming a package your dsh installation already contains resolves; a
+row naming an optional package it does not must be installed first. That is the whole
+difference between this step and step 1.
+
+An invariant failure here is the cheapest possible way to find a design mistake you would
 otherwise discover through corrupted replays weeks later.
 
 Then write the audit down. A defensible cost statement has four parts: the task,

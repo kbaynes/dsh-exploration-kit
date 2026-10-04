@@ -49,3 +49,4 @@ without re-running the experiment.
 - [ADR-0016 — Which profile a row is applied to decides whether it activates](0016-profile-choice-is-load-bearing.md)
 - [ADR-0017 — The harness state has one source of truth, and a gate holds the rest to it](0017-one-source-of-truth-for-the-harness-state.md)
 - [ADR-0018 — A pristine install must exit 0, and pnpm 11 requires build approval for that](0018-a-pristine-install-must-succeed.md)
+- [ADR-0019 — A row resolves against the installation; only missing packages need installing](0019-what-must-be-installed-vs-what-resolves.md)

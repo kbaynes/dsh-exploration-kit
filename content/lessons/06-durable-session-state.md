@@ -214,11 +214,24 @@ it". The projection is *derived*: the events are in the JSONL log, and the fold
 reproduces the state. That is why the log is the source of truth and projections
 are caches.
 
-Now inspect the raw evidence: open the session file under `$DSH_HOME/sessions/`
-and find your `l6/step` rows. You will see the persisted framing — the session
-format is versioned (`session.vN.jsonl`), committed generations are never renamed
-or replaced, and a write open publishes a version-named successor beside the
-unchanged source.
+Now inspect the raw evidence. The layout is not flat, and getting it wrong is the
+usual reason this step appears to fail:
+
+```
+$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd
+```
+
+- **`$DSH_HOME`** is `~/.dsh` by default.
+- **`<workspace>`** is a directory named for the session's working directory with
+  separators replaced and wrapped, e.g. `--Users-you-code-myproject--`.
+- **Each session is a directory**, not a file.
+- **`.zstd`** — the log is zstd-compressed. Read it with `zstd -dc <file> | less`, or
+  just use the query tools you set up in L7 and skip the decoding entirely.
+
+Find your `l6/step` rows there. You will see the persisted framing — the format is
+versioned, committed generations are never renamed or replaced, and a write open
+publishes a version-named successor (`session.v4.jsonl.zstd`) beside the unchanged
+source.
 
 ## Step 5 — Break replay on purpose
 

@@ -306,6 +306,22 @@ Worth recording because a check that cannot run is worse than no check.
 **Deliberately unverified:** every query, the workspace-authority refusal, token
 deltas, `/compact`, and the invariant sweep's findings. Each needs a session.
 
+**Two open items from the editorial review are now closed:**
+
+1. **`@deepseek-ai/dsh-invariants` does resolve in a fresh profile**, even though it is
+   not a dependency of the base bundle. Verified by applying the L7 overlay to a profile
+   that had never installed it: the two invariants rows resolved and only the uninstalled
+   query tool failed to import. The mechanism is that rows resolve against the running
+   installation's package tree, which a source checkout provides. The lesson now states
+   the resulting rule — a row naming a package your installation contains resolves; an
+   optional package it does not must be installed.
+2. **The session storage layout is not flat.** It is
+   `$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd`: workspace-scoped,
+   one *directory* per session, and zstd-compressed, with a write-open publishing
+   version-named successors such as `session.v4.jsonl.zstd`. L6 told readers to "open the
+   session file under `$DSH_HOME/sessions/`", which would have failed three ways. Both L6
+   and L7 now give the real path and note `zstd -dc` as the way to read it.
+
 ## Evidence: L6 plugins load, and the fold is unit-tested
 
 Both plugins activate:
