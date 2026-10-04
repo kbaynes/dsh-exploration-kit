@@ -95,6 +95,12 @@ This is the **agent-side** convention and nothing more. A human learner working 
 the lessons in their own terminal has no sandbox, uses the default `~/.dsh`, and does not
 need this — do not add it to the lessons themselves.
 
+**The suite owns the harness home while it runs.** One run at a time, and no manual
+`dsh` against the same `$DSH_HOME` — two harnesses sharing a home corrupt each other's
+sessions, and the breakage lands on whichever check is running, which reads as a flaky
+lesson. `scripts/check-kit.mjs` takes a lock and exits 2 with a message naming the holder
+rather than reporting the collision as a failure ([ADR-0030](decisions/0030-verification-owns-the-harness-home.md)).
+
 Two hygiene rules that come with it:
 
 - **Never create probe/test sessions or throwaway profiles in a real harness home.**

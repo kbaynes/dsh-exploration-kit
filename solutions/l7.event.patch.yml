@@ -1,0 +1,13 @@
+# Enable Lesson 7's event-read probe: a real turn whose mock provider answers with a
+# `session_event_read` call for seq 1, asking for two neighbours each way.
+#
+# `session_id` is optional on this tool, so the call targets the caller's own session and no id
+# has to be known before the harness boots:
+#
+#   pnpm run mock:llm --port 8142 --api-key mock-key --sequence tool_call_success,success \
+#     --repeat-last --tool-name session_event_read \
+#     --tool-arguments '{"seq":1,"before":2,"after":2}'
+- id: l7-event-read-probe
+  disabled: false
+  config:
+    enabled: true

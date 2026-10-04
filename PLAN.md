@@ -172,7 +172,10 @@ or via PTC; 5 and 7–9 need a configured provider.
 - [x] Confirm the model CALLING the skill loads the body — `solutions/verify-l5.sh` phase 9:
       with the mock scripting a `skill` call, the body marker that phase 8 asserts is ABSENT is
       present, and the call ran through the real tool pipeline.
-- [ ] Confirm a rename/add reaches the catalog without a restart
+- [x] Confirm an add reaches the catalog without a restart — `solutions/verify-l5.sh` phase 10:
+      the probe writes a new skill into a WATCHED root and runs a second session in the same
+      process, which then announces both skills. It writes into a temporary root, never the kit's
+      own skills directory, so a killed run cannot damage the repository.
 - [ ] Confirm `includeDefaultRoots: false` + `customSkillDirs` resolves as stated
 - [ ] Implement the command plugin and confirm `/l5-facts` runs with no model turn
 - [ ] Add the exact files to `examples/l5/`
@@ -204,6 +207,12 @@ or via PTC; 5 and 7–9 need a configured provider.
       normalising volatile ids: **indistinguishable**, so the target's existence does not leak.
 - [ ] Measure the token delta caused by mounting `tool-session-query`
 - [ ] Confirm `/compact` produces a measurable reduction
+- [x] Confirm `session_event_read` returns an event as JSON with neighbours —
+      `solutions/verify-l7.sh` phase 9: a scripted `session_event_read` call (the tool's
+      `session_id` is optional, so it targets the caller's own session) returns the target event as
+      a JSON block plus `Before:`/`After:` summaries. A dedicated probe prints results in FULL,
+      because the first attempt reused a probe that truncated them to 700 characters — cutting off
+      exactly the neighbour lists the claim is about.
 - [ ] Confirm the telemetry env vars behave as documented and that config alone
       cannot disable the row
 - [x] Run the invariants check against a composition including kit plugins — no violation
@@ -384,9 +393,9 @@ real quoted output instead of invented samples; the upstream-tutorial correction
 ## Verification-suite performance
 
 The full suite boots the harness 27-odd times, once or twice per lesson. It runs in about two
-minutes (measured: **176s**, 19 passed / 0 failed, after adding the phase that make the
-remaining "needs a model-driven tool call" claims checkable): each boot ends when its probe reports
-completion rather than after a fixed wait.
+minutes (measured: **256s**, 19 passed / 0 failed, after adding the phases that make the remaining
+"needs a model-driven tool call" claims checkable): each boot ends when its probe reports completion
+rather than after a fixed wait.
 
 - [x] **Replaced the blind wait with a readiness poll.** `solutions/lib.sh` provides
       `boot_and_wait <checkout> <profile> <log> <pattern> <timeout> [overlay...]`, which polls

@@ -108,6 +108,13 @@
       disabled: true
 
     # Lesson 5: observe the turn flow, then inject durable context.
+    # Opt-in diagnostic: adds a skill to a WATCHED root and reads the catalog again in the same
+    # process, verifying Lesson 5's "no restart needed" claim.
+    # See solutions/l5.live.patch.yml.
+    - id: l5-live-catalog-probe
+      name: dsh-exploration-kit-plugins/l5/live-catalog-probe.js
+      disabled: true
+
     - id: l5-observer
       name: dsh-exploration-kit-plugins/l5/turn-observer.js
 
@@ -148,4 +155,11 @@
     # See solutions/l7.auth.patch.yml.
     - id: l7-authority-probe
       name: dsh-exploration-kit-plugins/l7/authority-probe.js
+      disabled: true
+
+    # Opt-in diagnostic: makes a real `session_event_read` call, so Lesson 7's
+    # "events as JSON with neighbours" claim is testable with no key.
+    # See solutions/l7.event.patch.yml.
+    - id: l7-event-read-probe
+      name: dsh-exploration-kit-plugins/l7/event-read-probe.js
       disabled: true

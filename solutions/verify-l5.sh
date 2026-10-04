@@ -200,13 +200,57 @@ if start_mock_llm "$DSH_CHECKOUT" 8140 tool_call_success,success \
 else
   echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
 fi
+
+echo
+echo "== 10. adding a skill to a WATCHED root needs NO restart =="
+# The catalog is built from the provider's live view of the filesystem (skill-filesystem watches
+# its roots; the stability threshold is 200ms). Two sessions in ONE process prove it: the first
+# runs before the change, then the probe writes a new skill, then a second session runs. A second
+# SESSION rather than a second turn is deliberate - the catalog is injected as durable context, and
+# re-announcing it mid-session is a different question from whether the provider's view is live.
+#
+# The root is a TEMPORARY directory seeded from the kit's own skill, never the kit's directory: a
+# killed run must not be able to leave the repository extended.
+LIVE_DIR="$(mktemp -d)"
+cp -R "$KIT/kit-plugins/l5/skills/repo-onboarding" "$LIVE_DIR/"
+LIVE_MODEL_PATCH="$(mktemp)"
+cat > "$LIVE_MODEL_PATCH" <<'PATCH'
+- id: agent-default-model
+  config:
+    provider: deepseek-official
+    model: deepseek-flash
+PATCH
+if start_mock_llm "$DSH_CHECKOUT" 8143 success; then
+  LIVE_LOG="$(mktemp)"
+  export DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
+    KIT_ROOT="$KIT" L5_LIVE_SKILLS="$LIVE_DIR"
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$LIVE_LOG" '\[l5-live\] done' 120 \
+    "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l5.live.patch.yml" "$LIVE_MODEL_PATCH" \
+    || failures=$((failures + 1))
+  unset DEEPSEEK_BASE_URL DEEPSEEK_API_KEY KIT_ROOT L5_LIVE_SKILLS
+  stop_mock_llm
+
+  live_out="$(grep '\[l5-live\]' "$LIVE_LOG")"
+  check "the original skill is in the catalog to begin with" 'before: catalogue mentions the original skill: true' "$live_out"
+  check "the new skill is NOT there yet" 'before: catalogue mentions the new skill: false' "$live_out"
+  # The claim: after writing the directory, a later turn in the SAME process sees it.
+  check "a skill added live reaches the catalog with NO restart" 'after: catalogue mentions the new skill: true' "$live_out"
+  check "the original skill is still there" 'after: catalogue mentions the original skill: true' "$live_out"
+  check "the added skill's BODY is not shipped either" "after: the new skill's BODY is not shipped either: true" "$live_out"
+  rm -f "$LIVE_LOG"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
+rm -rf "$LIVE_DIR"; rm -f "$LIVE_MODEL_PATCH"
+
 rm -f "$CAT_MODEL_PATCH"
 
 echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 5 verified: injection durability, the command path, the skills overlay, and the"
-  echo "model-visible skill catalogue end to end - announced without its body, then loaded when the"
-  echo "model calls the skill through the real tool pipeline."
+  echo "model-visible skill catalogue end to end - announced without its body, loaded when the model"
+  echo "calls the skill through the real tool pipeline, and updated live when a skill is added to a"
+  echo "watched root."
 else
   echo "$failures check(s) failed."; exit 1
 fi

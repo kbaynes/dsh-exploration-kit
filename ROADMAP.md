@@ -24,7 +24,7 @@ suite rather than described as unverified.
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
 | 0.5 | Rewrite lessons for the verified bundle mechanism | ✅ All nine rewritten |
 | 1 | Build, test, and review each lesson | ✅ All nine built and executed |
-| 2 | Test infrastructure — automated verification in CI | ✅ 19 checks, version gate, full CI run (~3m) |
+| 2 | Test infrastructure — automated verification in CI | ✅ 19 checks, version gate, full CI run (~4m15s) |
 | 3 | Whole-kit review — editorial and technical pass | ✅ Two independent audits triaged and fixed |
 | 4 | Publication readiness — placeholders, licensing, metadata | 🔄 owner set (`kbaynes`); only the git author identity remains |
 | 4.5 | Tag the release against a harness state | ⬜ Pending publication |
@@ -42,7 +42,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | — | **Lessons need rewriting to install the bundle** — see PLAN Phase 0.5 | | | |
 | 3 | Services, isolation, and hot reload | ✅ | 🟡 | ✅ |
 | 4 | Build a policy gate | ✅ | 🟡 | ✅ |
-| 5 | Assemble context deliberately | ✅ | 🟡 | ✅ |
+| 5 | Assemble context deliberately | ✅ | ✅ | ✅ |
 | 6 | Give the session durable state | ✅ | 🟡 | ✅ |
 | 7 | Operate the harness | ✅ | 🟡 | ✅ |
 | 8 | Orchestrate multiple agents | ✅ | 🟡 | ✅ |

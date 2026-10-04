@@ -331,10 +331,12 @@ Requires a session, and therefore a provider:
 7. Renaming the skill directory changes the catalog without a restart.
 8. `/l5-facts` responds with no model turn and no `pre-step` log line.
 
-Items 4, 5, 6, and 8 are executed and recorded in
-[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md), including the
-step *after* the catalog: when the model calls the `skill` tool, the body loads through the real
-tool pipeline. Item 7 — a rename reflected without a restart — is not verified.
+All eight are executed and recorded in
+[VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 4's payload
+shape is observed from a real turn; item 6 is the pair described above — the catalog arrives without
+the body, and the body appears when the model calls the `skill` tool; and item 7 is verified by
+writing a new skill into a **watched** root and running a second turn in the same process, with no
+restart.
 
 ## Exit check — you should now be able to explain
 

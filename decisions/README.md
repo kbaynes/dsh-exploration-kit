@@ -60,3 +60,4 @@ without re-running the experiment.
 - [ADR-0027 — Most "needs a model" claims need a provider, and the repository ships a keyless one](0027-most-claims-need-a-provider-not-a-model.md)
 - [ADR-0028 — Never `JSON.stringify` a live event payload; the Cordis proxy throws on `toJSON`](0028-never-stringify-a-live-event-payload.md)
 - [ADR-0029 — A delivery receipt records admission, not completion; never assert on it](0029-an-acknowledgment-is-not-a-completion.md)
+- [ADR-0030 — Verification owns the harness home; one run at a time](0030-verification-owns-the-harness-home.md)

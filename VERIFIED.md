@@ -97,9 +97,9 @@ row that admits it has not been checked yet.
 | L2 — Register a tool, compose with config | **Executed** | The plugin loads through the installed bundle; the Schemastery schema rejects an invalid value; an overlay changes the installed row's config; and the **tool itself is called through the real pipeline** by a shipped probe — the configured default reaches it, an explicit unit overrides it, invalid arguments are rejected before `execute` runs, and `value`/`content` show the canonical/render split. Outside this lesson's scope: whether a model *chooses* to call it. See evidence below. |
 | L3 — Services, isolation, and hot reload | **Executed** | The service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay; the `plugin_manager` claim is executed and **corrected** (it manages the profile's rows and whole bundles, not rows a bundle contributes — ADR-0025); and **service isolation is executed** — two groups isolating one service name each see their own provider. Two upstream-tutorial traps found by running it. Nothing in this lesson is unverified. |
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
-| L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. The **model-visible skill catalogue** is executed end to end: against the mock provider a real turn assembles a request, the session log carries the skill catalogue with the skill's BODY absent, and when the model then **calls the `skill` tool** the body loads through the real tool pipeline — announced on demand, loaded on demand. **Not** executed: that a rename of the skill directory is reflected without a restart. |
+| L5 — Assemble context deliberately | **Executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. The **model-visible skill catalogue** is executed end to end: against the mock provider a real turn assembles a request, the session log carries the skill catalogue with the skill's BODY absent, and when the model then **calls the `skill` tool** the body loads through the real tool pipeline — announced on demand, loaded on demand. A skill **added to a watched root live** also reaches the catalog with **no restart**: two sessions in one process see different catalogs once a new skill directory is written, and the added skill's body is not shipped either. Nothing in L5 is left unexecuted. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
-| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider a **real turn COMPLETES** — it produces its own assistant message, ends `{"kind":"completed"}`, is searchable back to its own session, and exposes the **token-accounting projection shape**; `/compact` is exercised. An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it now searches for a marker unique to the run and asserts the hit is this session. The **workspace-authority refusal** is executed too, via a real model-driven tool call into a session under a different `cwd`: the tool result is refused with `SESSION_QUERY_TOOL_UNAUTHORIZED`, and a nonexistent target produces a byte-identical refusal, so the target's existence does not leak. **Not** executed: a token delta for mounting `tool-session-query` and a measurable `/compact` reduction, both of which need a provider that reports real usage. |
+| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider a **real turn COMPLETES** — it produces its own assistant message, ends `{"kind":"completed"}`, is searchable back to its own session, and exposes the **token-accounting projection shape**; `/compact` is exercised. An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it now searches for a marker unique to the run and asserts the hit is this session. `session_event_read` is executed through a real tool call and returns the target event as JSON with `Before:`/`After:` neighbour summaries. The **workspace-authority refusal** is executed too, via a real model-driven tool call into a session under a different `cwd`: the tool result is refused with `SESSION_QUERY_TOOL_UNAUTHORIZED`, and a nonexistent target produces a byte-identical refusal, so the target's existence does not leak. **Not** executed: a token delta for mounting `tool-session-query` and a measurable `/compact` reduction, both of which need a provider that reports real usage. |
 | L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. **Not** executed: the monolith-versus-fan-out cost comparison, which needs real token usage. |
 | L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; **delivery** is verified end to end — a due task splices its reminder, records a delivery receipt, resumes the session and **completes the scheduled work** (a second assistant message, `{"kind":"completed"}`); the **headless contract** (exit codes, stdout/stderr, `--json` phases, and a real **tool call with its correlated result** in the stream) runs keyless; and a **real SDK round trip** runs keyless too — the SDK drives a turn, receives the model's answer, reports the session, and observes 15 notifications. **Not** executed: a webhook delivery, which is a different transport. |
 
@@ -481,6 +481,28 @@ base-backed profile never prints — so it sat out the full 60-second timeout an
 half-started log. Accepting either the web URL or the kit plugin's own apply line cut verify-l7 from
 about 75 seconds to 15.
 
+## Evidence: L7 session_event_read returns an event as JSON, with its neighbours
+
+The claim is about tool *output*, so the tool has to run. The mock scripts the call and the
+harness executes it; `session_id` is optional on this tool, so the call targets the caller's own
+session and no id has to be known before the harness boots:
+
+```
+[l7-event] result 0 isError=false: Session session-l7-event-read-… — mock response recovered |
+    Target event seq 1: | ```json | { |   "type": "sandbox/mode", |   "seq": 1, |   "time": … |
+    "data": { |     "mode": "workspace-write" |   } | } | ``` |  | Before: | - seq 0 |
+    permission/preset | …Z | (no semantic text) |  | After: | - seq 2 | approval/policy | …Z |
+    (no semantic text) | - seq 3 | agent/inbox/spliced | …Z | (no semantic text)
+```
+
+Phase 9 asserts each part separately: the target event is JSON (`"type": "sandbox/mode"`), the
+prefix names the seq, and both directions of neighbour are summarised.
+
+**Why a dedicated probe for this.** The first attempt reused the authority probe, which truncated
+every tool result to 700 characters — cutting off exactly the neighbour lists the claim is about.
+A check that cannot see its own evidence is a check that will pass for the wrong reason, so the
+event-read probe prints results in full.
+
 ## Evidence: L7 a cross-workspace read is refused, and a missing target looks identical
 
 The authority check lives in the tool **executor** (`packages/session-query/tool-session-query`'s
@@ -787,6 +809,29 @@ The body marker that the catalogue phase asserts is **absent** is here **present
 the mechanism the lesson describes, and it needs a scripted tool call rather than a model: what is
 being verified is the harness's loading behaviour, not a model's judgement about when to read a
 skill.
+
+## Evidence: L5 a skill added to a watched root reaches the catalog with no restart
+
+The catalog is built from the provider's live view of the filesystem — `skill-filesystem` watches its
+roots, with a 200ms stability threshold. Two sessions in ONE process prove it:
+
+```
+[l5-live] before: catalogue mentions the original skill: true
+[l5-live] before: catalogue mentions the new skill: false
+[l5-live] wrote /tmp/l5-live-skills/live-added-skill/SKILL.md
+[l5-live] after: catalogue mentions the original skill: true
+[l5-live] after: catalogue mentions the new skill: true
+[l5-live] after: the new skill's BODY is not shipped either: true
+```
+
+A second **session** rather than a second turn is deliberate: the catalog arrives as durable
+context, and re-announcing it mid-session is a different question from whether the provider's view
+of the filesystem is live. The last line checks that the new skill obeys the same body rule as the
+original.
+
+The probe writes into a **temporary** root seeded from the kit's own skill, never into
+`<kit>/kit-plugins/l5/skills`. A verification that renames the repository's own files can leave it
+broken when the run is killed half-way.
 
 ## Evidence: L5 the command path, with no model request
 

@@ -283,15 +283,43 @@ else
   echo "      missing: $missing_result"
   failures=$((failures + 1))
 fi
+echo
+echo "== 9. session_event_read returns an event as JSON, with its neighbours =="
+# The claim is about tool OUTPUT, so the tool has to run. The mock scripts the call and the
+# harness executes it (ADR-0027). `session_id` is optional on this tool, so the call targets the
+# caller's own session - no id has to be known before the harness boots.
+EVENT_LOG="$(mktemp)"
+if start_mock_llm "$DSH_CHECKOUT" 8142 tool_call_success,success \
+    --tool-name session_event_read --tool-arguments '{"seq":1,"before":2,"after":2}'; then
+  export DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$EVENT_LOG" '\[l7-event\] done' 90 \
+    "$KIT/solutions/l7.patch.yml" "$KIT/solutions/l7.event.patch.yml" "$AUTH_MODEL_PATCH" \
+    || failures=$((failures + 1))
+  unset DEEPSEEK_BASE_URL DEEPSEEK_API_KEY
+  stop_mock_llm
+
+  event_out="$(grep '\[l7-event\]' "$EVENT_LOG")"
+  check "the read ran through the real tool pipeline" 'tool/result events: 1' "$event_out"
+  check "the tool reported success" 'isError=false' "$event_out"
+  check "the target event is returned as JSON" '"type": "sandbox/mode"' "$event_out"
+  check "the JSON block is the target seq" 'Target event seq 1:' "$event_out"
+  # The neighbours are the half that a shorter read would not show, so assert each direction.
+  check "a BEFORE neighbour is summarised" 'Before: | - seq 0 | permission/preset' "$event_out"
+  check "AFTER neighbours are summarised" 'After: | - seq 2 | approval/policy' "$event_out"
+  check "and the turn completed" '"kind":"completed"' "$event_out"
+  rm -f "$EVENT_LOG"
+else
+  echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+fi
 rm -f "$FOREIGN_LOG" "$MISSING_LOG" "$AUTH_MODEL_PATCH"
 
 echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 7 verified: the store, the query service, the tool scope, the invented-type caveat"
   echo "(with cleanup), a COMPLETED turn with its own assistant message, the trajectory being"
-  echo "searchable back to that session, the accounting shape, /compact, and the workspace-authority"
-  echo "refusal via a REAL model-driven tool call - including that a foreign target and a nonexistent"
-  echo "one are indistinguishable."
+  echo "searchable back to that session, the accounting shape, /compact, session_event_read's JSON"
+  echo "with neighbours, and the workspace-authority refusal via REAL model-driven tool calls -"
+  echo "including that a foreign target and a nonexistent one are indistinguishable."
 else
   echo "$failures check(s) failed."; exit 1
 fi

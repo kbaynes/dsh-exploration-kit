@@ -20,10 +20,64 @@
  */
 
 import { spawnSync } from 'node:child_process'
-import { resolve } from 'node:path'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 
 const root = resolve(import.meta.dirname, '..')
 const checkout = process.argv[2] ?? process.env.DSH_CHECKOUT ?? ''
+
+/**
+ * Refuse to run while another suite already owns the harness home.
+ *
+ * The per-lesson checks boot `dsh` against ONE `$DSH_HOME` and create sessions in it. Two runs at
+ * once — or one run plus a manual `dsh` against the same home — corrupt each other's checks, and
+ * the result reads as a flaky lesson rather than as a collision. This was diagnosed twice as a
+ * flake before the cause was found (ADR-0030), so it now fails loudly instead.
+ *
+ * Only taken when a checkout is supplied, because the environment-free checks boot nothing.
+ */
+const lockDir = process.env.DSH_HOME ?? join(homedir(), '.dsh')
+const lockPath = checkout === '' ? undefined : join(lockDir, '.check-kit.lock')
+
+function releaseLock() {
+  if (lockPath !== undefined) rmSync(lockPath, { force: true })
+}
+
+let lockTaken = false
+
+function takeLock() {
+  if (lockPath === undefined || lockTaken) return
+  lockTaken = true
+  if (existsSync(lockPath)) {
+    const holder = readFileSync(lockPath, 'utf8').trim()
+    const pid = Number.parseInt(holder, 10)
+    // A stale file from a killed run must not block the next one forever.
+    //
+    // This is a bare pid check, which has one limitation worth naming: pids are reused, so a dead
+    // run's number can belong to an unrelated live process and block this one. The alternative —
+    // asking the OS for the holder's command line — is not portable in the other direction:
+    // `ps` is blocked outright under some sandboxes, where the check would silently decide the
+    // lock is stale. A false "held" is visible and the message names the file to remove; a
+    // silently ignored lock is not.
+    const alive = Number.isInteger(pid) && pid > 0 && (() => {
+      try { process.kill(pid, 0); return true } catch { return false }
+    })()
+    if (alive) {
+      console.error(`Another check:kit run (pid ${pid}) is using ${lockDir}.`)
+      console.error('Two suites against one harness home corrupt each other\'s sessions, so this')
+      console.error('run stops rather than reporting the collision as a lesson failure (ADR-0030).')
+      console.error(`If pid ${pid} is not a check:kit run, remove ${lockPath} and retry.`)
+      process.exit(2)
+    }
+    console.error(`WARN  replacing a stale check:kit lock from pid ${holder || 'unknown'} (that process is gone)`)
+  }
+  writeFileSync(lockPath, `${process.pid}\n`)
+  process.on('exit', releaseLock)
+  for (const signal of ['SIGINT', 'SIGTERM']) {
+    process.on(signal, () => { releaseLock(); process.exit(130) })
+  }
+}
 
 /** Each check: what to run, and what it needs to be meaningful. */
 const checks = [
@@ -61,6 +115,7 @@ for (const check of checks) {
     process.stdout.write(`SKIP  ${check.name} — needs ${check.needs}\n`)
     continue
   }
+  takeLock()
   const run = spawnSync(check.cmd[0], check.cmd.slice(1), { cwd: root, encoding: 'utf8' })
   const ok = run.status === 0
   const tolerated = check.optional && !ok
@@ -81,4 +136,5 @@ console.log(
 if (count('skip') > 0) {
   console.log('Pass a DSH checkout path to include the upstream and per-lesson checks.')
 }
+releaseLock()
 process.exit(count('fail') > 0 ? 1 : 0)

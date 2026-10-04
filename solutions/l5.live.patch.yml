@@ -1,0 +1,16 @@
+# Enable Lesson 5's live-catalog probe: it writes a NEW skill into a watched root and then runs a
+# second turn in the same process.
+#
+# The root comes from L5_LIVE_SKILLS and is a TEMPORARY directory, never the kit's own skills
+# directory: a killed run must not be able to leave the repository renamed or extended. The
+# verification script populates it with the kit's `repo-onboarding` skill before booting.
+- id: skill-filesystem
+  config:
+    customSkillDirs: [!!js "process.env.L5_LIVE_SKILLS"]
+    includeDefaultRoots: false
+
+- id: l5-live-catalog-probe
+  disabled: false
+  config:
+    enabled: true
+    skillsDir: !!js "process.env.L5_LIVE_SKILLS"
