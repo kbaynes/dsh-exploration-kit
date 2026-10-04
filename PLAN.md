@@ -157,11 +157,18 @@ or via PTC; 5 and 7–9 need a configured provider.
 
 ### Lesson 5 — Assemble context deliberately
 
-- [ ] Implement `turn-observer.ts` and confirm the real `agent/pre-step` payload
-      shape, then correct the lesson to match it
+- [x] Implement the turn observer and confirm the real `agent/pre-step` payload shape — it is
+      `{ agent, messages, turn, step, signal }`, and the shape is now observed from a real turn:
+      the observer logs `pre-step turn=1 step=1 messages=2`. The lesson was corrected to match,
+      which is the change that exposed the bug in
+      [ADR-0028](decisions/0028-never-stringify-a-live-event-payload.md).
 - [ ] Implement the `agent.inject()` example and confirm the injected text appears
       in the replayed session after a restart
-- [ ] Create the skill bundle and confirm it appears in the catalog
+- [x] Create the skill bundle and confirm it appears in the catalog — asserted against
+      the mock provider by `solutions/verify-l5.sh` phase 8: the session log carries the
+      skill's name (`catalogue mentions 'repo-onboarding': true`) while the body stays out
+      (`body loaded into the log: false`). The PAIR is the claim: announced on demand,
+      loaded on demand.
 - [ ] Confirm a rename/add reaches the catalog without a restart
 - [ ] Confirm `includeDefaultRoots: false` + `customSkillDirs` resolves as stated
 - [ ] Implement the command plugin and confirm `/l5-facts` runs with no model turn
@@ -192,7 +199,13 @@ or via PTC; 5 and 7–9 need a configured provider.
 - [ ] Confirm `/compact` produces a measurable reduction
 - [ ] Confirm the telemetry env vars behave as documented and that config alone
       cannot disable the row
-- [ ] Run the invariants check against a composition including kit plugins
+- [x] Run the invariants check against a composition including kit plugins — no violation
+      reported; `solutions/verify-l7.sh` asserts it.
+- [x] Run a real turn and confirm it COMPLETES — this was blocked for two rounds by a bug in
+      the kit's own L5 pre-step listener, misrecorded as an upstream defect
+      ([ADR-0028](decisions/0028-never-stringify-a-live-event-payload.md)). The turn now
+      records its own assistant message, ends `{"kind":"completed"}`, and is searchable back
+      to its own session by a marker unique to the run.
 - [ ] Produce a worked cost/trajectory example and decide whether it belongs in
       the lesson
 - [ ] Add the exact files to `examples/l7/`
@@ -223,7 +236,13 @@ or via PTC; 5 and 7–9 need a configured provider.
 - [ ] Run the TypeScript SDK sample with a `patches` file loading a kit tool
 - [ ] **Replace or delete the Python placeholder snippet** — currently
       non-runnable; either test a real call or cut the step
-- [ ] Confirm a schedule fires once and appears in `schedule_list`
+- [x] Confirm a schedule fires once and appears in `schedule_list` — `solutions/verify-l9.sh`
+      phase 5 lists it, phase 8 confirms one delivery receipt for one firing.
+- [x] Confirm a scheduled task fires and **completes its work** — `solutions/verify-l9.sh`
+      phase 8: a due task records a delivery receipt, resumes the session, and the delivered
+      turn ends `{"kind":"completed"}` with a second assistant message. Delivery restores the
+      model from the session's logged request header, so the probe talks to the model once
+      before scheduling.
 - [ ] Confirm a webhook rule creates exactly one Session per delivery and record
       the duplicate-delivery behavior
 - [ ] Confirm the hook adapters' described role
@@ -354,8 +373,9 @@ real quoted output instead of invented samples; the upstream-tutorial correction
 
 ## Verification-suite performance
 
-The full suite boots the harness 25-odd times, once or twice per lesson. It now runs in about
-two minutes: each boot ends when its probe reports completion rather than after a fixed wait.
+The full suite boots the harness 27-odd times, once or twice per lesson. It runs in about two
+minutes (measured: **124s**, 19 passed / 0 failed, after adding the L5 catalogue and L9 delivery
+phases): each boot ends when its probe reports completion rather than after a fixed wait.
 
 - [x] **Replaced the blind wait with a readiness poll.** `solutions/lib.sh` provides
       `boot_and_wait <checkout> <profile> <log> <pattern> <timeout> [overlay...]`, which polls
@@ -364,14 +384,16 @@ two minutes: each boot ends when its probe reports completion rather than after 
       killed early used to leave an empty log, which a check asserting on a pattern's *absence*
       would still pass. The motivation was concrete — a fixed 18-second wait made L6's second
       phase fail while its "log is readable" check passed for the wrong reason.
-- [x] **Flake investigated, not reproduced.** Five consecutive captured full runs each reported
-      19 passed / 0 failed (one full run plus four repeats). The single 18/1 observation therefore
-      remains unexplained rather than fixed, and the honest state is recorded here rather than
-      closed. If it recurs, the capture is now in place: run
-      `pnpm run check:kit > /tmp/suite.log 2>&1` so the offending check is identifiable, and
-      suspect the timing-sensitive pair first (L6's preset switch, L9's schedule phases). The
-      readiness poll added in round 16 removed the largest source of timing dependence, which may
-      be why it stopped.
+- [x] **Flake reproduced, explained, and fixed.** An earlier note here recorded a single 18/1
+      observation as unexplained. It recurred in the run that added the L9 delivery phase, and the
+      capture made it identifiable: `FAIL solution: lesson 9 — the scheduled work ran: a second
+      assistant message`. The new phase had read the session log the instant a delivery receipt
+      appeared, but the receipt is written when the reminder is **admitted**, before the agent runs.
+      The read raced the delivered turn, and the companion assertion ("the delivered turn
+      completed") passed on the *warm-up* turn's `turn/end` — a false green of exactly the kind
+      this suite keeps finding. The phase now waits for a turn count exceeding the warm-up
+      baseline; see [ADR-0029](decisions/0029-an-acknowledgment-is-not-a-completion.md). Two
+      consecutive L9 runs and a full suite are clean.
 - [ ] Consider running the per-lesson checks in parallel. They use distinct session ids and
       distinct overlays, so they are independent; the only shared resource is the harness home.
       That would need a profile or home per worker.

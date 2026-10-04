@@ -53,6 +53,7 @@ export function apply(ctx, config) {
       }))
       await handle.agent.whenIdle()
       const warmed = (await ctx.sessionQuery.readSession(session.id))?.events ?? []
+      const warmupTurns = warmed.filter(event => event.type === 'turn/end').length
       console.log(`[l9-fire] warm-up turn produced ${warmed.filter(event => event.type === 'assistant/message').length} assistant message(s)`)
       console.log(`[l9-fire] the session logged a request header: ${warmed.some(event => event.type === 'request/header')}`)
 
@@ -96,7 +97,19 @@ export function apply(ctx, config) {
       console.log(`[l9-fire] deliveries reported: ${deliveries}`)
 
       // Did a turn actually run? An assistant message in the log is the durable evidence.
-      const log = await ctx.sessionQuery.readSession(session.id)
+      //
+      // WAIT for the delivered turn to CLOSE first. The receipt is written when the reminder is
+      // admitted, which is before the agent finishes the work, so reading the log at the moment
+      // delivery is observed can catch the turn mid-flight - and then the "last turn/end" is the
+      // warm-up's, so a turn that did complete reads as one that did not. Waiting on a turn count
+      // that exceeds the warm-up baseline is what makes both assertions measure the delivery.
+      let log = await ctx.sessionQuery.readSession(session.id)
+      const endsOf = snapshot => (snapshot?.events ?? []).filter(event => event.type === 'turn/end').length
+      const settleDeadline = Date.now() + config.waitMs
+      while (endsOf(log) <= warmupTurns && Date.now() < settleDeadline) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        log = await ctx.sessionQuery.readSession(session.id)
+      }
       const types = (log?.events ?? []).map(event => event.type)
       const assistant = types.filter(type => type === 'assistant/message').length
       console.log(`[l9-fire] assistant messages in the session: ${assistant}`)

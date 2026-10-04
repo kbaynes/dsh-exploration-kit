@@ -24,7 +24,7 @@ suite rather than described as unverified.
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
 | 0.5 | Rewrite lessons for the verified bundle mechanism | ✅ All nine rewritten |
 | 1 | Build, test, and review each lesson | ✅ All nine built and executed |
-| 2 | Test infrastructure — automated verification in CI | ✅ 19 checks, version gate, full CI run (~1m45s) |
+| 2 | Test infrastructure — automated verification in CI | ✅ 19 checks, version gate, full CI run (~2m05s) |
 | 3 | Whole-kit review — editorial and technical pass | ✅ Two independent audits triaged and fixed |
 | 4 | Publication readiness — placeholders, licensing, metadata | 🔄 runbook tested end-to-end; needs the owner |
 | 4.5 | Tag the release against a harness state | ⬜ Pending publication |
