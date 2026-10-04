@@ -101,7 +101,7 @@ row that admits it has not been checked yet.
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
 | L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no activation warnings; the pinned package installs; and the **query service itself** is exercised without a model — `listSessions` finds the created session, `readSession` returns its log, `filterEvents` matches by type, and all five lesson tools register in a live root Agent's scope (5/5). Two limits documented and asserted: an uninterpretable session breaks search corpus-wide, and an invented event type is invisible to filters. **Not** executed: the workspace-authority refusal, token deltas, `/compact`, and the invariant findings. |
 | L8 — Orchestrate multiple agents | **Partly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (no kit plugin needed), and the workflow's pure core passes **7 unit tests with a fake engine** — pipeline drives every item, the schema passes through, and a partially failed fan-out still yields a dense array. **Not** executed: any real delegation, fork, or fan-out — each needs a provider. |
-| L9 — Automate the harness | **Partly executed** | Executed: `schedule` and `webhook` are confirmed opt-in (no shipped bundle provides them), the overlay composes, and a web-backed profile activates both with **no warnings** while a base-backed profile leaves them `PENDING` naming the missing services; both packages install pinned. The Python snippet is a real upstream example. **Not** executed: any headless run, `--json` events, an SDK round trip, a schedule firing, a webhook delivery — each needs a provider. |
+| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are confirmed opt-in (no shipped bundle provides them); the overlay composes; a web-backed profile activates both with **no warnings** while a base-backed one strands them `PENDING` naming the missing services; both install pinned; and a **scheduled task survives a restart** in a fresh process, with the same task id, and deletes cleanly. The Python snippet is a real upstream example. **Not** executed: a task firing and the agent working on it, any headless run, `--json` events, an SDK round trip, and a webhook delivery. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
 
@@ -198,6 +198,30 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L9 a scheduled task survives a restart
+
+Executed in two processes, no model — creating a task is a service call:
+
+```
+PHASE ONE   [l9-probe] created task id=schedule-0a70ae86-… title="l9 schedule probe"
+            [l9-probe] listed 1 task(s): l9 schedule probe
+
+PHASE TWO   [l9-probe] after restart, tasks for the session: 1
+            [l9-probe]   title="l9 schedule probe" id=schedule-0a70ae86-…
+            [l9-probe] after deleting: 0 task(s)
+```
+
+The same task id in a process that never created it, so the task is Host storage rather than
+process memory. `solutions/verify-l9.sh` runs both phases and asserts all three lines.
+Delivery — a due task resuming the session and the agent working on it — still needs a
+provider, and the lesson says so.
+
+**Two gotchas found on the way.** The kit bundle had to be installed into the web profile as
+well as the base one, because L9's probe lives in the bundle but must run where `schedule`
+can activate (ADR-0016). And the **web profile does not surface a plugin's `console.log`** —
+its boot prints only the URL — so a probe there must report through a file. Both are now in
+the lesson and in `scripts/setup-verify-profiles.sh`.
 
 ## Evidence: L9 opt-in packages compose and activate
 

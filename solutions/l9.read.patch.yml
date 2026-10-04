@@ -1,0 +1,9 @@
+# Second phase: a FRESH process checks the scheduled task survived, then removes it.
+- id: l9-probe
+  disabled: false
+  config:
+    enabled: true
+    mode: read
+    sessionId: !!js "process.env.L9_SESSION_ID"
+    # The web profile hides plugin stdout, so results go to this file too.
+    # (set L9_PROBE_OUT in the environment)

@@ -78,8 +78,41 @@ for pkg in dsh-schedule dsh-webhook; do
 done
 
 echo
+echo "== 5. a scheduled task SURVIVES A RESTART =="
+# Lesson 9 claims schedules are Host-owned and survive restarts. That needs two processes,
+# like every other durability claim in this kit, and no model: creating a task is a service
+# call. Delivery is the part that needs a provider - a due task resumes the session and the
+# agent then works on it.
+#
+# The web profile does not surface a plugin's stdout, so the probe writes its result to a
+# file named by L9_PROBE_OUT.
+export L9_SESSION_ID="session-l9-verify-$RANDOM$RANDOM"
+probe_phase() { # probe_phase <overlay> <outfile> <logfile>
+  local overlay="$1" out="$2" log="$3"
+  rm -f "$out"
+  ( cd "$DSH_CHECKOUT" && L9_PROBE_OUT="$out" dsh --profile "$PROFILE" \
+      --patch "$KIT/solutions/l9.patch.yml" --patch "$overlay" --port 0 --no-open >"$log" 2>&1 ) &
+  local pid=$!
+  sleep 27
+  kill "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+}
+
+OUT1="$(mktemp)"; OUT2="$(mktemp)"; LOG="$(mktemp)"
+probe_phase "$KIT/solutions/l9.probe.patch.yml" "$OUT1" "$LOG"
+check "phase one creates and lists a task" 'listed 1 task(s)' "$(cat "$OUT1")"
+
+probe_phase "$KIT/solutions/l9.read.patch.yml" "$OUT2" "$LOG"
+check "the task is still there in a FRESH process" \
+  'after restart, tasks for the session: 1' "$(cat "$OUT2")"
+check "deleting it works" 'after deleting: 0 task(s)' "$(cat "$OUT2")"
+rm -f "$OUT1" "$OUT2" "$LOG"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 9 wiring verified. Model-dependent claims are unverified; see VERIFIED.md."
+  echo "Lesson 9 verified, including that a scheduled task survives a restart."
+  echo "Still needs a provider: a task actually FIRING and the agent working on it, a"
+  echo "headless run, --json events, an SDK round trip, and a webhook delivery."
 else
   echo "$failures check(s) failed."; exit 1
 fi

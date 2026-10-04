@@ -171,8 +171,41 @@ nothing, because the services it needs come from the web bundle:
 schedule (@deepseek-ai/dsh-schedule): pending (waiting for service: sessionController)
 ```
 
-Once mounted, schedules are Host-owned and survive restarts. They arrive as ordinary
-follow-up messages in the original conversation — **not** email, SMS, or push:
+Once mounted, schedules are Host-owned and **survive restarts** — which is testable
+without a model, since creating a task is a service call. The kit's probe does it in two
+processes, the same way L6's durability claim is tested:
+
+```sh
+export L9_SESSION_ID="session-l9-check-$RANDOM"
+dsh --profile web --patch <kit>/solutions/l9.patch.yml \
+    --patch <kit>/solutions/l9.probe.patch.yml --port 0 --no-open    # creates a task
+dsh --profile web --patch <kit>/solutions/l9.patch.yml \
+    --patch <kit>/solutions/l9.read.patch.yml  --port 0 --no-open    # a FRESH process
+```
+
+```
+PHASE ONE   [l9-probe] created task id=schedule-0a70… title="l9 schedule probe"
+            [l9-probe] listed 1 task(s): l9 schedule probe
+PHASE TWO   [l9-probe] after restart, tasks for the session: 1
+            [l9-probe]   title="l9 schedule probe" id=schedule-0a70…
+            [l9-probe] after deleting: 0 task(s)
+```
+
+The same task id, in a process that never created it: the task is Host storage, not process
+memory. `bash <kit>/solutions/verify-l9.sh` runs both phases.
+
+> **A gotcha worth knowing if you write plugins for this profile.** The **web profile does
+> not surface a plugin's `console.log`** to the terminal — its boot prints the URL and
+> nothing else — so a probe on a web-backed profile has to report results another way. The
+> kit's L9 probe writes them to the file named by `L9_PROBE_OUT` as well as logging them.
+> On a base-backed profile (`kitdemo`) plugin output appears normally, which is why the
+> other probes need no such arrangement.
+
+What still needs a provider is **delivery**: a due task resumes the session, and the agent
+then has to work on it. Storage is verifiable; the turn is not.
+
+They arrive as ordinary follow-up messages in the original conversation — **not** email,
+SMS, or push:
 
 ```
 schedule_create  { ... }

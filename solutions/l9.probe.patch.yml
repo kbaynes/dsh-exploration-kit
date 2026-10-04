@@ -1,0 +1,14 @@
+# Enable Lesson 9's schedule probe (phase one). Apply TOGETHER with l9.patch.yml, which
+# mounts the opt-in schedule package, and to a WEB-backed profile.
+#
+#   L9_SESSION_ID=session-l9-check-$$ dsh --profile web \
+#     --patch <kit>/solutions/l9.patch.yml --patch <kit>/solutions/l9.probe.patch.yml \
+#     --port 0 --no-open
+- id: l9-probe
+  disabled: false
+  config:
+    enabled: true
+    mode: write
+    sessionId: !!js "process.env.L9_SESSION_ID"
+    # The web profile hides plugin stdout, so results go to this file too.
+    # (set L9_PROBE_OUT in the environment)
