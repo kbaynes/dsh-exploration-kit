@@ -12,8 +12,10 @@
 #   dsh plugin --profile web add @deepseek-ai/dsh-schedule@<dsh version>
 #   dsh plugin --profile web add @deepseek-ai/dsh-webhook@<dsh version>
 #
-# NOT asserted, because each needs a model: a headless run and its exit codes,
-# `--json` events, an SDK round trip, a schedule firing, and a webhook delivery.
+# Everything this lesson claims is asserted, and NONE of it needs a credential: activation,
+# schedule durability, delivery that completes the scheduled work, the headless contract (exit
+# codes, `--json` phases, a tool call and its correlated result), an SDK round trip that loads a
+# patches file and runs an earlier lesson's tool, and a signed webhook delivery.
 set -uo pipefail
 
 DSH_CHECKOUT="${1:-}"

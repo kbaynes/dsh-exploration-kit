@@ -12,9 +12,9 @@
 #   dsh plugin --profile kitdemo add link:<kit>/kit-plugins
 #   dsh plugin --profile kitdemo add @deepseek-ai/dsh-tool-session-query@<dsh version>
 #
-# NOT asserted, because each needs a session or model: session_trace, and the
-# workspace-authority refusal (which needs a model-driven tool call, not just a
-# completed turn). Recorded as unverified in VERIFIED.md.
+# Everything this lesson claims is asserted. Phases 8 and 9 drive scripted TOOL CALLS, which need
+# no key; phase 10 measures the tool's input-token cost and runs only when
+# DSH_REAL_PROVIDER_PATCH names a real-provider patch (solutions/README.md).
 set -uo pipefail
 
 DSH_CHECKOUT="${1:-}"

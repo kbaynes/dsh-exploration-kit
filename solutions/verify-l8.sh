@@ -1,16 +1,22 @@
-# Lesson 8 verification — orchestration primitives are mounted and the workflow
-# logic is unit-tested without a model.
+# Lesson 8 verification — orchestration primitives, the workflow's pure core, fork heredity,
+# a real delegation, a measured cost comparison, and (opt-in, with a real provider) the two
+# claims that need model judgement.
 #
 # Verifies:
 #   1. the base bundle provides the subagent and workflow tools (no kit plugin needed)
 #   2. the workflow's pure core has unit tests, and they pass
 #   3. the workflow script is shaped for the tool (exports, not top-level code)
+#   4. fork heredity, through derived state
+#   5. a real end-to-end delegation against the scriptable mock, with its child's turn closed
+#   6. the monolith-versus-fan-out token comparison
+#   7. OPT-IN: a spawned child does not share the parent's conversation
+#   8. OPT-IN: send_message reaches a live child, and interrupt_agent stops it
 #
 # Usage: bash solutions/verify-l8.sh /path/to/deepseek-harness
 # Prereq: dsh plugin --profile kitdemo add link:<kit>/kit-plugins
 #
-# NOT asserted, because each needs a provider: a spawned child lacking parent context,
-# a forked child inheriting the cut, a real fan-out, and the cost comparison.
+# Phases 7 and 8 need a REAL provider and print SKIP unless DSH_REAL_PROVIDER_PATCH names a patch
+# that registers one; solutions/README.md has the recipe.
 set -uo pipefail
 
 DSH_CHECKOUT="${1:-}"
@@ -249,9 +255,12 @@ if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 8 verified: orchestration primitives, fake-engine logic, fork heredity through"
   echo "derived state, a real end-to-end delegation, and a measured monolith-versus-fan-out cost"
   echo "comparison."
-  echo "Still needs a credential: the MAGNITUDE of that comparison. The mock's input is a constant"
-  echo "3 tokens and its output is a scripted reply's character count, so the totals prove correct"
-  echo "attribution across agents rather than a realistic price."
+  echo "The MAGNITUDE of that comparison is not a harness property: under the mock the input is a"
+  echo "constant 3 tokens and the output is a scripted reply's character count, so the totals prove"
+  echo "correct attribution across agents rather than a realistic price. A realistic total is a"
+  echo "property of a provider's price list, not of anything this repository can assert."
+  echo "Phases 7 and 8 need a REAL provider and print SKIP without DSH_REAL_PROVIDER_PATCH; see"
+  echo "solutions/README.md for the patch that runs them."
 else
   echo "$failures check(s) failed."; exit 1
 fi

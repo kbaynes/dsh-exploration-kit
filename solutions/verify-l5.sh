@@ -10,8 +10,9 @@
 # Usage: bash solutions/verify-l5.sh /path/to/deepseek-harness
 # Prereq: dsh plugin --profile kitdemo add link:<kit>/kit-plugins
 #
-# NOT asserted, because each needs a model-driven tool call of its own: the model
-# INVOKING the skill once the catalogue has announced it.
+# NOT asserted: the model CHOOSING to invoke a skill, which is model judgement. The invocation
+# path itself is asserted in phase 9, where the mock scripts the `skill` call and the harness loads
+# the body for real; phases 8 and 10 assert the catalogue and its live update.
 set -uo pipefail
 
 DSH_CHECKOUT="${1:-}"

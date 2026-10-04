@@ -503,7 +503,7 @@ The seed must be a **prefix** of the parent's log, and `inheritedEventCount` is 
 
 **A stale path was found and fixed.** L8 and L9 still pointed readers at `doc/exploration/...`, the workspace location the curriculum left when it became a standalone repository. Both now use `<kit>/content/...`.
 
-**Deliberately unverified:** any real delegation, fork, or fan-out, and the monolith-versus-fan-out cost comparison. Every one needs a provider.
+**This section covers the contract the workflow engine guarantees, and nothing more.** The parts that need a provider are verified in their own sections below: fork heredity, a real delegation, and the monolith-versus-fan-out comparison (keyless), plus the two claims that need model judgement (opt-in, with a real provider).
 
 ## Evidence: L7 the invariant checks run clean
 

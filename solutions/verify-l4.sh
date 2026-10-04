@@ -9,8 +9,11 @@
 # Usage: bash solutions/verify-l4.sh /path/to/deepseek-harness
 # Prereq: dsh plugin --profile kitdemo add link:<kit>/kit-plugins
 #
-# NOT asserted here, because it needs a model tool call: that a write outside the
-# root is denied and one inside succeeds. Recorded as unverified in VERIFIED.md.
+# The gate's DECISIONS are asserted through the real tool pipeline by a shipped probe: an outside
+# write is GATE-DENIED with the lesson's reason, and an inside write is not denied by this gate.
+#
+# NOT asserted: the `ask` path, which needs a real approval flow rather than a scripted decision,
+# and the guard's undo-ability against another layer. Both are recorded in VERIFIED.md.
 set -uo pipefail
 
 DSH_CHECKOUT="${1:-}"
