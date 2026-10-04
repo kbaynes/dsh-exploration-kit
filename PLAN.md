@@ -77,8 +77,7 @@ by package name. Lesson 2's plugin loads and mounts its tool through it.
       quoted verbatim
 - [x] Establish `link:` (not `file:`) as the documented install, verified: `file:`
       copies so edits do not propagate, which defeats every "edit and observe" step
-- [ ] Rewrite steps 2–4 of **every remaining lesson** before building it
-      (L9 outstanding)
+- [x] Rewrite steps 2–4 of **every remaining lesson** before building it (L1–L9 done)
 - [x] Rewrite **Lesson 3** for the bundle, and correct two upstream-tutorial traps
       found by running it (`FiberState` const enum, non-schema `Config`)
 - [ ] Replace the `<kit>/plugins/*.patch.yml` convention with a documented

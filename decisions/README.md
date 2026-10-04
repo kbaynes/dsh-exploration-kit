@@ -45,3 +45,5 @@ without re-running the experiment.
 - [ADR-0012 — The curriculum, the bundle, and examples are one source of truth](0012-single-source-of-truth.md)
 - [ADR-0013 — Pin optional DSH package versions; npm's `latest` tag is stale](0013-pin-optional-package-versions.md)
 - [ADR-0014 — Tag each release to the DeepSeek Harness commit it was verified against](0014-tag-releases-to-a-harness-commit.md)
+- [ADR-0015 — A capability named in the docs is not necessarily mounted](0015-capability-tools-may-be-unmounted.md)
+- [ADR-0016 — Which profile a row is applied to decides whether it activates](0016-profile-choice-is-load-bearing.md)

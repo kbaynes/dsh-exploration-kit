@@ -1,0 +1,27 @@
+# Lesson 9: enable scheduled wakes and webhook triggers.
+#
+# Neither is mounted by any shipped bundle — the `schedule` and `webhook` packages are
+# opt-in — so each must be BOTH installed into the profile and inserted here:
+#
+#   dsh plugin --profile web add @deepseek-ai/dsh-schedule@<dsh version>
+#   dsh plugin --profile web add @deepseek-ai/dsh-webhook@<dsh version>
+#
+# Install the pinned version: npm's `latest` tag for the optional packages is stale
+# (see ADR-0013).
+#
+# Apply this to a WEB-backed profile, not the base-backed `kitdemo` one. The services
+# these packages require come from the web bundle, and on a base profile both rows sit
+# in PENDING forever:
+#
+#   schedule (...): pending (waiting for service: sessionController)
+#   webhook  (...): pending (waiting for services: agentPresets, workspaceRegistry)
+#
+# That failure is silent apart from the startup summary, which is Lesson 3's PENDING
+# lesson showing up in a real composition.
+
+- insert:
+    - id: schedule
+      name: '@deepseek-ai/dsh-schedule'
+
+    - id: webhook
+      name: '@deepseek-ai/dsh-webhook'

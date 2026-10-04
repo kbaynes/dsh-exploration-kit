@@ -35,9 +35,9 @@ and the [SDK family](https://github.com/deepseek-ai/deepseek-harness/blob/main/p
 
 ## Prerequisites
 
-L1–L8 complete, and a model provider configured. L4's policy work is a **hard**
-prerequisite here: unattended automation without a policy gate is how experiments
-become incidents.
+L1–L8 complete, a model provider configured, and — for steps 4–5 — an opt-in package
+installed into a **web-backed** profile. L4's policy work is a **hard** prerequisite:
+unattended automation without a policy gate is how experiments become incidents.
 
 ## Step 1 — One-shot from the shell
 
@@ -137,8 +137,33 @@ Three differences from the TypeScript path are worth knowing before you build:
 
 ## Step 4 — Give it a clock
 
-Schedules are Host-owned and survive restarts. They arrive as ordinary follow-up
-messages in the original conversation — **not** email, SMS, or push:
+**Schedules are opt-in, and the lesson's original premise was wrong.** `@deepseek-ai/dsh-schedule`
+is mounted by **no shipped bundle** — the `schedule` and `webhook` names you find in
+the bundle patches are telemetry tuning knobs, not these packages. So there are two
+steps, not one:
+
+```sh
+dsh plugin --profile web add @deepseek-ai/dsh-schedule@<dsh version>
+```
+
+and then the row, from `<kit>/solutions/l9.patch.yml`:
+
+```yaml
+- insert:
+    - id: schedule
+      name: '@deepseek-ai/dsh-schedule'
+```
+
+**Apply it to a web-backed profile, not the base-backed `kitdemo` one.** This is L3's
+`PENDING` lesson arriving in a real composition: on a base profile the row activates
+nothing, because the services it needs come from the web bundle:
+
+```
+schedule (@deepseek-ai/dsh-schedule): pending (waiting for service: sessionController)
+```
+
+Once mounted, schedules are Host-owned and survive restarts. They arrive as ordinary
+follow-up messages in the original conversation — **not** email, SMS, or push:
 
 ```
 schedule_create  { ... }
@@ -148,20 +173,40 @@ schedule_delete  { ... }
 ```
 
 The tool accepts `after_seconds`, an explicit absolute `at`, a bounded fixed-rate
-`every_seconds`, daily and weekly local times in an explicit IANA zone, and cron
-as a five-field expression. Management uses the Host storage domain, and a due
-message resumes the original Session.
+`every_seconds`, daily and weekly local times in an explicit IANA zone, and cron as a
+five-field expression. Management uses the Host storage domain, and a due message
+resumes the original Session.
+
+Note where those tools are registered: in a **live root Agent's scope**, so they do not
+appear in `--dump-config`. Composing cleanly proves the service loaded; seeing the tools
+needs a session.
 
 Practical exercise: schedule a recurring check of the kit's own validation
-(`~/.local/bin/okflint validate --manifest doc/okf-base.yaml ./doc/`), let it fire
-once, then delete it. Notice what "resumes the original Session" gives you — the
-run has your earlier context, which is both the feature and the risk. A reminder
-that inherits a long conversation inherits its cost.
+(`okflint validate --manifest okf-base.yaml`), let it fire once, then delete it. Notice
+what "resumes the original Session" gives you — the run has your earlier context, which
+is both the feature and the risk. A reminder that inherits a long conversation inherits
+its cost.
 
 ## Step 5 — Give it triggers
 
-`ctx.webhookRuntime` is a registry of **trusted** programmatic rules plus one
-built-in action: creating an ordinary root Session inside a Web Workspace.
+`ctx.webhookRuntime` is a registry of **trusted** programmatic rules plus one built-in
+action: creating an ordinary root Session inside a Web Workspace.
+
+It is opt-in in the same way as schedules — install the package (pinned) and insert the
+row:
+
+```sh
+dsh plugin --profile web add @deepseek-ai/dsh-webhook@<dsh version>
+```
+
+```yaml
+    - id: webhook
+      name: '@deepseek-ai/dsh-webhook'
+```
+
+It needs even more of the web bundle than `schedule` does; on a base profile it reports
+`pending (waiting for services: agentPresets, workspaceRegistry)`. Both requirements are
+in `<kit>/solutions/l9.patch.yml` with the reasoning inline.
 
 ```ts
 // WebhookRule<K>: branded `id`, provider `kind`, and run(delivery, signal)
@@ -219,12 +264,33 @@ automation you instrumented in L7.
 
 ## Verification
 
-1. A headless run returns the expected exit code for a success and for a forced failure.
-2. `--json` output contains a tool-call event you can assert on.
-3. An SDK run loads your `patches` file and executes a tool from an earlier lesson.
-4. A scheduled task fires once and is visible in `schedule_list` before you delete it.
-5. A webhook rule creates exactly one Session for one delivery — and you have
-   stated what happens on a duplicate delivery.
+```sh
+bash <kit>/solutions/verify-l9.sh <path/to/deepseek-harness>
+```
+
+Observable without a model:
+
+1. The overlay inserts `schedule` and `webhook`, and **no shipped bundle already
+   provides them** — they are genuinely opt-in, and the shipped bundles' `schedule`/
+   `webhook` matches are telemetry knobs.
+2. Booting a **web-backed** profile with both installed produces **no activation
+   warnings**. On a base-backed profile the same overlay leaves both rows `PENDING`,
+   naming the missing services — which is the point, not a defect.
+3. The profile manifest pins both packages to your dsh version rather than npm's stale
+   `latest`.
+
+Requires a provider:
+
+4. A headless run returns the documented exit code for success and for a forced
+   failure.
+5. `--json` output contains a tool-call event you can assert on.
+6. An SDK run loads your patches file and executes a tool from an earlier lesson.
+7. A scheduled task fires once and appears in `schedule_list` before you delete it.
+8. A webhook rule creates exactly one Session per delivery, and you have stated what
+   happens on a duplicate delivery.
+
+Items 4–8 are recorded as unverified in
+[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
 
 ## Exit check — you should now be able to explain
 

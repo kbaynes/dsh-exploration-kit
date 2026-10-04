@@ -101,7 +101,7 @@ row that admits it has not been checked yet.
 | L6 — Give the session durable state | **Partly executed** | Executed: both plugins load on the real composition; the projection's fold is **unit-tested** (`kit-plugins/l6/fold.test.mjs`, 4 tests, in CI) including the same-reference contract and the delta-corruption hazard. **Not** executed: appending to a real session, JSONL inspection, and restart replay — each needs a session. |
 | L7 — Operate the harness | **Partly executed** | Executed: the overlay composes as one override plus three inserts, and a boot applies it with **zero activation warnings**; the optional tool package is installed pinned to the dsh version. **Not** executed: any query, the authority refusal, token deltas, `/compact`, and the invariant findings — each needs a session. |
 | L8 — Orchestrate multiple agents | **Partly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (no kit plugin needed), and the workflow's pure core passes **7 unit tests with a fake engine** — pipeline drives every item, the schema passes through, and a partially failed fan-out still yields a dense array. **Not** executed: any real delegation, fork, or fan-out — each needs a provider. |
-| L9 — Automate the harness | **Documented** | Headless CLI contract, SDK usage, schedule and webhook contracts read from package READMEs. **The Python snippet in step 3 is a placeholder** and must be replaced or removed before publication. Needs a model. |
+| L9 — Automate the harness | **Partly executed** | Executed: `schedule` and `webhook` are confirmed opt-in (no shipped bundle provides them), the overlay composes, and a web-backed profile activates both with **no warnings** while a base-backed profile leaves them `PENDING` naming the missing services; both packages install pinned. The Python snippet is a real upstream example. **Not** executed: any headless run, `--json` events, an SDK round trip, a schedule firing, a webhook delivery — each needs a provider. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
 
@@ -198,6 +198,41 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L9 opt-in packages compose and activate
+
+**A premise in the lesson was wrong.** It assumed `schedule_*` and `ctx.webhookRuntime`
+were available. Neither package is mounted by any shipped bundle. The `schedule` and
+`webhook` strings in the bundle patches are telemetry tuning knobs
+(`scheduledDelayMillis`), which is exactly the kind of false match that makes a wrong
+assumption look confirmed.
+
+**Both are opt-in and must be installed, pinned** (ADR-0013):
+
+```
+dsh plugin --profile web add @deepseek-ai/dsh-schedule@0.2.0-rc.2
+dsh plugin --profile web add @deepseek-ai/dsh-webhook@0.2.0-rc.2
+```
+
+**Profile choice is load-bearing.** On the base-backed `kitdemo` profile the same
+overlay strands both rows in `PENDING`, naming the services they need:
+
+```
+schedule (...): pending (waiting for service: sessionController)
+webhook  (...): pending (waiting for services: agentPresets, workspaceRegistry)
+```
+
+On a **web-backed** profile with both installed, a boot produced no activation warnings
+at all. That is Lesson 3's `PENDING` mechanism appearing in a real composition rather
+than a contrived one.
+
+**Where the tools appear.** `schedule_*` registers in a live root Agent's scope, so it
+does not show up in `--dump-config`. Composing cleanly proves the service loaded;
+observing the tools needs a session. The lesson states that rather than implying the
+dump is evidence.
+
+**Deliberately unverified:** any headless run and its exit codes, `--json` events, an
+SDK round trip, a schedule firing, and a webhook delivery.
 
 ## Evidence: L8 orchestration primitives are mounted, and its logic is unit-tested
 
