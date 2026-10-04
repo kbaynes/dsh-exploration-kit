@@ -80,5 +80,20 @@ type-level declaration merging makes possible.
 ## Evidence
 
 [VERIFIED.md](../VERIFIED.md) "Evidence: L6's durability claim is false as written" quotes
-both boots and the search failure. The two-boot experiment is reproducible with
+both boots and the search failure.
+
+**Late addition — the query layer also cannot see such an event.** Found while verifying
+Lesson 7: `readSession` returns an invented event, and `filterEvents` finds it neither by
+type nor by literal text.
+
+```
+[l7-probe] readSession: 5 event(s); marker present: true
+[l7-probe] filterEvents by type: 0 match(es)
+[l7-probe] filterEvents by text: 0 match(es) for an invented type's payload
+```
+
+So the true cost of inventing a type is threefold: the session becomes unopenable after a
+restart, full-text search over the corpus breaks, and the events themselves are invisible to
+the query layer even while present in the log. `solutions/verify-l7.sh` asserts both filter
+results, so the limitation is checked rather than described. The two-boot experiment is reproducible with
 `solutions/l7.probe.patch.yml`'s `write` and `read` modes.

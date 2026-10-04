@@ -108,6 +108,34 @@ Two contract details worth understanding before you rely on them:
 Enabling this package adds fixed guidance plus five tool schemas to **every** model
 request, so it is a real prompt-budget decision, not a free toggle.
 
+### Two limits of history access, both found by running it
+
+**A session the harness cannot interpret poisons search for the whole corpus.** Full-text
+search observes *sessions*, so one session containing an event type outside the harness
+vocabulary makes `searchSessions` fail outright:
+
+```
+session-search persistence observation failed: session "…" contains event type "l6/step"
+(seq 4) unknown to this harness and not marked ignorable; refusing to interpret the log
+```
+
+That is Lesson 6's trap seen from this side — see
+[ADR-0024](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md).
+`readSession` still fails for that session; `listSessions` still lists it.
+
+**An event type the harness does not know is invisible to filters.** `readSession` returns
+a plugin-declared event, and `filterEvents` cannot find it — not by type, and not by literal
+text, because the query layer indexes only documents it can interpret. Verified:
+
+```
+[l7-probe] readSession: 5 event(s); marker present: true
+[l7-probe] filterEvents by type: 0 match(es)
+[l7-probe] filterEvents by text: 0 match(es) for an invented type's payload
+```
+
+A practical consequence for the reader: do not build retrieval in Lesson 5's or 6's spirit
+on an invented event type. It will be absent from exactly the searches meant to find it.
+
 Boot with the overlay to confirm the whole composition still activates:
 
 ```sh

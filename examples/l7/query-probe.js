@@ -76,9 +76,16 @@ export function apply(ctx, config) {
       console.log(`[l7-probe] readSession: ${events.length} event(s); marker present: ${JSON.stringify(events).includes(marker)}`)
 
       try {
-        // Filters are ANDed clauses in an ARRAY, not a bare object.
-        const filtered = await ctx.sessionQuery.filterEvents(session.id, [{ text: marker }])
-        console.log(`[l7-probe] filterEvents: ${Array.isArray(filtered) ? filtered.length : typeof filtered} match(es)`)
+        // Filter clauses are ANDed, in an ARRAY, and each clause carries a `kind`.
+        // A bare `{ text }` is rejected with "session unknown filter kind (missing)".
+        const byType = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'type', values: ['l6/step'] }])
+        console.log(`[l7-probe] filterEvents by type: ${Array.isArray(byType) ? byType.length : typeof byType} match(es)`)
+
+        // Literal-text filtering searches SEMANTIC text, which the harness derives only
+        // from event types it knows. A plugin-declared type contributes none, so its
+        // payload is invisible to text search even though the event is in the log.
+        const byText = await ctx.sessionQuery.filterEvents(session.id, [{ kind: 'text', text: marker }])
+        console.log(`[l7-probe] filterEvents by text: ${Array.isArray(byText) ? byText.length : typeof byText} match(es) for an invented type's payload`)
       } catch (error) {
         console.log(`[l7-probe] filterEvents unavailable: ${error.message}`)
       }

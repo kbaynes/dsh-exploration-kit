@@ -99,8 +99,47 @@ else
 fi
 
 echo
+echo "== 5. the query service itself, and where the tools register =="
+# ctx.sessionQuery is the service behind the five model-facing tools. The tools add schema,
+# prompt, and workspace authorization; the service is what a code caller uses, so the same
+# store and reads can be exercised WITHOUT a model.
+QUERY_LOG="$(mktemp)"
+( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" \
+    --patch "$KIT/solutions/l7.patch.yml" \
+    --patch "$KIT/solutions/l7.probe.patch.yml" --port 0 --no-open >"$QUERY_LOG" 2>&1 ) &
+querypid=$!
+sleep 27
+kill "$querypid" 2>/dev/null
+wait "$querypid" 2>/dev/null
+
+check "listSessions finds the session the probe created" \
+  'mine found: true' "$(grep '\[l7-probe\]' "$QUERY_LOG")"
+check "readSession returns the log including the marker event" \
+  'marker present: true' "$(grep '\[l7-probe\]' "$QUERY_LOG")"
+# A second consequence of ADR-0024, asserted rather than glossed: readSession returns the
+# invented event, and filterEvents cannot see it AT ALL - not by type, and not by text.
+# The query layer indexes documents it can interpret, and it cannot interpret a type the
+# harness does not know.
+check "filterEvents cannot see an invented type, by type" \
+  'filterEvents by type: 0 match' "$(grep '\[l7-probe\]' "$QUERY_LOG")"
+check "filterEvents cannot see it by text either" \
+  'filterEvents by text: 0 match' "$(grep '\[l7-probe\]' "$QUERY_LOG")"
+# Lesson 7 says the five tools register in a live ROOT AGENT's scope - a claim about
+# agent.ctx rather than the global registry, and one that would silently stop being true.
+check "all five lesson tools register in the agent scope" \
+  'lesson tools in the AGENT scope: 5/5' "$(grep '\[l7-probe\]' "$QUERY_LOG")"
+rm -f "$QUERY_LOG"
+
+echo
+echo "NOTE  full-text search is not asserted. It observes whole sessions, so a single"
+echo "      session carrying an event type the harness does not know makes searchSessions"
+echo "      fail for the entire corpus (ADR-0024). That is documented in the lesson."
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 7 wiring verified. Session-dependent claims are unverified; see VERIFIED.md."
+  echo "Lesson 7 verified: the store opens, the query service lists and reads, and the five"
+  echo "tools register in an agent scope. Still needs a provider: the workspace-authority"
+  echo "refusal, token deltas, /compact, and the invariant findings."
 else
   echo "$failures check(s) failed."; exit 1
 fi
