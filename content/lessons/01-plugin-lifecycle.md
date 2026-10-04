@@ -139,6 +139,14 @@ diagnostic metadata only. `ctx.effect(fn)` runs the body during load and keeps t
 returned disposer for unload — this is how you own a resource (timer, connection,
 watcher) that Cordis does not already manage.
 
+**Why a `.ts` file loads at all, and when that stops working.** Node runs `.ts`
+files by *erasing* types; there is no type checker in the boot path. That is enough
+for this file, because its only TypeScript is a type-only import that erasure
+removes entirely. It would **not** be enough for a `.ts` file containing an `enum`,
+a decorator, parameter properties, or a type-only *export* that consumers rely on —
+those need a real build step. Every later lesson uses plain `.js` for that reason:
+what runs is what you wrote, with no transpile gap between the two.
+
 Because you installed with `link:`, this file is already live. Nothing to reinstall.
 
 ## Step 4 — Boot it and watch the lifecycle

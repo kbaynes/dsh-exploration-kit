@@ -40,7 +40,7 @@ content/          The curriculum — an Open Knowledge Format bundle
 website/          VitePress configuration and theme (renders content/ in place)
 kit-plugins/      The dsh bundle that carries each lesson's exercise plugin
 plugins/          Your own scratch space for writing the exercises
-examples/         Read-only exact files as each lesson presents them
+examples/         Generated mirror of each lesson's files (drift-checked in CI)
 solutions/        Answer key, for diffing when stuck
 scripts/          Verification tooling
 ```
@@ -110,6 +110,7 @@ pnpm run check:links         # every relative link inside content/ resolves
 pnpm run check:placeholders  # no pre-publication placeholders remain
 pnpm run validate            # OKF conformance, if okflint is on your PATH
 pnpm run check:upstream      # upstream DSH links resolve (needs a checkout)
+pnpm run check:examples      # examples/ matches the canonical bundle
 ```
 
 `check:upstream` takes a DSH checkout path as an argument or in `DSH_CHECKOUT`:

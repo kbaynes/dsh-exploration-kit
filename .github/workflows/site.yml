@@ -56,6 +56,9 @@ jobs:
       - name: Check internal links
         run: pnpm run check:links
 
+      - name: Check examples mirror has not drifted
+        run: pnpm run check:examples
+
       - name: Build site
         run: pnpm run build
 

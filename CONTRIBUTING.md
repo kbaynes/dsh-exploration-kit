@@ -74,6 +74,13 @@ Rules for the body:
   `https://github.com/deepseek-ai/deepseek-harness/blob/main/...`, so the kit works
   when cloned on its own.
 
+## Examples are generated
+
+`examples/` mirrors `kit-plugins/`, which is canonical because it is what the boot
+actually loads. After editing a lesson plugin, run `node scripts/sync-examples.mjs`.
+CI runs `--check` and fails on drift — a hand-edited copy that disagrees with the
+booting code is exactly the bug this project exists to avoid.
+
 ## Conventions
 
 - `<kit>` means this repository's root. Exercise plugins live under

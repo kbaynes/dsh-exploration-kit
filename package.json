@@ -36,7 +36,9 @@
     "check:links": "node scripts/sync-site-docs.mjs && node scripts/check-links.mjs",
     "check:placeholders": "node scripts/check-placeholders.mjs",
     "check:upstream": "node scripts/check-upstream-links.mjs",
-    "sync:site": "node scripts/sync-site-docs.mjs"
+    "sync:site": "node scripts/sync-site-docs.mjs",
+    "sync:examples": "node scripts/sync-examples.mjs",
+    "check:examples": "node scripts/sync-examples.mjs --check"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",

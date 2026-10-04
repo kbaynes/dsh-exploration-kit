@@ -21,11 +21,13 @@ a deployable one.
 
 | Concept | What you learn |
 |---|---|
+| `inject = ['tools']` | Why a service must be declared before it can be touched |
 | `tools/pre-execute` | The reorderable allow / deny / ask decision point |
 | Waterfall dispatch | A listener receives `(...args, next)`, delegates with `next()`, or short-circuits |
 | The decision union | `{kind:'allow'}`, `{kind:'deny', reason}`, `{kind:'ask', reason?}`, `{kind:'cancel'}` |
 | Monotonic guards | `ctx.tools.guard()` — a denial no later listener can reverse |
 | The full pipeline | pre-execute → guards → execute → post-execute → finalizeContent → result |
+| `!!js` in a config row | Compute the confinement root at load time |
 | `fs/*` policy | `fs/write-intent` and `fs/edit-intent` waterfalls |
 | Sandbox seam | `ctx.sandbox` confines spawned processes; providers are swappable |
 | Credential redaction | Context-level redaction rather than tool-level string matching |
@@ -38,33 +40,37 @@ waterfall semantics.
 ## Prerequisites
 
 L1–L3 complete. L3 in particular: you need the reload loop to iterate on a policy
-without restarting.
+without restarting, and you have seen what a missing `inject` reports.
 
 ## Step 1 — A working deny-by-policy gate
 
-Create `<kit>/plugins/l4/write-scope.ts`:
+Open `<kit>/kit-plugins/l4/write-scope.js`, wired into the bundle:
 
-```ts
+```js
 import { resolve, sep } from 'node:path'
-import type { Context } from '@deepseek-ai/cordis'
-import type { PreToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
+import Schema from '@deepseek-ai/schemastery'
 
-const ALLOWED_ROOT = resolve(process.cwd(), '<kit>/plugins/l4/sandbox')
+export const Config = Schema.object({
+  allowedRoot: Schema.string().default(resolve(process.env.KIT_SANDBOX ?? process.cwd(), 'l4-sandbox')),
+})
 
-function isMutatingFsTool(name: string) {
+export const name = 'l4-write-scope'
+export const inject = ['tools']
+
+function isMutatingFsTool(name) {
   return name === 'write' || name === 'edit' || name === 'str_replace_editor'
 }
 
-function targetPath(exec: ToolExecution): string | undefined {
-  const args = exec.arguments as Record<string, unknown>
+function targetPath(exec) {
+  const args = exec.arguments ?? {}
   const value = args.path ?? args.file_path ?? args.filePath
   return typeof value === 'string' ? value : undefined
 }
 
-export const name = 'l4-write-scope'
+export function apply(ctx, config) {
+  const ALLOWED = resolve(config.allowedRoot)
 
-export function apply(ctx: Context) {
-  ctx.on('tools/pre-execute', async (exec, next): Promise<PreToolDecision> => {
+  ctx.on('tools/pre-execute', async (exec, next) => {
     if (!isMutatingFsTool(exec.name)) return next()
 
     const target = targetPath(exec)
@@ -72,63 +78,96 @@ export function apply(ctx: Context) {
       return { kind: 'ask', reason: `${exec.name} without a resolvable path` }
     }
 
-    const absolute = resolve(process.cwd(), target)
-    if (absolute !== ALLOWED_ROOT && !absolute.startsWith(ALLOWED_ROOT + sep)) {
-      return { kind: 'deny', reason: `writes are confined to ${ALLOWED_ROOT}` }
+    const absolute = resolve(target)
+    if (absolute !== ALLOWED && !absolute.startsWith(ALLOWED + sep)) {
+      return { kind: 'deny', reason: `writes are confined to ${ALLOWED}` }
     }
     return next()
   })
+
+  console.log(`[l4-write-scope] ACTIVE — writes confined to ${ALLOWED}`)
 }
 ```
 
-Three details are the whole lesson:
+Four details are the whole lesson:
 
-- **`return next()` delegates.** A listener that only observes must call `next()`
-  or it silently vetoes the pipeline. `next()` resolves to the downstream
-  decision, not to permission.
-- **Returning without `next()` is a short-circuit.** That is the design for
+- **`return next()` delegates.** A listener that only observes must call `next()`,
+  or it silently vetoes the pipeline. `next()` resolves to the downstream decision,
+  not to permission.
+- **Returning *without* `next()` is a short-circuit.** That is the design for
   single-decision events: a policy listener owns the decision.
 - **`exec.arguments` is frozen and deliberately not rewritable.** The repository
-  states outright that `tools/pre-execute` cannot rewrite arguments, because
-  logged and rendered args would desync from what actually ran. Read them; do not
-  try to normalize them here.
+  states that `tools/pre-execute` cannot rewrite arguments, because logged and
+  rendered args would desync from what actually ran. Read them; do not normalize
+  them here.
+- **`inject = ['tools']` is mandatory.** Without it, touching `ctx.tools` throws
+  `Error: cannot get property "tools" without inject` at load. This was hit while
+  building the lesson — the service is *not* ambient, and the loader tells you so.
 
-Create the allowed directory and mount the plugin from
-`<kit>/plugins/l4.patch.yml`:
+### Supplying the sandbox root
+
+The path must be absolute, and `process.cwd()` is the **checkout**, not the kit —
+so a relative default would confine writes to the wrong tree. The bundle row
+therefore computes it with `!!js`, evaluated at load time:
 
 ```yaml
-- insert:
     - id: l4-write-scope
-      name: './l4/write-scope.ts'
+      name: dsh-exploration-kit-plugins/l4/write-scope.js
+      config:
+        allowedRoot: !!js "process.env.KIT_ROOT ? process.env.KIT_ROOT + '/l4-sandbox' : undefined"
+```
+
+Boot with `KIT_ROOT` pointing at your kit, and confirm the plugin's own line names
+the tree it will defend:
+
+```sh
+KIT_ROOT=<kit> dsh --profile kitdemo --port 0 --no-open
+```
+
+```
+[l4-write-scope] ACTIVE — writes confined to <kit>/l4-sandbox
 ```
 
 ## Step 2 — Test the gate
 
-With a model available, ask the agent to write a file outside
-`<kit>/plugins/l4/sandbox` and confirm the call is denied with your reason
-string, then ask for a write inside the sandbox and confirm it succeeds.
+With a model available, ask the agent to write a file **outside** `l4-sandbox` and
+confirm the call is denied with your reason string; then ask for a write inside it
+and confirm it succeeds.
 
-Without a model, exercise the gate directly through the same runtime by using
-`run_code` in a PTC composition, or simply trust the reload loop: change the
-`reason` text and watch it appear on the next denied call. Either way, confirm
-**both** outcomes — a gate you have only seen deny is a gate you have not tested.
+Both outcomes matter. A gate you have only seen deny is a gate you have not tested —
+an over-broad policy that blocks everything looks identical to a working one until
+you try the permitted case.
+
+**No API key?** You can still verify everything except the decision itself: the
+listener registers, the plugin loads, and the configured root reaches `apply`. The
+allow/deny outcome is the one claim that needs a tool call, and it is recorded as
+unverified in [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md)
+rather than asserted.
 
 ## Step 3 — Make a denial irreversible
 
 A waterfall is reorderable: another listener registered after yours could, in
 principle, decide differently. When a rule genuinely must hold, use the monotonic
-guard instead:
+guard instead. It also lives in the bundle, at
+`<kit>/kit-plugins/l4/guard.js`:
 
-```ts
-export function apply(ctx: Context) {
+```js
+export const name = 'l4-guard'
+export const inject = ['tools']
+
+export function apply(ctx) {
   ctx.tools.guard(exec => {
-    if (exec.name === 'bash' && /rm\s+-rf\s+\//.test(JSON.stringify(exec.arguments))) {
+    if (exec.name === 'bash' && /rm\s+-rf\s+\//.test(JSON.stringify(exec.arguments ?? {}))) {
       return 'refusing a recursive delete of the filesystem root'
     }
     return undefined
   })
+
+  console.log('[l4-guard] ACTIVE — monotonic guard registered')
 }
 ```
+
+`inject` is required here too, for the same reason as the waterfall listener.
 
 Registered guards run **after** the extensible `tools/pre-execute` waterfall, and a
 returned reason denies the call and cannot be turned back into permission by a
@@ -178,10 +217,23 @@ confine. Defense in depth means your gate is not the only thing standing.
 
 ## Verification
 
-1. A write outside the sandbox is denied with your exact reason string.
-2. A write inside the sandbox succeeds.
-3. A guard denial survives even with your waterfall listener returning `next()`.
-4. You can name which pipeline stage would be wrong for a policy decision, and why.
+Observable without a model:
+
+1. The boot prints `[l4-write-scope] ACTIVE — writes confined to <your root>`, so the
+   configured root reached `apply`.
+2. Removing `inject = ['tools']` makes the load fail with
+   `cannot get property "tools" without inject` — proof the service is not ambient.
+3. `[l4-guard] ACTIVE — monotonic guard registered` confirms the guard's listener
+   installed on the same composition.
+
+Requires a tool call (needs a provider):
+
+4. A write outside the sandbox is denied with your exact reason string.
+5. A write inside the sandbox succeeds.
+6. A guard denial survives even with your waterfall listener returning `next()`.
+
+Do not treat 1–3 as evidence of 4–6. That distinction is the whole point of this
+project's verification rule.
 
 ## Exit check — you should now be able to explain
 
@@ -190,6 +242,8 @@ confine. Defense in depth means your gate is not the only thing standing.
 - Why argument rewriting is forbidden before dispatch.
 - Which of your policy ideas belong to `fs/*`, to `ctx.sandbox`, and to the tool
   pipeline respectively.
+- Why the sandbox root could not simply be a path relative to the process's working
+  directory.
 
 ## Next
 

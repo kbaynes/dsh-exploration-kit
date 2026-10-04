@@ -35,7 +35,7 @@ version, expect to adjust commands and package import paths.
 | L1 — Mount your first plugin | **Mostly executed** | Lifecycle cycle verified twice: originally via a patch overlay, and again after the bundle pivot (`dsh --profile kitdemo`), which is what the lesson now teaches. Both the `FAILED` throw and the `PENDING` inject experiments **are** executed, and their real output corrected two draft assumptions. See evidence below. |
 | L2 — Register a tool, compose with config | **Mostly executed** | Executed: the plugin loads through the installed bundle and logs `ACTIVE — defaultUnit=lines`; the Schemastery schema rejects `paragraphs` with a field-naming error; an overlay patch on the *installed* row changes the value to `chars`. Still **not** executed: an actual model tool call (needs a provider). See evidence below. |
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
-| L4 — Build a policy gate | **Partly executed** | The `PreToolDecision` union and pipeline order are verified against `packages/core/tools/src/index.ts` and `packages/core/tools/README.md`. The example gate plugin has **not** been executed. |
+| L4 — Build a policy gate | **Partly executed** | Executed: both policy plugins load (`l4-write-scope` reports its confinement root, `l4-guard` registers its monotonic guard), and the missing-`inject` failure was reproduced. **Not** executed: any allow/deny decision, which needs a model tool call. |
 | L5 — Assemble context deliberately | **Documented** | Verified against `docs/architecture.md`, `docs/cookbook/adding-a-tool.md` (`agent.inject()` semantics), `packages/skill/skill-filesystem/README.md`, and `packages/interaction/commands/README.md`. Not run; needs a model. |
 | L6 — Give the session durable state | **Documented** | `SessionEventMap` merge shape and `session.append` signature verified against `packages/deliverables/tool-present/src/types.ts` and `packages/core/session/src/index.ts`; projection rules from `packages/session/session-projection/README.md`. The JSONL replay experiment has **not** been run. |
 | L7 — Operate the harness | **Documented** | Bundle rows, `tool-session-query` contract, and telemetry env vars verified against the bundle patches and package READMEs. Query authorization and cost measurement not run; needs a model. |
@@ -137,6 +137,34 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L4 plugins load (decisions unverified)
+
+Both policy plugins activate on the live composition:
+
+```
+[l4-write-scope] ACTIVE — writes confined to <kit>/l4-sandbox
+[l4-guard] ACTIVE — monotonic guard registered
+```
+
+**A real failure was reproduced and fixed.** The first version of `l4-guard` touched
+`ctx.tools` without declaring the service, and the load failed loudly:
+
+```
+l4-guard (dsh-exploration-kit-plugins/l4/guard.js): Error: cannot get property "tools" without inject
+```
+
+The lesson now documents that `inject = ['tools']` is mandatory, because the service
+is not ambient.
+
+**A design correction.** The original gate computed its confinement root from
+`process.cwd()`. The dsh process runs from the *checkout*, not the kit, so that
+would have defended the wrong tree. The root now comes from the plugin's own config,
+supplied by the bundle row with `!!js` at load time.
+
+**Deliberately unverified:** the allow/deny outcomes. Observing them requires a tool
+call, which requires a provider. The lesson separates what the boot proves from what
+only a call can prove, rather than presenting the former as the latter.
 
 ## Evidence: L3 executed (except the runtime-management extras)
 
