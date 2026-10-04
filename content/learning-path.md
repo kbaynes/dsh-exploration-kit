@@ -41,8 +41,8 @@ Three rules produced the order:
 
 | # | Project | New mechanism | Unlocks |
 |---|---|---|---|
-| L1 | Mount your first plugin | Plugin tree, shapes, fiber lifecycle | Reading a `FAILED` or `PENDING` load as a diagnosis instead of a mystery |
-| L2 | A tool + config composition | `ctx.tools`, Schemastery, patches | Making DSH do something new the model can call |
+| L1 | Mount your first plugin | Plugin tree, bundles and rows, fiber lifecycle | Reading a `FAILED` or `PENDING` load as a diagnosis instead of a mystery |
+| L2 | A tool + config composition | `ctx.tools`, Schemastery, config override | Making DSH do something new the model can call |
 | L3 | A service + hot reload | `ctx.*` service keys, `inject`, HMR, inventory | Watching the runtime reconfigure live; inspecting your own tree |
 | L4 | A policy gate | `tools/*` and `fs/*` waterfall events, guards | Governing what the agent may do, not just what it can do |
 | L5 | Deliberate context assembly | `agent/pre-step`, `agent.inject()`, skills, commands | Controlling what the model knows and when |

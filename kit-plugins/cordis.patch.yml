@@ -9,6 +9,9 @@
 # Exercise rows are added here as each lesson is built. See content/lessons/.
 
 - insert:
+    - id: l1-hello
+      name: dsh-exploration-kit-plugins/l1/hello.ts
+
     - id: l2-wordcount
       name: dsh-exploration-kit-plugins/l2/wordcount.js
       config:

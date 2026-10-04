@@ -67,10 +67,15 @@ by package name. Lesson 2's plugin loads and mounts its tool through it.
 - [x] Reproduce and confirm the failure mode (outside and inside the checkout)
 - [x] Build `kit-plugins/` as a bundle and verify the plugin loads
 - [x] Pin `@deepseek-ai/*` to the release under test in the bundle manifest
-- [ ] Rewrite **Lesson 1** step 2–4 to install the bundle instead of using a
-      `--patch` overlay; keep the overlay only where it explains *config override*
+- [x] Rewrite **Lesson 1** for the bundle: install step, plugin-row explanation,
+      the loose-file trap, and the observed `FAILED`/`PENDING` output
+- [x] Verify L1's rewritten `FAILED` and `PENDING` experiments — the observed output
+      corrected two assumptions in the draft (the boot warns and continues rather
+      than exiting; `PENDING` does name the missing service at startup)
 - [ ] Rewrite **Lesson 2** the same way, and re-express last-write-wins as
       overriding an *installed* row's config
+- [x] Establish `link:` (not `file:`) as the documented install, verified: `file:`
+      copies so edits do not propagate, which defeats every "edit and observe" step
 - [ ] Rewrite steps 2–4 of **every remaining lesson** before building it
 - [ ] Replace the `<kit>/plugins/*.patch.yml` convention with a documented
       "install the bundle, then patch config" workflow

@@ -32,7 +32,7 @@ version, expect to adjust commands and package import paths.
 
 | Lesson | Status | Notes |
 |---|---|---|
-| L1 — Mount your first plugin | **Executed** | See evidence below. This is the only lesson verified end-to-end. |
+| L1 — Mount your first plugin | **Mostly executed** | Lifecycle cycle verified twice: originally via a patch overlay, and again after the bundle pivot (`dsh --profile kitdemo`), which is what the lesson now teaches. Both the `FAILED` throw and the `PENDING` inject experiments **are** executed, and their real output corrected two draft assumptions. See evidence below. |
 | L2 — Register a tool, compose with config | **Mostly executed** | Overlay composition, module-resolution path, config carry-through, closed-union Schemastery declaration, and last-write-wins across stacked `--patch` overlays **executed** via `solutions/verify-l2.sh`. Runtime tool registration **is** executed: the plugin mounts via the installed bundle and logs `ACTIVE — defaultUnit=lines`. Still **not** executed: an actual model tool call, and rejection of an invalid config value. See evidence below. |
 | L3 — Services, isolation, and hot reload | **Partly executed** | `PENDING` semantics and the fiber state machine read from `docs/cordis-tutorial/02..03`; the `diagnose.ts` registry walk and the HMR reload observation are **documented, not run**. |
 | L4 — Build a policy gate | **Partly executed** | The `PreToolDecision` union and pipeline order are verified against `packages/core/tools/src/index.ts` and `packages/core/tools/README.md`. The example gate plugin has **not** been executed. |
@@ -84,6 +84,59 @@ config, which is still how Lesson 2's last-write-wins exercise should be taught.
 **Dependency versions** are pinned to the release under test: `@deepseek-ai/dsh-*`
 at `0.2.0-rc.2`, `@deepseek-ai/schemastery` at `^3.18.4`. Bump them with each
 verification pass.
+
+### `link:` is required while editing, `file:` is not enough
+
+**Verified.** `dsh plugin add file:<path>` **copies** the package into the profile.
+A plugin row added to the kit afterwards did not compose until reinstall:
+
+```
+$ dsh --profile kitdemo --dump-config | grep -A8 dsh-exploration-kit-plugins
+# == dsh-exploration-kit-plugins
+- id: l2-wordcount            # the l1-hello row added minutes earlier is absent
+```
+
+`dsh plugin add link:<path>` creates a symlink instead, and every subsequent edit
+composes live:
+
+```
+lrwxr-xr-x  dsh-exploration-kit-plugins -> ../../../../MyDocs/DeepSeekHarness/dsh-exploration-kit/kit-plugins
+```
+
+**All lesson instructions use `link:`.** This is not cosmetic: the lessons ask the
+learner to edit plugin files and observe the change, which `file:` would defeat.
+
+### Lesson 1 re-verified through the bundle
+
+Booted `dsh --profile kitdemo` with both bundle rows installed:
+
+```
+[l1-hello] apply() ran — plugin is ACTIVE
+[l1-hello] effect registered
+[l2-wordcount] ACTIVE — defaultUnit=lines
+dsh web: http://127.0.0.1:<port>/?token=...
+[l1-hello] disposer ran — plugin is DISPOSED      (on shutdown)
+```
+
+This confirms the full cycle through the *bundle* path, not the retired overlay
+path, and confirms a `.ts` module loads from an installed bundle.
+
+Both failure experiments were then executed as the lesson instructs:
+
+```
+# apply throws
+dsh: warning: 1 entry did not activate
+l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): Error: apply exploded
+    at new apply (file:///<kit>/kit-plugins/l1/hello.ts:4:9) ...
+
+# inject an unavailable service
+dsh: warning: 1 entry did not activate
+l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service: definitelyNotAService)
+```
+
+**Two draft assumptions were wrong and are corrected in the lesson:** the boot
+warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
+the startup summary names the missing service.
 
 ## Evidence: L2 partly executed
 

@@ -10,8 +10,9 @@ timestamp: 2026-09-30
 # L1 — Mount your first plugin
 
 **Goal.** By the end of this lesson you have a plugin you wrote loading inside the
-real `dsh` harness, and you have observed three of its five lifecycle states with
-your own eyes. No model calls are needed.
+real `dsh` harness as part of an installed bundle, and you have observed the fiber
+lifecycle — including a loud failure and a silent `PENDING`. No model calls are
+needed.
 
 **Why first.** Every capability in the [feature map](../feature-map.md)
 is a plugin. Until you have mounted one and watched it fail, the rest of the path
@@ -23,28 +24,101 @@ this sits.
 | Concept | What you learn |
 |---|---|
 | The plugin tree | A running dsh is an ordered stack of config rows, each mounting one plugin module |
-| Patch overlays | `--patch <file>` adds rows on top of the profile without editing the profile |
+| Bundles | A package that ships a layer of plugin rows, installed into a profile |
+| Plugin rows | How the loader resolves a row's `name` to actual code |
 | Plugin shapes | Function, object, and `Service` subclass — and when each is used |
 | The fiber | The runtime handle for one loaded plugin instance |
-| Lifecycle | `PENDING → LOADING → ACTIVE → UNLOADING → DISPOSED`, plus `FAILED` |
-| Loud failure | A throwing `apply` is fatal, not skipped |
+| Lifecycle | The six fiber states, including `FAILED` and the silent `PENDING` |
 | Effects | A registration that is undone when the plugin unloads |
 
-Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md), and the repository's own
+Reference: the [plugin framework guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md)
+and the repository's
 [first-plugin tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cordis-tutorial/01-first-plugin.md).
 
 ## Prerequisites
 
 - The `deepseek-harness` source checkout, `pnpm run build` already run.
-- `dsh` on `PATH`. See [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md).
-- A terminal. **Do not** use the GUI's own agent bash tool for the boot step: the
+- `dsh` on `PATH`. See DSH's
+  [development guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md).
+- A terminal. **Do not** use a sandboxed agent's bash tool for the boot steps: the
   default file sandbox blocks `dsh` from writing its composed profile under
-  `~/.dsh`, and the boot will fail with `EPERM`. Run these commands in your own
-  shell.
+  `~/.dsh`, and the boot fails with `EPERM`. Run these commands in your own shell.
 
-## Step 1 — Write the plugin
+## Step 1 — Install the kit's plugin bundle
 
-Create `<kit>/plugins/l1/hello.ts` in the workspace:
+This kit ships its exercise plugins as a **bundle** — a package that contributes a
+layer of plugin rows to a profile. Install it once into a profile you own:
+
+```sh
+# 1. install the bundle's dependencies (it imports dsh packages)
+cd <kit>/kit-plugins && pnpm install && cd -
+
+# 2. install the bundle into a fresh profile
+dsh plugin --profile kitdemo add link:<kit>/kit-plugins
+```
+
+Two details matter, and both were verified by running them:
+
+- **Use `link:`, not `file:`.** `file:` *copies* the package, so edits you make
+  while working the lessons do not take effect until you reinstall. `link:`
+  symlinks it, and every edit you save below is live.
+- **`dsh plugin` forwards to pnpm in the profile directory.** The first use creates
+  the profile from the base template and appends your bundle to its
+  `dsh.profile.bundles` list.
+
+Confirm what got installed:
+
+```sh
+dsh plugin --profile kitdemo list
+```
+
+## Step 2 — Understand what a plugin row is
+
+The bundle carries one file that the profile reads: `kit-plugins/cordis.patch.yml`.
+Open it. It is an array of patch entries, and the one that matters is an `insert`
+list of **plugin rows**:
+
+```yaml
+- insert:
+    - id: l1-hello
+      name: dsh-exploration-kit-plugins/l1/hello.ts
+```
+
+See the composed result without booting anything:
+
+```sh
+cd <path/to/deepseek-harness>
+dsh --profile kitdemo --dump-config | grep -A3 'id: l1-hello'
+```
+
+`--dump-config` prints the tree a machine would actually boot — every bundle layer,
+then the profile's own patch — and shows your row as `dsh-exploration-kit-plugins/...`.
+`--dump-config-schema` prints the JSON Schema for entries and patches instead.
+
+### The trap this mechanism avoids
+
+You will see `--patch` overlays elsewhere in dsh's docs, and they are useful. But a
+row declared in an overlay resolves its `name` **relative to that patch file**, and
+a relative path to a loose source file cannot import dsh packages:
+
+```
+dsh: warning: 1 entry did not activate
+l2-wordcount (.../wordcount.ts): failed to import
+```
+
+The loader resolves the file outside the dsh installation, and pnpm symlinks only
+*declared* dependencies, so `@deepseek-ai/dsh-tools` is unreachable. This was
+observed by running it — it is why this kit ships a bundle.
+
+A plugin that imports **nothing** from dsh does load from a loose file that way,
+which is worth knowing for throwaway experiments. Anything real goes in the bundle.
+
+Naming a row by package instead means Node resolves it through the profile's own
+installation, which is exactly how third-party dsh plugins work.
+
+## Step 3 — Write the plugin
+
+Open `<kit>/kit-plugins/l1/hello.ts` — it is already there, and it is short:
 
 ```ts
 import type { Context } from '@deepseek-ai/cordis'
@@ -65,47 +139,12 @@ diagnostic metadata only. `ctx.effect(fn)` runs the body during load and keeps t
 returned disposer for unload — this is how you own a resource (timer, connection,
 watcher) that Cordis does not already manage.
 
-## Step 2 — Compose it with a patch overlay
-
-Create `<kit>/plugins/l1.patch.yml`:
-
-```yaml
-- insert:
-    - id: l1-hello
-      name: './l1/hello.ts'
-```
-
-Three things are load-bearing here, and each was verified by running it:
-
-- **New rows go under `insert:`.** A top-level `- id: ...` entry targets an
-  *existing* row id for override; targeting a new id does **not** fail the boot —
-  it prints `patch: entry "<id>" not found` as a warning and silently skips the
-  patch. The symptom is a missing row in `--dump-config`, not an error, which is
-  why this one costs people time.
-- **`name` resolves relative to the patch file, not the workspace root.** The
-  patch lives at `<kit>/plugins/l1.patch.yml`, so the specifier is
-  `./l1/hello.ts`. Writing the workspace-relative
-  `./<kit>/plugins/l1/hello.ts` silently resolves to a duplicated path
-  (`<kit>/plugins/<kit>/plugins/...`).
-- **`id` is stable identity.** Without one, every config re-read generates a new
-  id, so the entry counts as removed-plus-added and remounts even when unchanged.
-
-## Step 3 — Inspect the composed tree without booting
-
-```sh
-cd <path/to/deepseek-harness>
-dsh --profile web --patch ./<kit>/plugins/l1.patch.yml --dump-config | grep -A3 'id: l1-hello'
-```
-
-`--dump-config` prints the tree a machine would actually boot: every bundle layer,
-then the profile patch, then your overlay. Confirm your row resolved to a
-`file:///.../<kit>/plugins/l1/hello.ts` URL. `--dump-config-schema` prints
-the JSON Schema for entries and patches without mounting anything.
+Because you installed with `link:`, this file is already live. Nothing to reinstall.
 
 ## Step 4 — Boot it and watch the lifecycle
 
 ```sh
-dsh --profile web --patch ./<kit>/plugins/l1.patch.yml --port 0 --no-open
+dsh --profile kitdemo --port 0 --no-open
 ```
 
 Use a random port so you do not collide with any GUI already running. Expected
@@ -114,21 +153,24 @@ output:
 ```
 [l1-hello] apply() ran — plugin is ACTIVE
 [l1-hello] effect registered
+[l2-wordcount] ACTIVE — defaultUnit=lines
 dsh web: http://127.0.0.1:<port>/?token=...
 ```
 
-Press Ctrl-C. The shutdown path unwinds effects, so you should then see:
+Press Ctrl-C. The shutdown path unwinds effects, so you then see:
 
 ```
 [l1-hello] disposer ran — plugin is DISPOSED
 ```
 
-You have now witnessed `LOADING → ACTIVE → UNLOADING → DISPOSED`. Because your
-plugin injects nothing, it never entered `PENDING`.
+You have now witnessed `LOADING → ACTIVE → UNLOADING → DISPOSED`. The
+`l2-wordcount` line is the kit's next lesson already switched on — leave it for now.
+
+Your plugin declares no `inject`, so it never entered `PENDING`.
 
 ## Step 5 — Make it FAIL
 
-Change `apply` to throw before anything else:
+Edit `hello.ts` so `apply` throws before anything else:
 
 ```ts
 export function apply(ctx: Context) {
@@ -136,11 +178,22 @@ export function apply(ctx: Context) {
 }
 ```
 
-Save and boot again. The process dies with your error. This is the design: a
-plugin that fails to load is a **loud failure**, not a skipped entry. Read the
-stack trace — the loader tells you which entry failed.
+Save, then boot again. The boot reports the failed entry and continues, rather than
+dying:
 
-Revert the throw.
+```
+dsh: warning: 1 entry did not activate
+l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): Error: apply exploded
+    at new apply (file:///<kit>/kit-plugins/l1/hello.ts:4:9)
+    ...
+```
+
+This is the design — a plugin that fails to load is a **loud failure**, never a
+skipped entry. Note exactly what you get: the entry's `id`, its resolved module
+specifier, your error, and a stack frame pointing into your own file. That is
+enough to find the fault without adding a single `console.log`.
+
+Restore the original `apply` before continuing.
 
 ## Step 6 — Make it PEND
 
@@ -150,22 +203,35 @@ Add a dependency on a service nobody provides:
 export const inject = ['definitelyNotAService']
 ```
 
-Boot again. Now there is no error and no log line — the plugin sits in `PENDING`
-forever, because a required service is absent and the provider might still arrive
-later. This is the failure mode that costs people hours: **silence is PENDING.**
-Remember it; L3 teaches you to enumerate the states directly.
+Boot again. Unlike the failure above, the plugin's own `apply` never runs, so you
+see **nothing from your plugin at all** — but the startup check does tell you what
+it is waiting for:
+
+```
+dsh: warning: 1 entry did not activate
+l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service: definitelyNotAService)
+```
+
+That message is the whole lesson. `PENDING` is a legitimate state, not an error: a
+service may still arrive, so the loader waits rather than failing. The cost is that
+a plugin stuck on a missing provider looks *silent* from the inside — your logs
+never appear — while the harness tells you about it once, at startup, in a summary
+you can easily scroll past.
+
+Remember where to look; L3 teaches you to enumerate every fiber's state on demand.
 
 Revert `inject` before continuing.
 
 ## Verification
 
-You have passed L1 when all four hold:
+You have passed L1 when all five hold:
 
-1. `--dump-config` shows your `l1-hello` row with a correct `file://` URL.
-2. A boot prints the `apply()` line and the effect line.
-3. Ctrl-C prints the disposer line.
-4. You can state, without looking it up, what `PENDING` means and why it prints
-   nothing.
+1. `dsh plugin --profile kitdemo list` shows the kit's bundle installed.
+2. `--dump-config` shows your `l1-hello` row named by package.
+3. A boot prints the `apply()` line and the effect line.
+4. Ctrl-C prints the disposer line.
+5. You can state, without looking it up, why a plugin that imports a dsh package
+   cannot be loaded from a loose file by a `--patch` overlay.
 
 ## Exit check — you should now be able to explain
 
@@ -173,16 +239,18 @@ You have passed L1 when all four hold:
 - The difference between a plugin shape and a plugin *instance*.
 - Why `--dump-config` is not sufficient evidence that a plugin will work.
 - What an "effect" is, and what happens to one when its plugin unloads.
+- Why `link:` and `file:` installs behave differently while you are editing.
 
 ## Troubleshooting
 
 | Symptom | Cause |
 |---|---|
-| `patch: entry "x" not found` (warning, boot continues) | You used `- id:` for a new row; wrap it in `- insert:` |
-| Module resolves to a doubled path | `name` is patch-file-relative, not workspace-relative |
-| `EPERM ... ~/.dsh/profiles/web/cordis.yml` | The agent file sandbox is blocking `dsh`; run in your own shell |
+| `failed to import` and the entry did not activate | The plugin imports a dsh package but its row points at a loose file; ship it as a bundle and name the row by package |
+| `patch: entry "x" not found` (warning, boot continues) | You used `- id:` for a new row intended as an insert; wrap it in `- insert:` |
+| Edits have no effect after reinstalling | You installed with `file:` (a copy); remove and re-add with `link:` |
+| `EPERM ... ~/.dsh/profiles/...` | A file sandbox is blocking `dsh`; run in your own shell |
 | No output at all, no error | Your plugin is `PENDING` on an unavailable service |
-| Process exits immediately with a stack trace | `apply` threw — this is `FAILED` |
+| Process exits with an activation failure | `apply` threw — this is `FAILED` |
 
 ## Next
 

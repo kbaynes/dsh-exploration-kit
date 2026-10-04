@@ -50,8 +50,22 @@ Every lesson assumes:
 - A **DeepSeek Harness source checkout** with `pnpm run build` already run.
 - `dsh` on your `PATH` (see
   [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md)).
-- The path convention `<kit>` meaning this repository's root. Build your exercise
-  plugins under `<kit>/plugins/`.
+- The path convention `<kit>` meaning this repository's root.
+- The kit's exercise plugins installed as a **bundle**. Lesson 1 does this once:
+
+  ```sh
+  cd <kit>/kit-plugins && pnpm install && cd -
+  dsh plugin --profile kitdemo add link:<kit>/kit-plugins
+  ```
+
+  `link:` symlinks the package, so edits you make while working the lessons are
+  live. Your own scratch plugins go under `<kit>/plugins/`.
+
+**Plugins ship as a bundle, not as loose files.** A `--patch` overlay resolves its
+row relative to the patch file, and a loose source file cannot import `@deepseek-ai/*`
+packages — pnpm symlinks only declared dependencies. This was verified by running
+it; see the kit's bundle documentation at
+https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/kit-plugins/README.md.
 
 **Run boot commands in your own shell, not through a sandboxed agent's bash tool.**
 The default file sandbox blocks `dsh` from writing its composed profile under

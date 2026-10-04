@@ -28,8 +28,15 @@ map and the relevant lesson rather than reasoning from memory.
 
 ## Conventions
 
-- **Path convention:** `<kit>` means this repository's root. Exercise plugins live
-  under `<kit>/plugins/`.
+- **Path convention:** `<kit>` means this repository's root. The lesson exercise
+  plugins live in the bundle at `<kit>/kit-plugins/`; `<kit>/plugins/` is the
+  learner's own scratch space.
+- **Plugins ship as a bundle, never as loose files reached by a `--patch`
+  overlay.** A row in an overlay resolves relative to the patch file, and a loose
+  source file cannot import `@deepseek-ai/*` (pnpm symlinks only declared
+  dependencies), so the entry fails to activate. Rows are named by package and
+  installed with `dsh plugin ... add link:<kit>/kit-plugins`. Evidence is in
+  `VERIFIED.md` under "Design pivot".
 - **Upstream references** to DSH's own docs use absolute
   `https://github.com/deepseek-ai/deepseek-harness/blob/main/...` URLs so this repo
   works standalone. Links *within* the kit are relative markdown links.

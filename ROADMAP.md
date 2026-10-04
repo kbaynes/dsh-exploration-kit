@@ -8,7 +8,7 @@ A fast status view. The detailed task list with checkboxes lives in
 | Phase | Goal | Status |
 |---|---|---|
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
-| 0.5 | Rewrite lessons for the verified bundle mechanism | 🔄 In progress (blocking) |
+| 0.5 | Rewrite lessons for the verified bundle mechanism | 🔄 L1 done; L2–L9 to go |
 | 1 | Build, test, and review each lesson | 🔄 In progress (1–2 of 9) |
 | 2 | Test infrastructure — automated verification in CI | ⬜ Not started |
 | 3 | Whole-kit review — editorial and technical pass | ⬜ Not started |
@@ -22,7 +22,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 
 | # | Lesson | Implemented | Tested | Reviewed |
 |---|---|---|---|---|
-| 1 | Mount your first plugin | ⬜ | ✅ | ⬜ |
+| 1 | Mount your first plugin | ✅ | ✅ | ⬜ |
 | 2 | Register a tool, compose with config | ✅ | 🟡 | ⬜ |
 | — | **Lessons need rewriting to install the bundle** — see PLAN Phase 0.5 | | | |
 | 3 | Services, isolation, and hot reload | ⬜ | ⬜ | ⬜ |
