@@ -32,7 +32,7 @@ a deployable one.
 
 Reference: the repository's
 [extension cookbook permission-gate example](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md),
-`packages/core/tools/README.md`, and the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugins.md) for
+`packages/core/tools/README.md`, and the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) for
 waterfall semantics.
 
 ## Prerequisites

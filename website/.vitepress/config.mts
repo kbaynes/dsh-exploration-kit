@@ -58,7 +58,7 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/kevinbaynes/dsh-exploration-kit' },
+      { icon: 'github', link: 'https://github.com/REPLACE_OWNER/dsh-exploration-kit' },
     ],
 
     search: { provider: 'local' },

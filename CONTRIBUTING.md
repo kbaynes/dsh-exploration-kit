@@ -86,15 +86,29 @@ Rules for the body:
 ## Before you open a pull request
 
 ```sh
-# validate the OKF bundle (if okflint is installed)
-okflint validate --manifest okf-base.yaml ./content/
+# from the repository root
+pnpm install          # see README on the required hoisting setting
+pnpm run check:links
+pnpm run build
 
-# make sure the site still builds
-cd website && pnpm install && pnpm run build
+# validate the OKF bundle, if okflint is installed
+okflint validate --manifest okf-base.yaml
+
+# verify upstream DSH links against a local checkout
+DSH_CHECKOUT=/path/to/deepseek-harness pnpm run check:upstream
 ```
+
+`pnpm run check:placeholders` must pass before a release: it fails while any
+pre-publication placeholder token remains.
 
 Then confirm your internal links resolve and that `VERIFIED.md` matches what you
 actually did.
+
+## Code of Conduct
+
+Participation is covered by the [Code of Conduct](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/CODE_OF_CONDUCT.md). Report
+unacceptable behavior through the repository's **Security → Report a
+vulnerability** channel or to a maintainer directly.
 
 ## Licensing
 

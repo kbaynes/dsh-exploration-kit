@@ -71,11 +71,11 @@ export function apply(ctx: Context, config: Config) {
     output: {
       schema: {
         type: 'object',
+        additionalProperties: false,
         properties: {
-          unit: { type: 'string' },
-          count: { type: 'number' },
+          unit: { type: 'string', required: true },
+          count: { type: 'number', required: true },
         },
-        required: ['unit', 'count'],
       },
       render: (_args, value) => [
         { type: 'text', text: `${value.count} ${value.unit}` },
@@ -110,6 +110,12 @@ later lessons obeys them:
 ## Step 2 — Mount it
 
 `<kit>/plugins/l2.patch.yml`:
+
+> **Watch the specifier.** Your plugin lives beside the patch file
+> (`<kit>/plugins/l2/wordcount.ts`), so the entry's `name` is `'./l2/wordcount.ts'`.
+> If you place the patch *inside* the plugin directory instead, the correct
+> specifier is `'./wordcount.ts'` — never `'./l2/wordcount.ts'`, which resolves to
+> a nested `l2/l2/` path and fails to load.
 
 ```yaml
 - insert:

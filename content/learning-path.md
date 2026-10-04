@@ -45,7 +45,7 @@ Three rules produced the order:
 | L2 | A tool + config composition | `ctx.tools`, Schemastery, patches | Making DSH do something new the model can call |
 | L3 | A service + hot reload | `ctx.*` service keys, `inject`, HMR, inventory | Watching the runtime reconfigure live; inspecting your own tree |
 | L4 | A policy gate | `tools/*` and `fs/*` waterfall events, guards | Governing what the agent may do, not just what it can do |
-| L5 | Deliberate context assembly | `before-context-build`, `agent.inject()`, skills, commands | Controlling what the model knows and when |
+| L5 | Deliberate context assembly | `agent/pre-step`, `agent.inject()`, skills, commands | Controlling what the model knows and when |
 | L6 | Durable session state | `SessionEventMap`, projections, replay | State that survives a restart and is reconstructable from the log |
 | L7 | Operate the harness | OTel, token meter, session query, invariants | Answering "what did it cost, and what actually happened?" |
 | L8 | Multi-agent orchestration | Subagents, forks, workflow engine, presets, teams | Fanning work across contexts with structured results |
@@ -90,17 +90,18 @@ expensive to debug from a weak base.
 
 - **Model provider authoring** (`ctx.llm` adapters). Covered by the repository's
   [adding-an-llm-adapter cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-an-llm-adapter.md);
-  the [openrouter integration](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/openrouter-integration.md) concept covers
+  the [openrouter integration](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md) concept covers
   the configuration-level version. L4's provider-free policy work is the
   prerequisite.
 - **Client/UI plugin authoring.** L3 touches the browser half through the Cordis
   client runner, but building a React conversation node is out of scope; see the
   repository's `docs/subsystems/conversation.md`.
-- **Production deployment.** The [operations checklists](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/index.md)
-  own that; L9 stops at the local container boundary.
+- **Production deployment.** L9 stops at the local container boundary. DSH does
+  not publish deployment checklists, so hardening a multi-tenant pool from these
+  lessons is explicitly out of scope.
 
 ## Related Concepts
 
 - [Exploration lesson plan index](index.md) — the lessons themselves
 - [Capability map](feature-map.md) — what each lesson is exercising
-- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugins.md) — the mechanism all nine lessons share
+- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) — the mechanism all nine lessons share

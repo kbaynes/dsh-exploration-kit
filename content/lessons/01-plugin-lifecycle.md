@@ -30,13 +30,13 @@ this sits.
 | Loud failure | A throwing `apply` is fatal, not skipped |
 | Effects | A registration that is undone when the plugin unloads |
 
-Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugins.md), and the repository's own
+Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md), and the repository's own
 [first-plugin tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cordis-tutorial/01-first-plugin.md).
 
 ## Prerequisites
 
 - The `deepseek-harness` source checkout, `pnpm run build` already run.
-- `dsh` on `PATH`. See [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/local-cli-install.md).
+- `dsh` on `PATH`. See [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md).
 - A terminal. **Do not** use the GUI's own agent bash tool for the boot step: the
   default file sandbox blocks `dsh` from writing its composed profile under
   `~/.dsh`, and the boot will fail with `EPERM`. Run these commands in your own
@@ -78,8 +78,10 @@ Create `<kit>/plugins/l1.patch.yml`:
 Three things are load-bearing here, and each was verified by running it:
 
 - **New rows go under `insert:`.** A top-level `- id: ...` entry targets an
-  *existing* row id for override; targeting a new id fails with
-  `patch: entry "l1-hello" not found`.
+  *existing* row id for override; targeting a new id does **not** fail the boot —
+  it prints `patch: entry "<id>" not found` as a warning and silently skips the
+  patch. The symptom is a missing row in `--dump-config`, not an error, which is
+  why this one costs people time.
 - **`name` resolves relative to the patch file, not the workspace root.** The
   patch lives at `<kit>/plugins/l1.patch.yml`, so the specifier is
   `./l1/hello.ts`. Writing the workspace-relative
@@ -176,7 +178,7 @@ You have passed L1 when all four hold:
 
 | Symptom | Cause |
 |---|---|
-| `patch: entry "x" not found` | You used `- id:` for a new row; wrap it in `- insert:` |
+| `patch: entry "x" not found` (warning, boot continues) | You used `- id:` for a new row; wrap it in `- insert:` |
 | Module resolves to a doubled path | `name` is patch-file-relative, not workspace-relative |
 | `EPERM ... ~/.dsh/profiles/web/cordis.yml` | The agent file sandbox is blocking `dsh`; run in your own shell |
 | No output at all, no error | Your plugin is `PENDING` on an unavailable service |

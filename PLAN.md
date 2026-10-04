@@ -71,15 +71,21 @@ or via PTC; 5 and 7–9 need a configured provider.
 
 ### Lesson 2 — Register a tool, compose with config
 
-- [ ] Implement the `word_count` tool plus Schemastery config in `solutions/l2/`
+- [x] Implement the `word_count` tool plus Schemastery config in `solutions/l2/`
+- [x] Confirm the overlay composes and the module resolves to the right file
+      (`solutions/verify-l2.sh`, executed)
+- [x] Confirm two stacked `--patch` flags give last-write-wins on the config row
+- [x] Fix the `output.schema` blocker: it used raw JSON Schema, but `defineTool`
+      takes the value-schema DSL (`additionalProperties: false`, per-property
+      `required: true`)
 - [ ] Confirm the tool registers at load and its schema reaches prompt assembly
 - [ ] Execute a tool call and confirm the canonical value and render path
 - [ ] Confirm an invalid enum makes the load fail with a field-naming error
-- [ ] Confirm two stacked `--patch` flags give last-write-wins on the config row
+      (**not** observable via `--dump-config`, which does not run validation)
 - [ ] Confirm `!!js` interpolates in `config` and `disabled`
 - [ ] Add the exact files to `examples/l2/`
 - [ ] Review the explanation for clarity
-- [ ] Update the `VERIFIED.md` row
+- [x] Update the `VERIFIED.md` row to *Partly executed* with evidence
 
 ### Lesson 3 — Services, isolation, and hot reload
 
@@ -260,6 +266,102 @@ Turn the verified lessons into something CI can defend.
 - [ ] Consider contributing links (not content) upstream once the kit is proven
 
 ---
+
+## Audit findings — defect register
+
+Two independent audits were run against the scaffold: a per-lesson technical
+accuracy audit against the DSH source, and a publication-readiness audit. Every
+item below was verified against source before being accepted. **Closed** means
+fixed and re-verified.
+
+### Content defects (from the technical audit)
+
+- [x] **BLOCKER** L2 `output.schema` used raw JSON Schema instead of the
+      value-schema DSL
+- [x] **BLOCKER** L6 projection used raw JSON Schema objects for
+      `stateSchema`/`viewSchema`; they are Zod schemas
+- [x] **BLOCKER** L6 `key: 'l6Steps'` was not declared in the projection type maps
+- [x] **BLOCKER** L5 `agent.inject()` was called with a loose object; it requires a
+      full `UserMessage` built by `createUserMessage`, with a producer-declared
+      source kind
+- [x] **BLOCKER** L8 invented `meta.seedLength`; the real fields are
+      `meta.isSeeded` plus top-level `inheritedEventCount`
+- [x] **MAJOR** L1 claimed a skipped patch fails the boot; it emits a warning and
+      silently skips the row
+- [x] **MAJOR** L5 claimed the base `skill-filesystem` row already sets
+      `customSkillDirs`; it has no config at all
+- [x] **MAJOR** `learning-path.md` named a nonexistent `before-context-build`
+      event instead of `agent/pre-step`
+- [x] **MAJOR** L7 told the reader to run the invariants check, but
+      `@deepseek-ai/dsh-invariants` is mounted only by `sdk-minimal`
+- [x] **MAJOR** every `docs/harness/*` and `docs/operations/*` upstream link 404'd —
+      those directories do not exist upstream. 13 links remapped to verified paths;
+      the 5 `docs/operations/*` checklists have no counterpart and were reworded
+- [x] **MINOR** L6 said `SessionEventMap` entries may carry `@mode`; they must not
+- [x] **MINOR** L6 said compaction adds three log-only events; it adds four
+- [x] **MINOR** `feature-map.md` said four Cordis dispatch modes; there are five
+      (`bail` was missing)
+- [x] **MINOR** L1 omitted the home-patch layer from the composition order
+- [x] **MINOR** L9's Python snippet was a non-runnable placeholder; replaced with
+      the upstream SDK's real example
+- [ ] **MINOR** L1 gives an aggregated activation diagnostic for a throwing `apply`,
+      not a raw stack trace
+- [ ] **MINOR** L2 says `--dump-config` shows the resolved `!!js` value; it prints
+      expressions unevaluated
+- [ ] **MINOR** L2 quotes a validation message with a `$` prefix Cordis does not add
+- [ ] **MINOR** L5 says a skill `name` must match its directory; only kebab-case is
+      enforced
+- [ ] **MINOR** L9: `dsh: <code>: <message>` is the turn-error form only;
+      unexpected failures print `dsh: <message>`
+- [ ] **MINOR** L9 describes `dsh.bundle` and `dsh.profile` as combinable; a package
+      declares one or the other
+- [ ] **NIT** L9 references the GitHub review guide without a link
+
+### Publication defects (from the readiness audit)
+
+- [x] **BLOCKER** `.gitignore` `plugins/` + `!plugins/README.md` was dead — git never
+      descends into an excluded directory, so `plugins/README.md` was untracked and
+      two links to it 404'd. Fixed to `plugins/*`
+- [x] **BLOCKER** three `kevinbaynes` URLs in `content/index.md` leaked into every
+      built page; made relative
+- [x] **BLOCKER** remaining owner placeholders normalised to a single
+      `REPLACE_OWNER` token, now enforced by `check:placeholders`
+- [x] **MAJOR** the Pages workflow had no `pull_request` trigger, so the link-check
+      gate never ran on PRs
+- [x] **MAJOR** pnpm version drift (CI pinned 10, development on 11.7.0); now pinned
+      via `packageManager`
+- [x] **MAJOR** `THIRD-PARTY.md` pointed at nonexistent `website/package.json` and
+      `website/pnpm-lock.yaml`, and omitted the upstream MIT notice
+- [x] **MAJOR** `README.md` never stated the pnpm requirement or that the lessons
+      need a DSH checkout with `dsh` on `PATH`
+- [x] **MAJOR** `CONTRIBUTING.md` instructed `cd website && pnpm install`, which
+      contradicted the README and only worked by accident
+- [x] **MINOR** issue-template labels referenced labels that will not exist; the
+      defect template's relative `VERIFIED.md` link was wrong from that directory
+- [x] **MINOR** branch protection for per-page `lastUpdated` dates missing
+      (`fetch-depth: 0`)
+- [x] **MAJOR** added `CODE_OF_CONDUCT.md` and linked it
+- [x] **MINOR** added `.editorconfig`
+- [ ] **MINOR** add `.gitattributes` (LF normalisation,
+      `pnpm-lock.yaml linguist-generated`)
+- [ ] **MINOR** add issue labels (`lesson-defect`, `clarity`) to the repository, or
+      drop the `labels:` keys
+- [ ] **OPTIONAL** record the intended GitHub topics in-repo so they survive a
+      transfer
+- [ ] **OPTIONAL** add Open Graph/Twitter meta and a favicon for link previews
+- [ ] **OPTIONAL** add an `editLink` so readers can propose fixes from a page
+- [ ] **BLOCKER (publish-time)** rewrite git history to the real author identity
+      before the first public push
+
+### New tooling added by this pass
+
+- [x] `scripts/check-upstream-links.mjs` — validates every upstream DSH link against
+      a local checkout. This class of bug (a plausible path that does not exist) is
+      now caught mechanically rather than by review.
+- [x] `scripts/check-placeholders.mjs` — fails while any pre-publication placeholder
+      remains
+- [x] `scripts/sync-site-docs.mjs` — copies root docs into the VitePress source
+      root, because VitePress refuses links that escape it
 
 ## Open decisions
 

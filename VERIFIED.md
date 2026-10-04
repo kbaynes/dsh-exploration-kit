@@ -33,7 +33,7 @@ version, expect to adjust commands and package import paths.
 | Lesson | Status | Notes |
 |---|---|---|
 | L1 — Mount your first plugin | **Executed** | See evidence below. This is the only lesson verified end-to-end. |
-| L2 — Register a tool, compose with config | **Documented** | `defineTool` contract and Schemastery config pattern read from `docs/cookbook/adding-a-tool.md` and `docs/cordis-tutorial/05-config.md`; patch-layer and `!!js` behavior verified under L1. Tool registration itself not executed. |
+| L2 — Register a tool, compose with config | **Partly executed** | Overlay composition, module-resolution path, config carry-through, closed-union Schemastery declaration, and last-write-wins across stacked `--patch` overlays **executed** via `solutions/verify-l2.sh`. Tool registration at runtime and rejection of an invalid config value are **not** executed (dump-config does not run validation). See evidence below. |
 | L3 — Services, isolation, and hot reload | **Partly executed** | `PENDING` semantics and the fiber state machine read from `docs/cordis-tutorial/02..03`; the `diagnose.ts` registry walk and the HMR reload observation are **documented, not run**. |
 | L4 — Build a policy gate | **Partly executed** | The `PreToolDecision` union and pipeline order are verified against `packages/core/tools/src/index.ts` and `packages/core/tools/README.md`. The example gate plugin has **not** been executed. |
 | L5 — Assemble context deliberately | **Documented** | Verified against `docs/architecture.md`, `docs/cookbook/adding-a-tool.md` (`agent.inject()` semantics), `packages/skill/skill-filesystem/README.md`, and `packages/interaction/commands/README.md`. Not run; needs a model. |
@@ -41,6 +41,31 @@ version, expect to adjust commands and package import paths.
 | L7 — Operate the harness | **Documented** | Bundle rows, `tool-session-query` contract, and telemetry env vars verified against the bundle patches and package READMEs. Query authorization and cost measurement not run; needs a model. |
 | L8 — Orchestrate multiple agents | **Documented** | Subagent provider rows verified against `packages/bundle/base/cordis.patch.yml`; agent-team caps verified against `packages/experimental/agent-team-profile/cordis.patch.yml`. Needs a model. |
 | L9 — Automate the harness | **Documented** | Headless CLI contract, SDK usage, schedule and webhook contracts read from package READMEs. **The Python snippet in step 3 is a placeholder** and must be replaced or removed before publication. Needs a model. |
+
+## Evidence: L2 partly executed
+
+`solutions/verify-l2.sh <checkout>` was run against the real harness and passes:
+
+```
+== 1. valid overlay composes ==
+PASS  overlay row present
+PASS  module resolves to the kit file
+PASS  no doubled path segment
+PASS  config value carried
+== 2. schema declares defaultUnit as a closed union ==
+PASS  Config declares a closed union for defaultUnit
+PASS  Config is exported as both a type and a runtime schema
+== 3. stacked overlays, last write wins ==
+PASS  override value wins
+```
+
+A defect was found and fixed during this verification: placing the patch file
+*inside* the plugin directory made `'./l2/wordcount.ts'` resolve to a nested
+`solutions/l2/l2/wordcount.ts`. The lesson now documents that trap explicitly.
+
+**Deliberately not verified:** `--dump-config` composes config rows and does **not**
+run Schemastery validation, so the claim that an invalid `defaultUnit` is rejected
+at load remains unproven. It needs a harness boot with the plugin mounting.
 
 ## Evidence: L1 executed
 
@@ -81,7 +106,11 @@ environment fact, not a DSH defect.
   the curriculum.
 - **Model-call-dependent outcomes** in L5, L7, L8, and L9 — these require a
   configured provider and have not been run by the author.
-- The L9 **Python SDK** snippet — placeholder only.
+- The L9 **Python SDK** snippet — now a real upstream example, still unrun.
+- **Runtime behavior of every example plugin** (L2's tool registration, L3's
+  service and HMR loop, L4's gate denying a real call, L5's injection and skill
+  catalog, L6's projection replay) — the mechanisms are verified against source
+  and, for L2, composition is executed; the plugins have not been mounted.
 
 ## Verification backlog
 

@@ -2,12 +2,21 @@
 website/.vitepress/dist/
 website/.vitepress/cache/
 node_modules/
-**/node_modules/
 *.tsbuildinfo
 
-# Exercise artifacts created while working the lessons
-plugins/
+# Exercise artifacts created while working the lessons.
+# `plugins/*` (not `plugins/`) is required: git never descends into an excluded
+# directory, so ignoring the directory itself would make the negation below dead
+# and leave plugins/README.md untracked — breaking the links from examples/ and
+# solutions/.
+plugins/*
 !plugins/README.md
+
+# Generated site pages, synced from repository-root docs at build time.
+# Canonical copies live at the root (VERIFIED.md, CONTRIBUTING.md, THIRD-PARTY.md).
+content/VERIFIED.md
+content/CONTRIBUTING.md
+content/THIRD-PARTY.md
 
 # Local environment
 .DS_Store

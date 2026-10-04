@@ -29,7 +29,7 @@ iterate on.
 | Hot module replacement | `dsh-hmr` unloads and reloads a changed plugin |
 | Live tree inspection | Plugin inventory, the registry API, and `plugin_manager` |
 
-Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugins.md) and the repository's
+Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) and the repository's
 [services tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cordis-tutorial/03-services.md).
 
 ## Prerequisites

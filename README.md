@@ -47,17 +47,39 @@ scripts/          Verification tooling
 `content/` is the source of truth. The website reads it directly; nothing is
 duplicated.
 
+## Prerequisites
+
+**To read the lessons** you need a
+[DeepSeek Harness source checkout](https://github.com/deepseek-ai/deepseek-harness)
+with `pnpm run build` already run, and `dsh` on your `PATH`. The lessons create and
+boot real plugins against that checkout, so the curriculum cannot be completed
+without it. See DSH's
+[development guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md)
+for the checkout and CLI setup.
+
+**To build this site** you need Node.js ≥20 and pnpm ≥10. Development is verified
+on Node 22.23.1 with pnpm 11.7.0, which is pinned in `packageManager`.
+
+Lessons 1–3 and 6 need no model API key. Lessons 4, 5, and 7–9 benefit from (and
+mostly require) a configured provider.
+
 ## Building the site
 
 From the repository root:
 
 ```sh
-pnpm install      # see the hoisting note below
-pnpm run dev      # local preview at http://127.0.0.1:5173
-pnpm run build    # static build into website/.vitepress/dist
+pnpm install        # see the hoisting note below
+pnpm run dev        # local preview at http://127.0.0.1:5173
+pnpm run build      # static build into website/.vitepress/dist
+pnpm run preview    # serve the production build at http://127.0.0.1:4173
 ```
 
-Requires Node.js 20 or newer.
+Use `preview` rather than `dev` when you care about the deployed URL: `dev` serves
+from the site root, which hides mistakes in the VitePress `base` path.
+
+`pnpm run dev` and `pnpm run build` first run `scripts/sync-site-docs.mjs`, which
+copies `VERIFIED.md`, `CONTRIBUTING.md`, and `THIRD-PARTY.md` into `content/` for
+the build. Those copies are generated and git-ignored — edit the root files.
 
 > **Why hoisting is required.** VitePress compiles the markdown in `content/`,
 > which sits *outside* the directory it is invoked from. pnpm symlinks only
@@ -74,9 +96,21 @@ script ignored. Run `pnpm approve-builds` if you want to silence it.
 ## Checks
 
 ```sh
-pnpm run check:links   # every relative link inside content/ resolves
-pnpm run validate      # OKF conformance, if okflint is on your PATH
+pnpm run check:links         # every relative link inside content/ resolves
+pnpm run check:placeholders  # no pre-publication placeholders remain
+pnpm run validate            # OKF conformance, if okflint is on your PATH
+pnpm run check:upstream      # upstream DSH links resolve (needs a checkout)
 ```
+
+`check:upstream` takes a DSH checkout path as an argument or in `DSH_CHECKOUT`:
+
+```sh
+DSH_CHECKOUT=~/src/deepseek-harness pnpm run check:upstream
+```
+
+It exists because the curriculum links to DSH documentation by absolute GitHub URL,
+and a plausible-looking path such as `docs/harness/plugins.md` can simply not
+exist. CI runs the first three; only a maintainer with a checkout can run the last.
 
 Verified from a clean export of the committed tree: `pnpm install --frozen-lockfile`,
 `pnpm run check:links`, and `pnpm run build` all succeed with no inherited
@@ -117,10 +151,29 @@ and the observed result recorded.** If you hit something that does not work as
 written, that is a defect worth an issue — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 
+## Getting help and reporting defects
+
+<!-- placeholder-check:allow -->
+Open an [issue](https://github.com/REPLACE_OWNER/dsh-exploration-kit/issues). Two
+templates are provided:
+
+- **Lesson defect** — a step does not work, or a technical claim is wrong. Include
+  your DSH version; version drift is the most common cause.
+- **Clarity feedback** — the step worked but the explanation did not. This is
+  genuinely valuable: if it confused you, it will confuse others.
+
+Please check [VERIFIED.md](VERIFIED.md) first — a lesson that has never been
+executed is far more likely to have defects, and it is the honest place to set your
+expectations.
+
+Questions about DeepSeek Harness itself belong
+[upstream](https://github.com/deepseek-ai/deepseek-harness/discussions), not here.
+
 ## Contributing
 
 Corrections, clearer explanations, and new lessons are welcome. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+[CONTRIBUTING.md](CONTRIBUTING.md), and note that participation is covered by the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License and attribution
 

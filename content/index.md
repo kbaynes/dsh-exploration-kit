@@ -49,7 +49,7 @@ Every lesson assumes:
 
 - A **DeepSeek Harness source checkout** with `pnpm run build` already run.
 - `dsh` on your `PATH` (see
-  [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/local-cli-install.md)).
+  [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md)).
 - The path convention `<kit>` meaning this repository's root. Build your exercise
   plugins under `<kit>/plugins/`.
 
@@ -62,13 +62,13 @@ The default file sandbox blocks `dsh` from writing its composed profile under
 Authored and verified against **DeepSeek Harness `0.2.0-rc.2`**
 (commit `639ed01539`). DSH is a developer preview with explicitly breaking
 changes, so a different version may require adjustments. See
-[VERIFIED.md](https://github.com/kevinbaynes/dsh-exploration-kit/blob/main/VERIFIED.md)
+[VERIFIED.md](./VERIFIED.md)
 for exactly which steps have been executed and which are documented but unrun.
 
 ## Contributing
 
 Corrections, clearer explanations, and additional lessons are welcome — see
-[CONTRIBUTING.md](https://github.com/kevinbaynes/dsh-exploration-kit/blob/main/CONTRIBUTING.md).
+[CONTRIBUTING.md](./CONTRIBUTING.md).
 The content is an [Open Knowledge Format](https://github.com/GoogleCloudPlatform/knowledge-catalog)
 bundle, so every file is plain markdown with YAML frontmatter.
 
@@ -76,7 +76,7 @@ bundle, so every file is plain markdown with YAML frontmatter.
 
 This is an independent, unofficial teaching resource. DeepSeek Harness is
 developed by [DeepSeek AI](https://deepseek.com) and licensed under MIT (see
-[THIRD-PARTY.md](https://github.com/kevinbaynes/dsh-exploration-kit/blob/main/THIRD-PARTY.md)).
+[THIRD-PARTY.md](./THIRD-PARTY.md)).
 The knowledge here was derived from the public DSH documentation and source; the
 lesson design, exercises, and explanations are original. Not affiliated with or
 endorsed by DeepSeek AI.

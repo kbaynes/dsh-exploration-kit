@@ -1,0 +1,3 @@
+- id: l2-wordcount
+  config:
+    defaultUnit: chars

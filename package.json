@@ -9,6 +9,7 @@
     "node": ">=20",
     "pnpm": ">=10"
   },
+  "packageManager": "pnpm@11.7.0",
   "keywords": [
     "deepseek-harness",
     "dsh-plugin",
@@ -18,7 +19,7 @@
     "agents",
     "cordis"
   ],
-  "//": "REPLACE BEFORE PUBLISHING: repourl is a placeholder owner. Update repository, homepage, and bugs together with the VitePress `base` path and the placeholder links in README.md, CONTRIBUTING.md, and website/.vitepress/config.mts.",
+  "//": "placeholder-check:allow  REPLACE BEFORE PUBLISHING: every 'REPLACE_OWNER' token in the repo must become the real GitHub owner. Run `pnpm run check:placeholders` to find them all. Existing sites: package.json repository/homepage/bugs, website/.vitepress/config.mts socialLinks, and .github/ISSUE_TEMPLATE/config.yml contact links.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/REPLACE_OWNER/dsh-exploration-kit.git"
@@ -28,11 +29,14 @@
     "url": "https://github.com/REPLACE_OWNER/dsh-exploration-kit/issues"
   },
   "scripts": {
-    "dev": "vitepress dev website --host 127.0.0.1 --port 5173",
-    "build": "vitepress build website",
+    "dev": "node scripts/sync-site-docs.mjs && vitepress dev website --host 127.0.0.1 --port 5173",
+    "build": "node scripts/sync-site-docs.mjs && vitepress build website",
     "preview": "vitepress preview website --host 127.0.0.1 --port 4173",
     "validate": "okflint validate --manifest okf-base.yaml",
-    "check:links": "node scripts/check-links.mjs"
+    "check:links": "node scripts/sync-site-docs.mjs && node scripts/check-links.mjs",
+    "check:placeholders": "node scripts/check-placeholders.mjs",
+    "check:upstream": "node scripts/check-upstream-links.mjs",
+    "sync:site": "node scripts/sync-site-docs.mjs"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",

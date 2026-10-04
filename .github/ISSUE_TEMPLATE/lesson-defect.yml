@@ -10,7 +10,7 @@ body:
         wrong. For "this step was confusing but it worked", use the *Clarity feedback*
         template instead.
 
-        Before filing, please check [VERIFIED.md](../blob/main/VERIFIED.md) — it records
+        Before filing, please check [VERIFIED.md](../../blob/main/VERIFIED.md) — it records
         which lessons have actually been executed, and an unverified lesson is more
         likely to have defects.
   - type: input

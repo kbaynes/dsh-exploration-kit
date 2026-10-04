@@ -1,6 +1,6 @@
 name: site
 
-# Builds the VitePress site and publishes it to GitHub Pages.
+# Checks every pull request, and publishes to GitHub Pages on pushes to main.
 #
 # One-time setup in the repository: Settings → Pages → Build and deployment →
 # Source: "GitHub Actions". The site then serves from
@@ -9,8 +9,12 @@ name: site
 #
 # Requires no secrets. No DSH checkout or API key is needed to build the site:
 # the curriculum is documentation, not executable code.
+#
+# The pnpm version comes from package.json's `packageManager` field, so CI and
+# local development cannot drift apart.
 
 on:
+  pull_request:
   push:
     branches: [main]
   workflow_dispatch:
@@ -28,11 +32,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # fetch-depth 0: VitePress `lastUpdated` reads per-page dates from git, and
+      # the default depth-1 checkout would collapse every page to one date.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - uses: actions/setup-node@v4
         with:
@@ -44,6 +50,9 @@ jobs:
         # root (content/) is outside website/, so vue must resolve from the root.
         run: pnpm install --frozen-lockfile
 
+      - name: Check for pre-publication placeholders
+        run: pnpm run check:placeholders
+
       - name: Check internal links
         run: pnpm run check:links
 
@@ -51,12 +60,16 @@ jobs:
         run: pnpm run build
 
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
 
       - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
         with:
           path: website/.vitepress/dist
 
+  # Deploy only from main: a pull request should build and check, never publish.
   deploy:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:

@@ -47,7 +47,10 @@ const broken = []
 const external = []
 
 for (const file of markdownFiles(root)) {
-  const body = stripFences(readFileSync(file, 'utf8'))
+  const raw = readFileSync(file, 'utf8')
+  // Generated site pages are copies of root docs; check the root originals only.
+  if (raw.includes('GENERATED FILE')) continue
+  const body = stripFences(raw)
   for (const match of body.matchAll(linkPattern)) {
     const target = match[1]
     if (target.startsWith('#')) continue

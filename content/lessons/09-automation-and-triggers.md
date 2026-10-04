@@ -30,9 +30,8 @@ debugging a scheduler, a protocol, and a plugin model simultaneously.
 | Hook adapters | Claude Code and Codex hook protocols |
 | The operating bar | What must be true before any of this ships unattended |
 
-Reference: [headless integration model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/headless-integration-model.md),
-[integration options](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/integration-options.md), and the
-[operations checklists](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/index.md).
+Reference: the [headless bundle](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/bundle/headless/README.md)
+and the [SDK family](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/sdk/README.md).
 
 ## Prerequisites
 
@@ -107,17 +106,34 @@ Design points that matter more than the API shape:
 The Python SDK speaks the same protocol:
 
 ```python
-# deepseek_harness drives a bundled dsh runtime over newline-delimited JSON-RPC
+from deepseek_harness import DeepSeekHarness
+
+with DeepSeekHarness(
+    dsh_home="/absolute/path/to/isolated-dsh-home",
+    cwd="/absolute/path/to/workspace",
+    provider="deepseek-official",
+    model="deepseek-v4-flash",
+    max_tokens=49_152,
+) as harness:
+    result = harness.run("Say hi.", session_id="example-001")
+
+print(result.final_response)
 ```
 
-Two differences from the TypeScript path are worth knowing before you build:
+Three differences from the TypeScript path are worth knowing before you build:
 
-- **Every launch requires an explicitly selected Harness home.** Python never
-  silently reads `~/.dsh`. If your automation relies on ambient configuration, it
-  will fail here — deliberately.
-- **The SDK starts the matching bundled `dsh --profile sdk` runtime** unless you
-  select another executable or profile, and the shipped `sdk-minimal` profile is
-  the runnable minimal example.
+- **`dsh_home` is mandatory and explicit.** Python never silently reads `~/.dsh`.
+  If your automation relies on ambient configuration, it fails here — deliberately.
+  Use an isolated home per tenant so sessions and credentials cannot leak between
+  automations.
+- **`cwd` is the agent workspace**, while `runtime_cwd` independently selects the
+  subprocess working directory. Both are made absolute before launch, and the two
+  are genuinely different concerns: where the agent operates versus where the
+  runtime process starts.
+- **The SDK starts the bundled `dsh --profile sdk` runtime**, so Python does not
+  need system Node.js installed. Persistent plugin customization belongs to that
+  profile — pass `patches=[...]` for an invocation-specific change, or install an
+  external bundle with `dsh plugin --profile sdk add file:/path/to/bundle`.
 
 ## Step 4 — Give it a clock
 
@@ -179,21 +195,27 @@ compatibility shim.
 ## Step 6 — Know the operating bar
 
 You have now built everything that makes unattended automation possible. Before
-you let it run, walk the checklists — they exist because each one is a way this
-fails in production:
+you let it run, be deliberate about the concerns that make it fail in production:
 
-| Checklist | The question it answers |
+| Concern | The question it answers |
 |---|---|
-| [Agent container](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/agent-container.md) | Concurrency governance, turn timeouts, non-root execution, tool scoping, `/v1/agent/turn` and `/healthz` |
-| [Kubernetes scaling](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/kubernetes-scaling.md) | Resource limits, autoscaling signals, disruption budgets, network policy |
-| [State & session store](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/state-session-store.md) | Serialization, distributed locking, TTL, HA for pod-agnostic routing |
-| [Telemetry pipeline](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/telemetry-pipeline.md) | Token cost tracking, tool latency, secret scrubbing |
-| [Visualization & alerting](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/visualization-auditing-alerting.md) | Letting a human notice before the bill does |
+| Container | Concurrency governance, turn timeouts, non-root execution, tool scoping, health endpoints |
+| Scaling | Resource limits, autoscaling signals, disruption budgets, network policy |
+| State & session store | Serialization, distributed locking, TTL, HA for pod-agnostic routing |
+| Telemetry | Token cost tracking, tool latency, secret scrubbing |
+| Alerting | Letting a human notice before the bill does |
+
+**DSH publishes none of these as documentation.** They are concerns the harness
+*exposes* — through the session log, the telemetry packages, and the plugin seams
+you have been using — but the deployment decisions are yours. That boundary is
+deliberate: the harness is a runtime, not an operations manual. Read the SDK-minimal
+and telemetry bundle rows plus their package READMEs to see what can be observed,
+then build the rest to your environment's requirements.
 
 Three sentences to carry away: a stateless pod pool requires session state to live
-outside the pod (integration option C); the cheapest control is a policy gate at
-`tools/pre-execute` plus a restrictive permission preset; and the only automation
-you can debug is the automation you instrumented in L7.
+outside the pod; the cheapest control is a policy gate at `tools/pre-execute` plus
+a restrictive permission preset; and the only automation you can debug is the
+automation you instrumented in L7.
 
 ## Verification
 
@@ -214,7 +236,7 @@ you can debug is the automation you instrumented in L7.
 ## Where to go next
 
 - **Find plugins before writing them.** Use the `find-dsh-plugins` skill or the
-  recipes in [plugin discovery](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugin-discovery.md) — the community
+  recipes in [plugin discovery](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md) — the community
   registry holds thousands of entries, and the bare GitHub topic filter
   over-matches badly.
 - **Publish your work.** Bundle your plugins into a package that declares its role

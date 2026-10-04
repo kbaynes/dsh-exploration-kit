@@ -14,7 +14,7 @@ Every row is a capability that ships in the repository checkout, named by the
 package or seam that provides it. The **Lesson** column points at the
 [guided lesson](index.md) that puts that capability under your hands.
 
-Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugins.md), the architecture doc's
+Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md), the architecture doc's
 "where new behavior goes" table (`docs/architecture.md`), the tool schema catalog
 (`docs/tool-catalog.md`), and the shipped bundle patches
 (`packages/bundle/base/cordis.patch.yml`, `packages/bundle/web-app/cordis.patch.yml`).
@@ -28,7 +28,7 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | Fiber lifecycle `PENDING → LOADING → ACTIVE → UNLOADING → DISPOSED`, plus `FAILED` | Cordis registry | [L1](./lessons/01-plugin-lifecycle.md) |
 | Reversible effects — registrations unwind on unload | `ctx.on`, `ctx.plugin`, `ctx.effect` | [L2](./lessons/02-tool-and-effects.md), [L3](./lessons/03-service-and-hmr.md) |
 | Dependency injection and load ordering via `inject` | Cordis services | [L3](./lessons/03-service-and-hmr.md) |
-| Typed events in four dispatch modes: `emit`, `waterfall`, `parallel`, `serial` | Cordis events | [L4](./lessons/04-policy-waterfalls.md) |
+| Typed events in five dispatch modes: `emit`, `parallel`, `serial`, `bail`, `waterfall` | Cordis events | [L4](./lessons/04-policy-waterfalls.md) |
 | Config validation before `apply` runs (Schemastery) | Cordis config | [L2](./lessons/02-tool-and-effects.md) |
 | `!!js` load-time config and `disabled` expressions | Loader | [L2](./lessons/02-tool-and-effects.md) |
 | Profiles, bundles, patches; ordered composition at boot | `dsh-base`, `dsh-web-app`, `dsh-headless`, `dsh-sdk-app` | [L2](./lessons/02-tool-and-effects.md) |
@@ -161,7 +161,7 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | Retry and fallback policy | `llm-retry` |
 | Sandboxed execution backends | `sandbox-local`, `e2b`, `sandbox-windows-acl` |
 
-See [OpenRouter integration & reasoning error hardening](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/openrouter-integration.md)
+See [OpenRouter integration & reasoning error hardening](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md)
 for the verified provider-configuration recipe.
 
 ## 11. Observability and operations
@@ -173,13 +173,15 @@ for the verified provider-configuration recipe.
 | Trajectory replay from the durable log | `session-projection`, `session-query` | [L7](./lessons/07-operating-the-harness.md) |
 | Runtime invariant checking | `runtime-diagnostics/invariants` | [L7](./lessons/07-operating-the-harness.md) |
 
-Deploy-time hardening for all of the above lives in the
-[operations checklists](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/index.md).
+Deploy-time hardening guidance is **not** published by DSH as documentation; it
+lives in the package READMEs for the container, session-store, and telemetry
+packages, plus your own operational judgment. Treat every row above as a capability
+to harden rather than a deployment recipe.
 
 ## Related Concepts
 
 - [Exploration lesson plan](index.md) — the ordered path through this map
-- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugins.md) — the mechanism behind every row in section 1
-- [Plugin discovery](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/plugin-discovery.md) — finding third-party plugins that add rows
-- [Headless integration model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/headless-integration-model.md) — deploying section 9
-- [Observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/observability-auditing.md) — deploying section 11
+- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) — the mechanism behind every row in section 1
+- [Plugin discovery](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md) — finding third-party plugins that add rows
+- [Headless integration model](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/bundle/headless/README.md) — deploying section 9
+- [Observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/otel.md) — deploying section 11

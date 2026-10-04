@@ -27,6 +27,18 @@ profile:
     Exploration Lesson:
       required: [type, title, description]
       optional: [resource, tags, timestamp]
+    # The three types below belong to pages generated into content/ by
+    # scripts/sync-site-docs.mjs from repository-root documents. They are
+    # git-ignored; the canonical files live at the root and are not concepts.
+    Verification Ledger:
+      required: [type, title, description]
+      optional: [resource, tags, timestamp]
+    Contribution Guide:
+      required: [type, title, description]
+      optional: [resource, tags, timestamp]
+    Attribution:
+      required: [type, title, description]
+      optional: [resource, tags, timestamp]
   date_fields: [timestamp]
 
 hygiene:

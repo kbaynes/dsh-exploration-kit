@@ -153,7 +153,8 @@ Programmatic forking is the seam behind `subagent_fork`:
 ctx.agents.create({
   sessionId,
   seed,
-  meta: { parentSession, seedLength },
+  inheritedEventCount,
+  meta: { parentSession, isSeeded: true },
 })
 ```
 

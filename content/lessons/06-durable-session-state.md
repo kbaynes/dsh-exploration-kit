@@ -55,8 +55,9 @@ declare module '@deepseek-ai/dsh-session/types' {
 Put the merge on the **producer's** type-only export and import that export for
 side effects from consumers — the repository's conversation subsystem is explicit
 about this split, and it matters as soon as a client also wants to render your
-event. The `@mode` tag convention in the same file documents dispatch mode; a log
-event with no listener semantics can use the default.
+event. Unlike a Cordis `Events` declaration, a `SessionEventMap` entry must **not**
+carry an `@mode` tag — a log event has no dispatch mode, and the persistence-catalog
+generator hard-errors on one.
 
 Two rules about this vocabulary decide whether your feature is durable *and*
 replayable:
@@ -65,7 +66,7 @@ replayable:
   are reconstructable from the log. If you want the model to see something, it
   needs an event; if you only want *readers* to see it, log-only is correct.
 - **Do not extend `SurfaceEventType` casually.** Only message-producing events
-  reach the model's history. Compaction is the instructive precedent: it adds three
+  reach the model's history. Compaction is the instructive precedent: it adds four
   log-only events and rides its summary on a separate `user/message` with a
   `surfaceOp: { op: 'replace', startSeq, endSeq }`. The surface mutation is a
   deliberate, separate act.
@@ -122,25 +123,44 @@ reader gets current state without re-deriving it:
 
 ```ts
 import type { Context } from '@deepseek-ai/cordis'
+import { z } from 'zod'
+
+// A projection key is typed against a merge-extensible table, so declare yours.
+declare module '@deepseek-ai/dsh-session-projection/types' {
+  interface SessionProjectionStateMap {
+    l6Steps: { total: number }
+  }
+  interface SessionProjectionMap {
+    l6Steps: { total: number }
+  }
+}
 
 export const name = 'l6-projection'
 export const inject = ['sessionProjections']
 
+const stateSchema = z.object({ total: z.number() })
+
 export function apply(ctx: Context) {
   ctx.sessionProjections.register({
     key: 'l6Steps',
-    stateSchema: { type: 'object', properties: { total: { type: 'number' } }, required: ['total'] },
+    stateSchema,
     stateVersion: 1,
     init: () => ({ total: 0 }),
     apply: (state, event) =>
       event.type === 'l6/step' ? { total: event.data.count } : state,
     wire: {
-      viewSchema: { type: 'object', properties: { total: { type: 'number' } }, required: ['total'] },
+      viewSchema: stateSchema,
       view: state => ({ total: state.total }),
     },
   })
 }
 ```
+
+Both schemas are **Zod** schemas, not raw JSON Schema objects: the registry calls
+`.parse()` on them (`packages/llm/token-meter/src/usage-projection.ts` is a real
+unit to compare against). And `key` is not a free string — it is
+`keyof SessionProjectionStateMap`, an empty merge-extensible table, so an
+undeclared key fails to typecheck.
 
 Design constraints that are not optional:
 

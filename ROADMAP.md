@@ -3,12 +3,12 @@
 A fast status view. The detailed task list with checkboxes lives in
 [PLAN.md](PLAN.md); this file is what you read in five seconds.
 
-**Current phase: 0 — Groundwork.** Only Lesson 1 is verified. Nothing is published.
+**Current phase: 1 — Building lessons.** Lessons 1–2 built and verified; nothing is published yet.
 
 | Phase | Goal | Status |
 |---|---|---|
-| 0 | Groundwork — version pin, baseline checks, issue templates | 🔄 In progress |
-| 1 | Build, test, and review each lesson | ⬜ Not started |
+| 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
+| 1 | Build, test, and review each lesson | 🔄 In progress (1–2 of 9) |
 | 2 | Test infrastructure — automated verification in CI | ⬜ Not started |
 | 3 | Whole-kit review — editorial and technical pass | ⬜ Not started |
 | 4 | Publication readiness — placeholders, licensing, metadata | ⬜ Not started |
@@ -17,10 +17,12 @@ A fast status view. The detailed task list with checkboxes lives in
 
 ## Lesson status
 
+Legend: ✅ done · 🟡 partial · ⬜ not started
+
 | # | Lesson | Implemented | Tested | Reviewed |
 |---|---|---|---|---|
 | 1 | Mount your first plugin | ⬜ | ✅ | ⬜ |
-| 2 | Register a tool, compose with config | ⬜ | ⬜ | ⬜ |
+| 2 | Register a tool, compose with config | ✅ | 🟡 | ⬜ |
 | 3 | Services, isolation, and hot reload | ⬜ | ⬜ | ⬜ |
 | 4 | Build a policy gate | ⬜ | ⬜ | ⬜ |
 | 5 | Assemble context deliberately | ⬜ | ⬜ | ⬜ |
@@ -30,7 +32,8 @@ A fast status view. The detailed task list with checkboxes lives in
 | 9 | Automate the harness | ⬜ | ⬜ | ⬜ |
 
 "Tested" means executed end-to-end against a real DSH checkout and recorded in
-[VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it.
+[VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it. A partial 🟡
+means the mechanism was executed but the lesson's own exercise was not.
 
 ## The gate that matters
 

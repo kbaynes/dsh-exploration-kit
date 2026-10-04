@@ -29,8 +29,8 @@ faith.
 | Invariants | `runtime-diagnostics/invariants` as a self-check |
 | Cost auditing | Turning a trajectory into a defensible number |
 
-Reference: [observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/observability-auditing.md) and the
-[telemetry pipeline checklist](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/operations/telemetry-pipeline.md).
+Reference: [observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/otel.md) and the
+[telemetry pipeline checklist](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/session-telemetry.md).
 
 ## Prerequisites
 
@@ -128,9 +128,22 @@ deliberately whether an exploration workspace should emit anything.
 
 ## Step 5 — Let the harness audit itself
 
-`runtime-diagnostics/invariants` checks runtime properties — including the
-"model-visible means logged" invariant that L6 depended on. Run it against a
-composition that includes your plugins. An invariant failure here is the cheapest
+`@deepseek-ai/dsh-invariants` checks runtime properties — including the
+"model-visible means logged" invariant that L6 depended on. It is **not** mounted by
+the base, web, or headless bundles (only `sdk-minimal` carries it), so add it
+yourself to `l7.patch.yml`:
+
+```yaml
+- insert:
+    - id: invariants
+      name: '@deepseek-ai/dsh-invariants'
+    - id: session-invariant
+      name: '@deepseek-ai/dsh-session/invariant'
+```
+
+The second row is the session-specific half; the shipped composition pairs them,
+and copying only the first leaves the session checks unarmed. Boot with the patch,
+run a session, and read the output. An invariant failure here is the cheapest
 possible way to find a design mistake you would otherwise discover through
 corrupted replays weeks later.
 

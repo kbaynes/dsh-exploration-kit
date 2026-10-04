@@ -29,7 +29,7 @@ durable state you add in L6.
 | Skills | A `SKILL.md` catalog discovered from scanned roots, body loaded on demand |
 | Human commands | `ctx.commands.register()` — dispatches without a model turn |
 
-Reference: [workspace instruction loading](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/agent-instructions.md), the
+Reference: [workspace instruction loading](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md), the
 repository's
 [skill filesystem README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/skill/skill-filesystem/README.md)
 and
@@ -71,6 +71,15 @@ Now add an injection to the same plugin:
 
 ```ts
 import type { Context } from '@deepseek-ai/cordis'
+import { createUserMessage } from '@deepseek-ai/dsh-llm'
+
+// A source kind belongs to its producer, so declare yours. There is deliberately
+// no shared catch-all `plugin` kind.
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    'l5-turn-observer': { kind: 'l5-turn-observer' }
+  }
+}
 
 export const name = 'l5-turn-observer'
 
@@ -83,15 +92,15 @@ export function apply(ctx: Context) {
 
   ctx.on('agent/created', (agent) => {
     try {
-      agent.inject({
+      agent.inject(createUserMessage({
         content: [
           {
             type: 'text',
             text: 'Exploration mode: when you explain a change, name the file it lands in.',
           },
         ],
-        source: { kind: 'plugin', plugin: 'l5-turn-observer' },
-      })
+        source: { kind: 'l5-turn-observer' },
+      }))
     } catch {
       // the agent may already be disposed; never let a notification kill a plugin
     }
@@ -99,10 +108,13 @@ export function apply(ctx: Context) {
 }
 ```
 
-The exact injection helper matters less than its contract, which the
-[adding-a-tool cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-tool.md)
-states plainly: `agent.inject({ content, source })` appends durable context the
-**next** model request sees — and it is **not a wake-up**. An idle agent stays
+`agent.inject()` takes a complete `UserMessage`, not a loose `{ content, source }`
+object. Build it with `createUserMessage`, which fills in the role and a stable
+identity. The **source kind is producer-owned**: each producer declares its own
+kind by merging into `MessageSourceMap`, and there is no catch-all kind to reuse.
+
+The contract that matters here is that the injected message appends durable context
+the **next** model request sees — and it is **not a wake-up**. An idle agent stays
 idle. Guard against disposed agents.
 
 To confirm the durability claim yourself, inject a distinctive sentence, run one
@@ -142,16 +154,16 @@ deep — `<root>/<name>/SKILL.md` or `<root>/<name>.md`. A nested `**/SKILL.md` 
 deliberately not discovered. An invalid skill is skipped with a warning, so a
 broken skill looks *identical to an absent one* from the model's point of view.
 
-Now point a scanned root at it. `skill-filesystem` already receives
-`customSkillDirs` from the base bundle's `!!js` expression, so override that row
-rather than inserting a second provider:
+Now point a scanned root at it. The shipped `skill-filesystem` row carries no
+`config` at all, so your overlay supplies the first `customSkillDirs` by overriding
+that existing row rather than inserting a second provider:
 
 `<kit>/plugins/l5.skills.patch.yml`:
 
 ```yaml
 - id: skill-filesystem
   config:
-    customSkillDirs: ['./<kit>/plugins/l5/skills']
+    customSkillDirs: ['<absolute path to>/dsh-exploration-kit/plugins/l5/skills']
     includeDefaultRoots: false
 ```
 
@@ -208,7 +220,7 @@ skill:
 | Commands | Deterministic actions with no reasoning needed | No model turn at all |
 
 Placement has a correctness dimension, not just a cost one. The
-[agent-instructions concept](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/harness/agent-instructions.md) records the rule and
+[agent-instructions concept](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md) records the rule and
 a real mistake from this very bundle: `~/.dsh/AGENTS.md` loads in **every** dsh
 session on the machine, so anything workspace-specific placed there bleeds into
 unrelated projects. Workspace-root `AGENTS.md` is correct for workspace-specific

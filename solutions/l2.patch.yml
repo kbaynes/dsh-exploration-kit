@@ -1,0 +1,5 @@
+- insert:
+    - id: l2-wordcount
+      name: './l2/wordcount.ts'
+      config:
+        defaultUnit: lines
