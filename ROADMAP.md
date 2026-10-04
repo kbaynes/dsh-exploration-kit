@@ -9,17 +9,19 @@ A fast status view. The detailed task list with checkboxes lives in
 [VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets) and
 [PLAN Phase 4.5](PLAN.md).
 
-**Current phase: 1 — Building lessons.** Lessons 1–2 built and verified; nothing is published yet.
+**Current phase: 4 — Publication readiness.** All nine lessons are built and executed;
+the kit is one owner substitution away from publishable, and publication is deliberately
+held until more hardening is done.
 
 | Phase | Goal | Status |
 |---|---|---|
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
 | 0.5 | Rewrite lessons for the verified bundle mechanism | ✅ All nine rewritten |
-| 1 | Build, test, and review each lesson | 🔄 In progress (1–2 of 9) |
-| 2 | Test infrastructure — automated verification in CI | ✅ 15 checks, version gate |
-| 3 | Whole-kit review — editorial and technical pass | ⬜ Not started |
+| 1 | Build, test, and review each lesson | ✅ All nine built and executed |
+| 2 | Test infrastructure — automated verification in CI | ✅ 16 checks, version gate, full CI run |
+| 3 | Whole-kit review — editorial and technical pass | ✅ Independent review triaged and fixed |
 | 4 | Publication readiness — placeholders, licensing, metadata | 🔄 runbook + gate done; needs the owner |
-| 4.5 | Tag the release against a harness state | ⬜ Not started |
+| 4.5 | Tag the release against a harness state | ⬜ Pending publication |
 | 5 | Publish and promote | ⬜ Not started |
 | 6 | After publication — maintenance and contributions | ⬜ Not started |
 
@@ -29,16 +31,16 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 
 | # | Lesson | Implemented | Tested | Reviewed |
 |---|---|---|---|---|
-| 1 | Mount your first plugin | ✅ | ✅ | ⬜ |
-| 2 | Register a tool, compose with config | ✅ | 🟡 | ⬜ |
+| 1 | Mount your first plugin | ✅ | ✅ | ✅ |
+| 2 | Register a tool, compose with config | ✅ | 🟡 | ✅ |
 | — | **Lessons need rewriting to install the bundle** — see PLAN Phase 0.5 | | | |
-| 3 | Services, isolation, and hot reload | ✅ | 🟡 | ⬜ |
-| 4 | Build a policy gate | ✅ | 🟡 | ⬜ |
-| 5 | Assemble context deliberately | ✅ | 🟡 | ⬜ |
-| 6 | Give the session durable state | ✅ | 🟡 | ⬜ |
-| 7 | Operate the harness | ✅ | 🟡 | ⬜ |
-| 8 | Orchestrate multiple agents | ✅ | 🟡 | ⬜ |
-| 9 | Automate the harness | ✅ | 🟡 | ⬜ |
+| 3 | Services, isolation, and hot reload | ✅ | 🟡 | ✅ |
+| 4 | Build a policy gate | ✅ | 🟡 | ✅ |
+| 5 | Assemble context deliberately | ✅ | 🟡 | ✅ |
+| 6 | Give the session durable state | ✅ | 🟡 | ✅ |
+| 7 | Operate the harness | ✅ | 🟡 | ✅ |
+| 8 | Orchestrate multiple agents | ✅ | 🟡 | ✅ |
+| 9 | Automate the harness | ✅ | 🟡 | ✅ |
 
 "Tested" means executed end-to-end against a real DSH checkout and recorded in
 [VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it. A partial 🟡
