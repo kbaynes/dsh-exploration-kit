@@ -196,20 +196,19 @@ A real delegation follows, and the numbers say what happened:
 - **three model requests** — the parent's tool call, the **child's own turn**, then the parent's final answer. A child agent really ran, in its own context.
 - **a child session recorded with a parent link** in the session log, so the delegation is durable lineage rather than a transient call.
 
-`bash <kit>/solutions/verify-l8.sh` runs it and asserts all four properties.
+`bash <kit>/solutions/verify-l8.sh` runs it and asserts the request count, the child's own turn closing, the parent link, and the token comparison.
 
-Requires a real provider:
-
-5. A spawned child demonstrates it lacks the parent's *conversation* context — the mock cannot show this, because scripted output does not depend on what the child was given.
-5. A forked child inherits the cut, and your L6 projection consumes it rather than inferring it — **executed**: the probe asserts the inherited prefix length, the `isSeeded` marker, the parent lineage, and that the projection reflects the inherited event.
-6. A real delegation runs a child turn and records it — **executed**, against the mock provider.
-6. `send_message` reaches a live child and `interrupt_agent` stops it.
-7. A real fan-out returns schema-validated rows.
+4. A spawned child demonstrates it lacks the parent's *conversation* context.
+5. A forked child inherits the cut, and your L6 projection consumes it rather than inferring it.
+6. A real delegation runs a child turn and records it, with a parent link.
+7. `send_message` reaches a live child and `interrupt_agent` stops it.
 8. You can produce the four-part audit for a monolithic run *and* a decomposed run of the same task.
 
-Items 6 and 8 are executed and recorded in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 6 is a real delegation — a genuine fan-out where the parent calls the tool, a child runs its own turn, and the child is durably recorded with a parent link. Item 8's four-part audit is produced by the check itself, which measures **26 tokens for one turn and 57 for the same task as a fan-out (parent 31 + child 26)**, attributing the child's share to the child's own session rather than pooling it.
+Items 5, 6, and 8 are executed and recorded in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 5 asserts the inherited prefix length, the `isSeeded` marker, the parent lineage, and that the projection reflects the inherited event. Item 6 is a genuine fan-out: the parent calls the tool, a child runs its own turn, and the child is durably recorded with a parent link. Item 8's four-part audit is produced by the check itself, which measures **26 tokens for one turn and 57 for the same task as a fan-out (parent 31 + child 26)**, attributing the child's share to the child's own session rather than pooling it.
 
-What that comparison does **not** establish is the *magnitude*: the mock's input is a constant 3 tokens and its output is a scripted reply's character count, so the totals prove correct attribution across agents, not a realistic price. Items 4, 5, and 7 remain unverified.
+What that comparison does **not** establish is the *magnitude*: the mock's input is a constant 3 tokens and its output is a scripted reply's character count, so the totals prove correct attribution across agents, not a realistic price.
+
+Items 4 and 7 are not executed, and both need a **real provider** for the same reason: the mock's output is scripted, so it does not depend on what the child was given. Item 4 asks the child to show what it did *not* know; item 7 needs a model that chooses to `send_message` or `interrupt_agent` rather than a script that calls them.
 
 **If your child's session looks truncated, check the scheduling before suspecting the harness.** During this project a delegated child was left open in 5 of 10 runs, and it was not a harness fault: the scripted call took the default background scheduling, the parent finished, and the headless process exited while the child was still working. Passing `run_in_background: false` closed it every time. The verification asks for the result in the same turn, and still retries and prints how many attempts it needed, so that a regression would show up as a rising attempt count rather than as silence.
 
