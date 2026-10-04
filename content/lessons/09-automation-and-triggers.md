@@ -279,9 +279,11 @@ Requires a provider:
 7. A scheduled task fires once and appears in `schedule_list` before you delete it.
 8. A webhook rule creates exactly one Session per delivery, and you have stated what happens on a duplicate delivery.
 
-Items 4, 5, and 7 are executed and recorded in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md), along with a scheduled task surviving a restart and a delivery completing the scheduled work. Item 5 needs no credential either — the mock scripts the **tool call** while the harness dispatches it, and the check asserts the stream contract: a `tool_call` with its parsed input and a `tool_result` carrying the same `callId`. (Whether the tool then *runs* depends on the host's sandbox, so the result's status is not asserted.)
+Items 4, 5, 6, and 7 are executed and recorded in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md), along with a scheduled task surviving a restart and a delivery completing the scheduled work. Item 5 needs no credential either — the mock scripts the **tool call** while the harness dispatches it, and the check asserts the stream contract: a `tool_call` with its parsed input and a `tool_result` carrying the same `callId`. (Whether the tool then *runs* depends on the host's sandbox, so the result's status is not asserted.)
 
-Items 6 and 8 are not executed: item 6 needs the SDK to invoke a tool rather than answer a question, and item 8 needs a webhook credential.
+Item 6 is executed too: an SDK run **loads a patches file and executes an earlier lesson's tool**. The patch is Lesson 2's own override (`defaultUnit: chars`), the mock scripts a `word_count` call that omits `unit`, and the result reads `11681 chars` — the real character count of the kit README. Two independent things are therefore proven at once: the patched unit shows the **patches file was loaded**, and the count shows the **tool read the file** rather than echoing a string.
+
+Item 8 is not executed: a webhook delivery needs a credential, which is a different transport from everything above.
 
 ## Exit check — you should now be able to explain
 

@@ -37,6 +37,13 @@ echo
 echo "== kit bundle into the web-backed profile '$WEB_PROFILE' =="
 dsh plugin --profile "$WEB_PROFILE" add "link:$REPO/kit-plugins"
 
+# Lesson 9's SDK phase runs the `sdk-minimal` profile and loads a patches file that configures an
+# earlier lesson's tool, so the bundle must be resolvable THERE too. The profile is created on
+# first use (the SDK spawns it), so install into it explicitly rather than assuming it exists.
+echo "== kit bundle into the SDK profile 'sdk-minimal' =="
+dsh plugin --profile sdk-minimal add "link:$REPO/kit-plugins" 2>/dev/null \
+  || echo "   (profile sdk-minimal not created yet; the suite's SDK phase will report it)"
+
 echo
 echo "== pinned opt-in package for lesson 7 =="
 dsh plugin --profile "$BASE_PROFILE" add "@deepseek-ai/dsh-tool-session-query@$VERSION"

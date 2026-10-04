@@ -224,6 +224,46 @@ fi
 rm -rf "$SDK_HOME"
 
 echo
+echo "-- and it loads a PATCHES FILE and executes an earlier lesson's tool --"
+# Lesson 9's item 6: an SDK run that loads a patches file and executes a tool from an earlier
+# lesson. The patch used here is Lesson 2's own override (`l2-wordcount` with `defaultUnit: chars`),
+# and the mock scripts a `word_count` call that OMITS `unit` - so the unit that comes back proves
+# whether the patch was loaded. The expected count is computed from the real file, so the result
+# proves the tool read it rather than that a string was echoed.
+#
+# The profile needs the kit bundle in ITS home: the SDK spawns `dsh` with DSH_HOME here, and a
+# fresh home has only the shipped `sdk-minimal` template. Installing a bundle creates the profile.
+TOOL_HOME="$(mktemp -d)"
+if DSH_HOME="$TOOL_HOME" dsh plugin --profile sdk-minimal add "link:$KIT/kit-plugins" >/dev/null 2>&1; then
+  EXPECTED_CHARS="$(python3 -c "print(len(open('$KIT/README.md', encoding='utf-8').read()))")"
+  if start_mock_llm "$DSH_CHECKOUT" 8144 tool_call_success,success,success \
+       --tool-name word_count --tool-arguments "{\"path\":\"$KIT/README.md\"}"; then
+    TOOL_OUT="$(cd "$DSH_CHECKOUT" && DSH_HOME="$TOOL_HOME" \
+        DEEPSEEK_BASE_URL="$MOCK_LLM_BASE_URL" DEEPSEEK_API_KEY=mock-key \
+        SDK_PATCH="$KIT/solutions/l2.override.patch.yml" \
+        SDK_PROMPT="count the characters in the kit README" \
+        node "$KIT/solutions/sdk-roundtrip.mjs" "$DSH_CHECKOUT" 2>&1)"
+    tool_status=$?
+    stop_mock_llm
+
+    check "the tool-calling SDK run exits 0" '0' "$tool_status"
+    check "the SDK reports that it loaded a patches file" 'patches=1' "$TOOL_OUT"
+    TOOL_LOG="$(find "$TOOL_HOME/sessions" -name 'session.v*.jsonl' 2>/dev/null | head -1)"
+    tool_log="$(cat "$TOOL_LOG" 2>/dev/null)"
+    check "an earlier lesson's tool RAN inside the SDK run" '"name":"word_count"' "$tool_log"
+    # `chars` is the PATCHED unit; the plugin's own default is `words`. The count is the file's.
+    check "the result comes from the real file, in the PATCHED unit" "\"text\":\"$EXPECTED_CHARS chars\"" "$tool_log"
+    check "and the tool reported success" '"isError":false' "$tool_log"
+  else
+    echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
+  fi
+else
+  echo "FAIL  could not create the sdk-minimal profile in a fresh home"
+  failures=$((failures + 1))
+fi
+rm -rf "$TOOL_HOME"
+
+echo
 echo "== 8. DELIVERY: a due task resumes the session and the agent DOES the work =="
 # The half that needs a provider. Two details are load-bearing, and both were learned by failing:
 #   - The session must have talked to the model BEFORE the task fires. Delivery resumes the session
@@ -316,7 +356,8 @@ if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 9 verified: opt-in activation, schedule durability, DELIVERY (a due task resumes the"
   echo "session, the receipt is recorded, and the agent completes the scheduled work), a real headless"
   echo "turn (exit codes, stdout/stderr separation, the --json event stream including a real tool"
-  echo "call and its correlated result) and a real SDK round trip - all keyless."
+  echo "call and its correlated result) and a real SDK round trip that loads a PATCHES FILE and"
+  echo "executes an earlier lesson's tool - all keyless."
   echo "Still needs a credential: a webhook delivery, which is a different transport."
 else
   echo "$failures check(s) failed."; exit 1

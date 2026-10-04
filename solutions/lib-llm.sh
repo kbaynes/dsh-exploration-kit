@@ -27,6 +27,9 @@ start_mock_llm() { # start_mock_llm <checkout> <port> <sequence> [extra mock fla
   ( cd "$checkout" && pnpm run mock:llm --port "$port" --api-key mock-key \
       --sequence "$sequence" --repeat-last "$@" >"$log" 2>&1 ) &
   MOCK_LLM_PID=$!
+  # `disown` removes the job from this shell's table, so killing it in stop_mock_llm does not make
+  # bash print "Terminated: 15" over the check output. The process is still controlled by pid.
+  disown "$MOCK_LLM_PID" 2>/dev/null || true
 
   local waited=0
   while (( waited < 40 )); do

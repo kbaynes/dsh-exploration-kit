@@ -230,7 +230,7 @@ The substance of the project. Repeat this block for each lesson. **Order is inde
       `callId`. The result's *status* is not asserted: whether a tool can run is host-dependent
       (this machine has no usable sandbox backend), so the check asserts the stream contract.
 - [ ] Confirm `--session-id` adopts an exact session and fails on unknown ids
-- [ ] Run the TypeScript SDK sample with a `patches` file loading a kit tool
+- [x] Run the TypeScript SDK sample with a `patches` file loading a kit tool — `solutions/verify-l9.sh` phase 7: the SDK composes `sdk-minimal` from `solutions/l2.override.patch.yml`, the mock scripts a `word_count` call that omits `unit`, and the result reads `11681 chars`. The patched unit proves the patches file was loaded; the count, computed from the file by the check, proves the tool read it. The profile needs the bundle in the SDK's OWN home (`dsh` spawns with its own `DSH_HOME`), so the phase installs it there and `scripts/setup-verify-profiles.sh` does the same for the shared home.
 - [ ] **Replace or delete the Python placeholder snippet** — currently
       non-runnable; either test a real call or cut the step
 - [x] Confirm a schedule fires once and appears in `schedule_list` — `solutions/verify-l9.sh`
