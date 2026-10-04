@@ -34,6 +34,7 @@ const checks = [
   { name: 'configuration artifacts', cmd: ['pnpm', 'run', '-s', 'check:configs'] },
   { name: 'lesson structure', cmd: ['pnpm', 'run', '-s', 'check:lessons'] },
   { name: 'internal links', cmd: ['pnpm', 'run', '-s', 'check:links'] },
+  { name: 'synced-document links', cmd: ['pnpm', 'run', '-s', 'check:synced-links'] },
   { name: 'decision records', cmd: ['pnpm', 'run', '-s', 'check:decisions'] },
   { name: 'examples mirror', cmd: ['pnpm', 'run', '-s', 'check:examples'] },
   { name: 'unit tests (pure folds)', cmd: ['pnpm', 'run', '-s', 'check:units'] },

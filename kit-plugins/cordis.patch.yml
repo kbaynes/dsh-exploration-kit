@@ -77,3 +77,9 @@
     - id: l6-probe
       name: dsh-exploration-kit-plugins/l6/projection-probe.js
       disabled: true
+
+    # Opt-in diagnostic: queries session history through ctx.sessionQuery, verifying
+    # Lesson 7's substance without a model. See solutions/l7.probe.patch.yml.
+    - id: l7-probe
+      name: dsh-exploration-kit-plugins/l7/query-probe.js
+      disabled: true

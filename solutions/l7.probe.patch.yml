@@ -1,0 +1,9 @@
+# Enable Lesson 7's query probe. Apply it TOGETHER with l7.patch.yml, which opens the
+# session store and mounts the model-facing tools:
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml \
+#       --patch <kit>/solutions/l7.probe.patch.yml --port 0 --no-open
+- id: l7-probe
+  disabled: false
+  config:
+    enabled: true

@@ -203,45 +203,81 @@ Read it back with `stateOf(session, 'l6Steps')` for one unit, or
 is the seq every value reflects. Checkpoints persist these units through
 `session-projection-cache`, so a cold read need not load the whole log.
 
-## Step 4 — Prove durability
+## Step 4 — The trap: a new event type destroys the session on restart
 
-This step is the lesson. Do all four, in order:
+**Do not skip this step, and do not write the code above into anything real.**
 
-1. Run a session that triggers tool results and therefore appends `l6/step` events.
-2. Note the final count your projection reports.
-3. Stop the process entirely.
-4. Restart, reopen that session, and read the same projection key again.
-
-The count comes back — and the honest reason is not "the projection remembered
-it". The projection is *derived*: the events are in the JSONL log, and the fold
-reproduces the state. That is why the log is the source of truth and projections
-are caches.
-
-Now inspect the raw evidence. The layout is not flat, and getting it wrong is the
-usual reason this step appears to fail:
+The `l6/step` event you just declared is a **third-party event type**. The harness knows
+the event types it ships with — the persistence catalog states plainly that *"external
+plugin types require their own declarations and are outside this catalog"* — and the
+storage contract refuses to interpret a log containing a type it does not know:
 
 ```
-$DSH_HOME/sessions/<workspace>/session-<uuid>/session.jsonl.zstd
+failed to read stored session "session-l7-durability":
+session "session-l7-durability" contains event type "l6/step" (seq 4)
+unknown to this harness and not marked ignorable;
+refusing to interpret the log — it was likely written by a newer harness
 ```
 
-- **`$DSH_HOME`** is `~/.dsh` by default.
-- **`<workspace>`** is a directory named for the session's working directory with
-  separators replaced and wrapped, e.g. `--Users-you-code-myproject--`.
-- **Each session is a directory**, not a file.
-- **`.zstd`** — the log is zstd-compressed. Read it with `zstd -dc <file> | less`, or
-  just use the query tools you set up in L7 and skip the decoding entirely.
+That is not a warning. The session **cannot be reopened at all**.
 
-Find your `l6/step` rows there. You will see the persisted framing — the format is
-versioned, committed generations are never renamed or replaced, and a write open
-publishes a version-named successor (`session.v4.jsonl.zstd`) beside the unchanged
-source.
+Execute the proof, because the failure is the lesson:
+
+1. Boot with the counter enabled and let it append at least one `l6/step` event.
+2. Confirm the projection reports a count *in that same process* — it will. The event is
+   in the live log, so everything looks correct.
+3. Stop the process.
+4. Boot again and try to read that session — with the L7 query service, or by resuming it.
+
+```
+[l7-probe] RE-READ FAILED: … contains event type "l6/step" (seq 4) unknown to this
+harness and not marked ignorable; refusing to interpret the log
+```
+
+**Step 2 passing and step 4 failing in the same session is the whole point.** An event
+type you invent is writable, foldable, and completely non-durable. Worse, it is
+*contagious*: full-text search observes whole sessions, so one session carrying an
+unknown type makes `searchSessions` fail for the entire corpus.
+
+This corrects an earlier version of this lesson, which claimed the count would come back
+after a restart. It does not. See
+[ADR-0024](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md).
+
+### What to do instead
+
+**Derive durable state from events the harness already knows.** That is the part of this
+lesson worth keeping, and it needs no new vocabulary:
+
+```js
+// Fold a KNOWN event type. `tool/result` is part of the harness's vocabulary, so a log
+// containing it stays readable — and therefore stays durable.
+export const projection = {
+  key: 'l6Steps',
+  stateSchema,
+  stateVersion: 1,
+  init: () => ({ total: 0 }),
+  apply: (state, event) =>
+    event.type === 'tool/result' ? { total: state.total + 1 } : state,
+  wire: { viewSchema: stateSchema, view: state => ({ total: state.total }) },
+}
+```
+
+Note what changed: the fold now **accumulates**, because a known event does not carry your
+state for you. That is legitimate here — the events are immutable and appended exactly
+once, so replay is deterministic. The "complete post-change state" rule from step 5 applies
+to events that *carry a value*, which is a different situation from counting events that
+already exist.
+
+If you genuinely need a new durable fact, the harness channel for it is a *known* event
+type or the plugin-owned mechanisms the architecture doc lists — extending the vocabulary
+is a change to the harness, not something a third-party plugin can do from outside it.
 
 ## Step 5 — Break replay on purpose
 
-Temporarily make the event carry a delta instead of the complete state — for
-example append `{ label: 'tool-result', count: 1 }` every time. Replay will now
-produce a wrong total, because the fold has nothing to accumulate against. This is
-the concrete failure the "complete post-change state" rule prevents. Revert.
+A state-carrying event must carry the **complete** post-change state, never a delta,
+because replay has nothing reliable to accumulate against. If you keep a value-carrying
+event — including a first-party one — make that mistake deliberately and watch the total
+come out wrong. This is the rule the harness's own events follow.
 
 ## Verification
 

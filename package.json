@@ -53,7 +53,8 @@
     "setup": "pnpm install && pnpm run install:plugins",
     "check:publication": "node scripts/check-publication.mjs",
     "setup:profiles": "bash scripts/setup-verify-profiles.sh",
-    "check:configs": "node scripts/check-configs.mjs"
+    "check:configs": "node scripts/check-configs.mjs",
+    "check:synced-links": "node scripts/check-synced-links.mjs"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",

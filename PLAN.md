@@ -275,6 +275,25 @@ the response is to re-verify and either fix the lesson or demote its `VERIFIED.m
       helps completion
 - [ ] Re-read [VERIFIED.md](VERIFIED.md) end to end and correct every overstatement
 
+## Blocking defect — L6 must stop inventing an event type
+
+Found in this round by a two-boot experiment (ADR-0024): a plugin-declared `SessionEventMap`
+type is writable and foldable, and makes the session **unopenable after a restart**. The
+lesson text is already corrected; the shipped code is not.
+
+- [ ] Refactor `kit-plugins/l6/counter.js` to stop appending `l6/step`, and refactor
+      `l6/fold.js` to fold a **known** event type (`tool/result`), accumulating as it goes.
+- [ ] Update `l6/projection-probe.js` and `solutions/verify-l6.sh` to the new event and to
+      assert the **restart** path — which is the claim that was wrong, so it must be the one
+      the check covers.
+- [ ] Decide whether `l6-counter.js` survives at all: keeping it as a deliberate hazard
+      risks a reader enabling it. If it stays, its row and comments must say it is a
+      demonstration, never a pattern to copy.
+- [ ] Re-promote L6's `VERIFIED.md` row to Executed once the two-boot check passes.
+- [ ] Add the same write/restart/read test to any other place the kit writes durable plugin
+      state.
+- [ ] Add the L7 caveat that search fails for a corpus containing an unknown event type.
+
 ## Phase 3 — outcome: editorial review complete
 
 An independent editorial review of all nine lessons was run as a separate reviewer

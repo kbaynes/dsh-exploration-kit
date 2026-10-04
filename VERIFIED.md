@@ -98,7 +98,7 @@ row that admits it has not been checked yet.
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
-| L6 — Give the session durable state | **Executed** | A probe creates a real session (no model), appends `l6/step` events, and reads the registered projection through `stateOf`: `0 → 1 → 9`, proving the append path, the fold, and the **complete-state** rule (a second event saying 9 yields 9, not 1+9). The fold's pure core is unit-tested (4 tests). **Found by this probe: both the counter and L5's inject plugin read the `agent/created` payload as the agent**, so the counter crashed on any real session and the inject plugin silently did nothing. Both fixed. Still unverified: JSONL-on-disk inspection and restart replay. |
+| L6 — Give the session durable state | **DEFECT — claim false as written** | The lesson taught that a plugin can add durable state by declaring and appending a new event type. Executed two-boot experiment: the event writes and folds fine in-process, and after a restart the session **cannot be opened at all** — `contains event type "l6/step" … unknown to this harness and not marked ignorable; refusing to interpret the log`. Step 4 is corrected to teach the failure and the supported replacement (fold a known event); the shipped plugins still need the refactor ([PLAN.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/PLAN.md)), and the ledger row stays demoted until they have it. See evidence below. |
 | L7 — Operate the harness | **Partly executed** | Executed: the overlay composes as one override plus three inserts, and a boot applies it with **zero activation warnings**; the optional tool package is installed pinned to the dsh version. **Not** executed: any query, the authority refusal, token deltas, `/compact`, and the invariant findings — each needs a session. |
 | L8 — Orchestrate multiple agents | **Partly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (no kit plugin needed), and the workflow's pure core passes **7 unit tests with a fake engine** — pipeline drives every item, the schema passes through, and a partially failed fan-out still yields a dense array. **Not** executed: any real delegation, fork, or fan-out — each needs a provider. |
 | L9 — Automate the harness | **Partly executed** | Executed: `schedule` and `webhook` are confirmed opt-in (no shipped bundle provides them), the overlay composes, and a web-backed profile activates both with **no warnings** while a base-backed profile leaves them `PENDING` naming the missing services; both packages install pinned. The Python snippet is a real upstream example. **Not** executed: any headless run, `--json` events, an SDK round trip, a schedule firing, a webhook delivery — each needs a provider. |
@@ -344,6 +344,43 @@ deltas, `/compact`, and the invariant sweep's findings. Each needs a session.
    version-named successors such as `session.v4.jsonl.zstd`. L6 told readers to "open the
    session file under `$DSH_HOME/sessions/`", which would have failed three ways. Both L6
    and L7 now give the real path and note `zstd -dc` as the way to read it.
+
+## Evidence: L6's durability claim is false as written
+
+**A two-boot experiment, executed:**
+
+```
+BOOT 1 (write)
+  [l7-probe] created session-l7-durability with a distinctive marker
+  [l7-probe] readSession: 5 event(s); marker present: true
+
+BOOT 2 (fresh process)
+  [l7-probe] RE-READ FAILED: failed to read stored session "session-l7-durability":
+    session "session-l7-durability" contains event type "l6/step" (seq 4)
+    unknown to this harness and not marked ignorable;
+    refusing to interpret the log — it was likely written by a newer harness
+```
+
+The event is writable and foldable in the process that wrote it, so the lesson's earlier
+"the count comes back" claim looked true. After a restart the session is unopenable.
+
+**It is contagious.** `searchSessions` observes whole sessions, so one such session breaks
+search for the corpus:
+
+```
+[l7-probe] searchSessions failed: session-search persistence observation failed:
+  session "session-l6-probe-…" contains event type "l6/step" …
+```
+
+**Why:** `validateStoredEvents` rejects stored events outside the harness's known
+vocabulary unless the envelope carries `ignorable: true`; the persistence catalog states
+that external plugin types are outside its inventory; `KNOWN_SESSION_EVENT_TYPES` is a
+static generated set with no runtime registration; and `session.append()` cannot set
+`ignorable`.
+
+**The lesson is corrected** — Step 4 now teaches this as the trap and gives the supported
+replacement, folding a known event type. This is the first finding that *invalidated* a
+lesson's central claim rather than refining it, and it is recorded as ADR-0024.
 
 ## Evidence: L6 executed (and two shipped bugs found)
 
