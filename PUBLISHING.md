@@ -2,6 +2,17 @@
 
 The runbook for taking this repository public. Everything here is either a one-line edit or a command; nothing is a judgement call except the decisions listed at the end.
 
+**Before tagging, run the reader's own path on a clean copy** — a fresh clone in a fresh `DSH_HOME`, which is the only test that catches a file the repository forgot to commit:
+
+```sh
+git clone <this repository> /tmp/kit-clone && cd /tmp/kit-clone
+pnpm run setup
+pnpm run check:kit                        # 11 passed, 9 skipped (no checkout)
+export DSH_HOME=/tmp/kit-clone-home
+bash scripts/setup-verify-profiles.sh ~/.local/bin <dsh-version>
+DSH_CHECKOUT=<checkout> pnpm run check:kit # 20 passed, 0 failed
+```
+
 **The gate is `pnpm run check:publication`.** It refuses while anything below is outstanding, so the sequence is: fix what it names, re-run it, repeat, then publish.
 
 ## 1. Choose the public owner and name

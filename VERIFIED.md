@@ -219,6 +219,30 @@ The headless phases previously proved the stream's text and phase events. This o
 
 **A wiring bug caught here too.** The phase first ran after the script had deleted the model patch it reused, so `--patch` pointed at a removed file and the boot failed with six unexplained errors. It now writes its own patch — the same fix already needed for the delivery phase.
 
+## Evidence: a fresh clone passes the WHOLE suite in a fresh harness home
+
+The strongest check of publication readiness is the workflow the documentation gives a reader, performed literally on a new checkout with no local state:
+
+```
+$ git clone <kit> /tmp/kit-clone && cd /tmp/kit-clone
+$ pnpm run setup                                  # exit 0, both dependency roots
+$ pnpm run check:kit                              # no checkout yet
+11 passed, 0 warned, 0 failed, 9 skipped          # the 9 need a DSH checkout
+
+$ export DSH_HOME=/tmp/kit-clone-home             # a home that has never seen this kit
+$ bash scripts/setup-verify-profiles.sh ~/.local/bin 0.2.0-rc.2
+Profiles provisioned at dsh 0.2.0-rc.2.
+$ DSH_CHECKOUT=<checkout> pnpm run check:kit
+20 passed, 0 warned, 0 failed, 0 skipped
+harness left: 0
+```
+
+Three things this establishes that nothing else does:
+
+- **The generated files really are generated.** `content/VERIFIED.md`, `content/CONTRIBUTING.md` and `content/THIRD-PARTY.md` are gitignored and absent from a clone; the OKF check and the site build pass anyway, because the sync runs first.
+- **The install story works from nothing.** `setup-verify-profiles.sh` provisions every profile the per-lesson checks need — including the kit bundle into *two* profiles and the pinned optional packages — in a home that started empty.
+- **The suite's own hygiene holds on a clean machine.** `harness left: 0` after 27 boots, which is the property [ADR-0035](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0035-a-background-launch-is-killed-by-the-pid-you-started.md) and [ADR-0036](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0036-never-wait-unboundedly-on-a-process-you-no-longer-need.md) restored.
+
 ## Evidence: L9 an SDK run loads a patches file and executes an earlier lesson's tool
 
 Item 6 of Lesson 9's exit check, and the strongest of the SDK claims: the SDK composes a profile from a **patches file** and a tool from an earlier lesson actually runs.

@@ -78,14 +78,14 @@ The pinned branch and the checkout disagree — one of them is stale:
   deepseek-ai/deepseek-harness: kit.target.json says "main", the checkout is on "master"
 ```
 
-And the clean state, with the branch coverage stated in the output:
+And the clean state, with the branch coverage stated in the output (the placeholder owner token is elided as `<owner>` here, because this record is itself scanned by the placeholder gate; the run printed it literally):
 
 ```
 $ pnpm run check:upstream
 checked 39 distinct GitHub link(s)
   deepseek-ai/deepseek-harness uses branch "master" (pinned; checkout has "master")
   kbaynes/dsh-exploration-kit uses branch "main"
-  ignored: REPLACE_OWNER/dsh-exploration-kit (not this kit's repositories)
+  ignored: <owner>/dsh-exploration-kit (not this kit's repositories)
   ignored 2 documented URL form(s) that name no real path
 every link resolves, and every link names the branch its repository uses
 ```

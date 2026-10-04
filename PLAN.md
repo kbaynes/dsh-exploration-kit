@@ -372,6 +372,7 @@ Neither is blocking publication. Both matter because a suite that takes eleven m
 
 ## Phase 4 — Publication readiness
 
+- [x] **Prove the pristine-install path end to end** — a fresh clone in a fresh `DSH_HOME`, provisioned by `scripts/setup-verify-profiles.sh`, runs `check:kit` **20 passed / 0 failed** and leaves no processes behind; without a checkout it is 11 passed / 9 skipped. This is ADR-0018's guarantee checked on the real artifact rather than argued: generated files are absent from the clone and the OKF check plus site build still pass, because the sync runs first. Recorded in [VERIFIED.md](VERIFIED.md).
 - [x] Add `PUBLISHING.md`, the runbook for the steps that no file can carry, and
       `pnpm run check:publication`, the gate that refuses until the repository is ready
 - [x] Record the intended GitHub topics in `.github/topics.txt` so they survive a
