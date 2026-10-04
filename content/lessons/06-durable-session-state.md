@@ -185,12 +185,12 @@ All of it runs **without a model**, and the restart is asserted in two processes
 
 Item 5 is not decoration: it is the check that would have caught the original lesson's defect, and it is the one that fails if anyone reintroduces an invented type.
 
-Every item above has been executed; the exact output is quoted in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md), which also records what this lesson does *not* verify: the fold's behaviour under a real model turn, which is a question about the model rather than about durable state.
+Every item above has been executed; the exact output is quoted in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). What this lesson does *not* verify is the fold's behaviour under a real model turn — a question about the model rather than about durable state — and the ledger's L6 row now says so too.
 
 ## Exit check — you should now be able to explain
 
 - Why "model-visible means logged" is a *checked* invariant rather than advice.
-- When an event needs a `surfaceOp` and when that parameter is forbidden.
+- When an event needs a `surfaceOp` — the parameter that says how a committed event meets the model-facing surface (`append`, or a replacement operation) — and when it is forbidden, which is the difference between a surface event and a log-only one.
 - (Deferred to L8) Why a projection may not use `firstLiveSeq` to infer a fork-inherited cut.
 - Why an in-process assertion cannot distinguish durable state from a cache.
 - What breaks if `apply` returns a fresh equal object on irrelevant events.

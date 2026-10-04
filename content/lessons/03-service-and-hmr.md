@@ -116,9 +116,22 @@ The startup summary is a hint; the registry is the source of truth. Open `<kit>/
 ```js
 export const name = 'l3-diagnose'
 
+/**
+ * Optional name filter. Set `config: { match: 'l3-' }` on this plugin's row to
+ * report only the fibers you are working on. Without it, the sweep reports every
+ * PENDING/FAILED fiber in the whole composition — which is honest but noisy,
+ * because a real profile has services legitimately waiting on optional providers.
+ */
+import Schema from '@deepseek-ai/schemastery'
+
+export const Config = Schema.object({
+  match: Schema.string().default(''),
+})
+
 // FiberState is a `const enum`: TypeScript erases it, and it is NOT a runtime
 // export of the published @deepseek-ai/cordis package. Importing it — as the
-// upstream Cordis tutorial does — throws at load. Compare the stable numbers.
+// upstream Cordis tutorial does — throws at load. The numeric values are stable,
+// so compare against the documented ordering instead.
 const STATE_NAMES = ['PENDING', 'LOADING', 'ACTIVE', 'FAILED', 'DISPOSED', 'UNLOADING']
 
 export function apply(ctx, config) {
@@ -138,7 +151,8 @@ export function apply(ctx, config) {
         }
       }
     }
-    console.log(`[l3-diagnose] ${reported} stranded fiber(s)`)
+    const scope = filter ? `matching "${filter}"` : 'across the whole composition'
+    console.log(`[l3-diagnose] ${reported} stranded fiber(s) ${scope}`)
   }, 800)
   ctx.effect(() => () => clearTimeout(timer))
 }

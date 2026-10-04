@@ -143,7 +143,7 @@ Two contracts the probe hit, both precise:
 - **The seed must be contiguous from seq 0** — a prefix of the parent's log, which is what "completed-turn seed" means. Passing one later event fails with `seed event at index 0 has seq 4 (expected 0); seed must be contiguous from 0`. So read the prefix from the log rather than assembling one by hand.
 - **`inheritedEventCount` is required whenever `meta.isSeeded` is set**, or creation fails with `seeded session requires an inherited event count`. It is the exact inherited prefix length, and the child's header then carries it so a projection's `init` can read the cut instead of inferring it from `firstLiveSeq`.
 
-Only agent-loop-published sessions persist. `bash <kit>/solutions/verify-l8.sh` asserts all four lines above.
+**Persistence follows publication by the agent loop.** A session created directly in the session store is not written to disk; `ctx.agents.create` publishes through the loop, which is why Lesson 6's probe sessions survive a restart. `bash <kit>/solutions/verify-l8.sh` asserts all four lines above.
 
 ## Step 5 — Opt into agent teams (optional, deeper)
 

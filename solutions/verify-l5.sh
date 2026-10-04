@@ -136,6 +136,15 @@ check "the command resolves" 'resolved: true' "$cmd_out"
 check "the handler returns its text" '"kind":"success","text":"content/' "$cmd_out"
 check "the session logs the command lifecycle" 'command/run, command/done' "$cmd_out"
 check "no model request was made" 'model-request events in the log: 0' "$cmd_out"
+# Item 8's second half: no `pre-step` line either. The observer prints one for every step it sees,
+# so its absence in the BOOT LOG is independent evidence that no turn ran - a different artifact
+# from the session log above, which is why it is checked separately.
+if grep -q '\[l5-observer\] pre-step' "$CMD_LOG"; then
+  echo "FAIL  a pre-step line was logged, so a turn DID run"
+  failures=$((failures + 1))
+else
+  echo "PASS  no pre-step line was logged either, so no turn ran"
+fi
 rm -f "$CMD_LOG"
 
 echo
@@ -239,7 +248,7 @@ if start_mock_llm "$DSH_CHECKOUT" 8143 success; then
   live_out="$(grep '\[l5-live\]' "$LIVE_LOG")"
   check "the original skill is in the catalog to begin with" 'before: catalogue mentions the original skill: true' "$live_out"
   check "the new skill is NOT there yet" 'before: catalogue mentions the new skill: false' "$live_out"
-  # The claim: after writing the directory, a later turn in the SAME process sees it.
+  # The claim: after writing the directory, a later SESSION in the same process sees it.
   check "a skill added live reaches the catalog with NO restart" 'after: catalogue mentions the new skill: true' "$live_out"
   check "the original skill is still there" 'after: catalogue mentions the original skill: true' "$live_out"
   check "the added skill's BODY is not shipped either" "after: the new skill's BODY is not shipped either: true" "$live_out"
