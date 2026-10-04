@@ -70,6 +70,32 @@ that forced it. `pnpm run check:decisions` enforces the format and the index.
 - **Say when a step is unverified.** A lesson that admits uncertainty is more
   useful than one that overstates.
 
+## Running verification from an agent
+
+If your file policy confines writes to the session workspace (the common case for an
+agent driving this repository), the lesson verification scripts cannot write to the real
+harness home under `~/.dsh` — they would need an approval on every boot. Do not relax the
+sandbox. Point the harness home somewhere sandbox-writable instead:
+
+```sh
+export DSH_HOME=/tmp/dsh-verify     # /tmp is writable under workspace-write (ADR-0023)
+bash scripts/setup-verify-profiles.sh
+DSH_CHECKOUT=/path/to/deepseek-harness pnpm run check:kit
+```
+
+This is the **agent-side** convention and nothing more. A human learner working through
+the lessons in their own terminal has no sandbox, uses the default `~/.dsh`, and does not
+need this — do not add it to the lessons themselves.
+
+Two hygiene rules that come with it:
+
+- **Never create probe/test sessions or throwaway profiles in a real harness home.**
+  If you run against the real home (as earlier rounds of this project did), remove what you
+  created afterwards — a session containing an invented event type (ADR-0024) poisons
+  full-text search for that whole home, and a leftover profile is confusing.
+- The `/tmp` home is disposable by design: profiles and sessions there are recreatable with
+  one command and lose nothing.
+
 ## Validation
 
 ```sh
