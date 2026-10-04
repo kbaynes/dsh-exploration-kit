@@ -18,7 +18,7 @@ A fast status view. The detailed task list with checkboxes lives in
 | 1 | Build, test, and review each lesson | 🔄 In progress (1–2 of 9) |
 | 2 | Test infrastructure — automated verification in CI | ✅ 15 checks, version gate |
 | 3 | Whole-kit review — editorial and technical pass | ⬜ Not started |
-| 4 | Publication readiness — placeholders, licensing, metadata | ⬜ Not started |
+| 4 | Publication readiness — placeholders, licensing, metadata | 🔄 runbook + gate done; needs the owner |
 | 4.5 | Tag the release against a harness state | ⬜ Not started |
 | 5 | Publish and promote | ⬜ Not started |
 | 6 | After publication — maintenance and contributions | ⬜ Not started |

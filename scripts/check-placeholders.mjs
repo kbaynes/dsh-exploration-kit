@@ -19,7 +19,11 @@ const root = resolve(import.meta.dirname, '..')
 const skipDirs = new Set(['.git', 'node_modules', 'dist', 'cache', '.vitepress'])
 
 /** Files exempt from scanning: this checker necessarily names the tokens. */
-const skipFiles = new Set([join('scripts', 'check-placeholders.mjs')])
+const skipFiles = new Set([
+  // These necessarily contain the tokens they look for.
+  join('scripts', 'check-placeholders.mjs'),
+  join('scripts', 'check-publication.mjs'),
+])
 
 /** A line carrying this marker is intentional documentation of a placeholder. */
 const allowMarker = 'placeholder-check:allow'

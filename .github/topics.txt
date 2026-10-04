@@ -1,0 +1,16 @@
+# Intended GitHub topics for this repository. Not carried by any file, so recorded here
+# to survive a transfer or a re-creation. Set them in repository settings.
+#
+# `deepseek-harness` and `dsh-plugin` are the discovery channels that matter: the DSH
+# plugin ecosystem is indexed by the `dsh-plugin` topic and searched by the npm
+# `deepseek-harness` keyword. The bare token `dsh` collides with many unrelated projects,
+# so the description must also contain the unambiguous phrase "DeepSeek Harness".
+deepseek-harness
+dsh
+dsh-plugin
+cordis
+agents
+curriculum
+tutorial
+okf
+vitepress

@@ -319,14 +319,26 @@ real quoted output instead of invented samples; the upstream-tutorial correction
 
 ## Phase 4 — Publication readiness
 
-- [ ] Replace every placeholder: repo owner, URLs, `base` in the VitePress config
-- [ ] Set the real git author identity on the initial commit (or rewrite history)
-- [ ] Decide the public repository name and make it consistent everywhere
-- [ ] Confirm the license choice and that `LICENSE`, `package.json`, and
+- [x] Add `PUBLISHING.md`, the runbook for the steps that no file can carry, and
+      `pnpm run check:publication`, the gate that refuses until the repository is ready
+- [x] Record the intended GitHub topics in `.github/topics.txt` so they survive a
+      transfer, and state why the description must contain "DeepSeek Harness"
+- [x] Reduced the owner substitution to a single token (`REPLACE_OWNER`) read from
+      `package.json`'s `kit` field, instead of hardcoded URLs across five files
+- [ ] Replace the placeholder owner — **needs the real GitHub owner**; then
+      `pnpm run check:placeholders` passes
+- [ ] Rewrite the git author identity — **needs the maintainer identity**; the history
+      currently carries `kit@example.invalid`, which is a placeholder rather than an
+      invented real identity
+- [ ] Decide the public repository name (working name `dsh-exploration-kit`; changing it
+      means updating the VitePress `base` in the same edit)
+- [x] Confirm the license choice and that `LICENSE`, `package.json`, and
       `THIRD-PARTY.md` agree
-- [ ] Recheck `THIRD-PARTY.md` against what the content actually derives
-- [ ] Confirm the DeepSeek AI non-affiliation disclaimer is accurate and prominent
-- [ ] Add a `CHANGELOG.md` or confirm `content/log.md` serves that purpose
+- [x] Recheck `THIRD-PARTY.md` against what the content actually derives, and reproduce
+      the upstream MIT notice
+- [x] Confirm the DeepSeek AI non-affiliation disclaimer is accurate and prominent
+- [x] Resolved the changelog question: `content/log.md` is the curriculum history and a
+      second `CHANGELOG.md` would drift from it. No second changelog.
 - [ ] Confirm the Pages workflow works on a real repository (not just locally)
 - [x] Dry-run: export the committed tree fresh, `pnpm run setup`, and run every check
       that needs no checkout. It found two real defects — a second dependency root that

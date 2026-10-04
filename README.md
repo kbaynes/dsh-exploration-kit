@@ -183,6 +183,8 @@ remaining lessons are written but unverified.
   one earned by getting it wrong first. Worth reading before contributing.
 - [PLAN.md](PLAN.md) — the detailed, checkbox-driven implementation plan covering
   build, test, review, publication readiness, and promotion.
+- [PUBLISHING.md](PUBLISHING.md) — the runbook for taking this repository public, and
+  `pnpm run check:publication`, the gate that refuses until it is ready.
 
 The rule that governs the project: **a step is verified only when it has been run
 and the observed result recorded.** If you hit something that does not work as

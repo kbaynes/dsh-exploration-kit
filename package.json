@@ -50,7 +50,8 @@
     "check:pins": "bash scripts/verify-target.sh",
     "check:lessons": "node scripts/check-lessons.mjs",
     "install:plugins": "pnpm --dir kit-plugins install --frozen-lockfile",
-    "setup": "pnpm install && pnpm run install:plugins"
+    "setup": "pnpm install && pnpm run install:plugins",
+    "check:publication": "node scripts/check-publication.mjs"
   },
   "devDependencies": {
     "vitepress": "^1.6.4",
