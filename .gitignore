@@ -26,3 +26,7 @@ content/THIRD-PARTY.md
 
 # Bundle dependencies (installed per checkout; the manifest and lockfile are tracked)
 kit-plugins/node_modules/
+
+# Local reproductions of the full verification (see .github/workflows/verify-against-dsh.yml)
+.dsh-checkout/
+.dsh-bin/

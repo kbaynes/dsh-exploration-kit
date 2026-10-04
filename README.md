@@ -134,7 +134,17 @@ DSH_CHECKOUT=~/src/deepseek-harness pnpm run check:upstream
 
 It exists because the curriculum links to DSH documentation by absolute GitHub URL,
 and a plausible-looking path such as `docs/harness/plugins.md` can simply not
-exist. CI runs the first three; only a maintainer with a checkout can run the last.
+exist. CI runs the environment-free checks on every push; the full set, including the
+per-lesson ones, runs in the `verify against dsh` workflow — which clones the harness at
+the commit pinned in [kit.target.json](kit.target.json) and is also the release gate.
+
+To reproduce that locally against your own checkout:
+
+```sh
+bash scripts/install-dsh-shim.sh <path-to-deepseek-harness> /tmp/dsh-bin
+PATH=/tmp/dsh-bin:$PATH bash scripts/setup-verify-profiles.sh "" 
+DSH_CHECKOUT=<path-to-deepseek-harness> PATH=/tmp/dsh-bin:$PATH pnpm run check:kit
+```
 
 Verified from a clean export of the committed tree: `pnpm install --frozen-lockfile`,
 `pnpm run check:links`, and `pnpm run build` all succeed with no inherited

@@ -536,6 +536,13 @@ unload, and that the disposer runs on graceful shutdown.
 therefore instructs readers to run boot commands in their own shell. This is an
 environment fact, not a DSH defect.
 
+## CI workflows
+
+| Workflow | Status |
+|---|---|
+| `site` (environment-free checks, Pages deploy) | Documented. Its checks all pass locally; the Actions orchestration is not exercised here. |
+| `verify against dsh` (full per-lesson suite at the pinned commit) | **Steps verified locally, YAML not executed.** The command sequence — install the CLI shim, provision the profiles, `check:target`, `check:kit` — was run locally with `dsh` resolved only from that shim, reporting `16 passed, 0 failed`. GitHub Actions itself cannot be run from the authoring environment, so the workflow's orchestration is unverified. |
+
 ## Not verified at all
 
 - Any **client/UI plugin authoring** (React conversation nodes) — out of scope of

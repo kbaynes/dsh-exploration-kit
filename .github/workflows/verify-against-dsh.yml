@@ -1,0 +1,91 @@
+name: verify against dsh
+
+# The FULL verification: clone DeepSeek Harness at the commit pinned in kit.target.json,
+# build it, provision the profiles, and run every check including the per-lesson ones.
+#
+# The other workflow (`site`) covers what needs no harness. This one is the expensive,
+# authoritative check, and it exists for two reasons:
+#
+#   1. **It is the release gate.** PLAN Phase 4.5 says a release is tagged against a
+#      harness state; this is the check that the kit still matches that state.
+#   2. **It notices upstream drift.** The weekly schedule means a change in the harness
+#      that breaks a lesson is discovered here rather than by a reader.
+#
+# It is NOT run on every push: cloning and building the harness takes minutes, and the
+# pinned commit does not change between pushes.
+#
+# NOTE: this workflow has not itself been executed (the author's environment runs the
+# same commands locally). The steps it calls ARE verified: see scripts/install-dsh-shim.sh
+# and scripts/setup-verify-profiles.sh, both exercised locally and recorded in VERIFIED.md.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Monday 06:00 UTC — catch upstream movement without daily noise.
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the kit
+        uses: actions/checkout@v4
+
+      - name: Read the pinned harness state
+        id: pin
+        run: |
+          echo "commit=$(node -p 'require("./kit.target.json").dsh.commit')" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p 'require("./kit.target.json").dsh.version')" >> "$GITHUB_OUTPUT"
+
+      # The harness, at exactly the commit the kit was verified against. Not `main`:
+      # verifying against a moving target would make the result meaningless.
+      - name: Check out DeepSeek Harness at the pinned commit
+        uses: actions/checkout@v4
+        with:
+          repository: deepseek-ai/deepseek-harness
+          ref: ${{ steps.pin.outputs.commit }}
+          path: .dsh-checkout
+
+      # Both repositories pin the same pnpm, so one setup serves both.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # The harness requires ^22.19.0 || >=24; the kit only needs >=20.
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            .dsh-checkout/pnpm-lock.yaml
+
+      - name: Build DeepSeek Harness
+        working-directory: .dsh-checkout
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Install the kit's own dependencies
+        run: pnpm run setup
+
+      - name: Put the harness CLI on PATH
+        run: bash scripts/install-dsh-shim.sh "$GITHUB_WORKSPACE/.dsh-checkout" "$GITHUB_WORKSPACE/.dsh-bin"
+
+      - name: Provision the verification profiles
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.dsh-bin:$PATH"
+          bash scripts/setup-verify-profiles.sh "" "${{ steps.pin.outputs.version }}"
+
+      # Fails when the checkout is not the recorded commit, is dirty, or its tag moved —
+      # so a silent upstream change cannot make later results meaningless.
+      - name: Check the harness state still matches the records
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.dsh-bin:$PATH"
+          pnpm run check:target -- "$GITHUB_WORKSPACE/.dsh-checkout"
+
+      - name: Run every check
+        run: |
+          export PATH="$GITHUB_WORKSPACE/.dsh-bin:$PATH"
+          DSH_CHECKOUT="$GITHUB_WORKSPACE/.dsh-checkout" pnpm run check:kit

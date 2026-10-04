@@ -242,11 +242,17 @@ Turn the verified lessons into something CI can defend.
       Proven by injecting a drift and confirming it named the disagreeing file.
 - [ ] Split the suite into **no-key** and **needs-provider** groups so CI can run
       the first without secrets
-- [ ] Add a CI workflow for the kit's own checks (links, OKF, build)
+- [x] Add a CI workflow for the kit's own checks (links, OKF, build) — `site.yml`, on
+      every push and pull request
+- [x] Add a workflow for the **full** suite including per-lesson checks, cloning the
+      harness at the pinned commit: `verify-against-dsh.yml`, weekly and on demand. Its
+      command sequence is verified locally; the Actions YAML is not (recorded in
+      `VERIFIED.md`). See [ADR-0020](decisions/0020-verify-against-the-pinned-commit.md).
 - [x] **Decided against regenerating `VERIFIED.md`**: its rows carry human judgement about
       what was executed, which is not derivable from a version string. The harness-state
       *identifiers* are gated instead (see ADR-0017), which is the part that can drift mechanically.
-- [ ] Decide what CI does when DSH upstream changes: warn, or fail the build
+- [x] Decided: the scheduled full-verification workflow **fails** on upstream drift, and
+the response is to re-verify and either fix the lesson or demote its `VERIFIED.md` row.
 
 ## Phase 3 — Whole-kit review
 
