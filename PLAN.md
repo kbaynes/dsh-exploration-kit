@@ -330,6 +330,8 @@ An independent editorial review of all nine lessons was run as a separate review
 
 11. **Every upstream link named the wrong branch.** All 42 links to `deepseek-ai/deepseek-harness` said `blob/main/`; the repository's default branch is `master`, so every one of them 404'd. The link checker could not catch it because it hardcoded the expected prefix as a literal — links naming another branch never matched and were never checked. `kit.target.json` had said `"branch": "master"` all along and nothing read the field. The checker now takes the branch from the pin, cross-checks it against the checkout, reads this repository's own branch from git, scans every markdown file including fenced URLs, and reports a wrong branch as a named failure ([ADR-0033](decisions/0033-a-checker-must-not-hardcode-what-it-checks.md)).
 
+12. **Lesson 8's exit-check list was malformed** — no item 4, two 5s, two 6s, and a closing note referring to item numbers that did not exist, so "items 4, 5 and 7 remain unverified" could not be checked. Repaired, and `check:lessons` now fails on any ordered-list block whose numbering repeats or goes backwards. Continuations are still allowed, because a list may legitimately resume at 4 after an interposed explanation; only order and repetition are enforced.
+
 **Left open deliberately:**
 
 - [x] L7: confirmed by experiment that `@deepseek-ai/dsh-invariants` **does** resolve in

@@ -52,6 +52,41 @@ files.forEach((file, index) => {
     lastPosition = found.index
   }
 
+  // Ordered-list numbering never repeats or goes backwards within a block.
+  //
+  // A lesson's exit check is a numbered list whose items are referenced by NUMBER in the prose
+  // around it ("items 4 and 7 are not executed"). An editor adding an item in the middle can
+  // easily leave two 5s behind, and then those references point at nothing: Lesson 8's list had no
+  // item 4, two 5s and two 6s, and no check noticed. Continuations are allowed - a block may
+  // legitimately resume at 4 after an interposed explanation - so only order and repetition are
+  // enforced, not starting at 1.
+  {
+    const lines = text.split('\n')
+    let inFence = false
+    let block = []
+    const flush = () => {
+      for (let i = 1; i < block.length; i += 1) {
+        if (block[i].number <= block[i - 1].number) {
+          problems.push(`${where}:${block[i].line}: ordered-list numbering goes backwards or repeats (${block[i - 1].number} then ${block[i].number})`)
+        }
+      }
+      block = []
+    }
+    lines.forEach((line, position) => {
+      if (/^\s*(```|~~~)/.test(line)) { inFence = !inFence; return }
+      if (inFence) return
+      const match = line.match(/^(\d+)\.\s/)
+      if (match) {
+        block.push({ number: Number(match[1]), line: position + 1 })
+        return
+      }
+      // A blank line does not end a list; any other unindented content does.
+      if (line.trim() === '' || line.startsWith(' ') || line.startsWith('\t')) return
+      flush()
+    })
+    flush()
+  }
+
   // Frontmatter carries the OKF fields the bundle requires.
   const fm = text.match(/^---\n([\s\S]*?)\n---/)
   if (!fm) problems.push(`${where}: no YAML frontmatter`)
