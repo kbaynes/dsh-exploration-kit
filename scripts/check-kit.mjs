@@ -45,7 +45,7 @@ const checks = [
     needs: 'a DSH checkout (pass one as an argument or set DSH_CHECKOUT)',
     skip: checkout === '',
   },
-  ...[2, 3, 4, 5, 7, 8, 9].map(n => ({
+  ...[2, 3, 4, 5, 6, 7, 8, 9].map(n => ({
     name: `solution: lesson ${n}`,
     cmd: ['bash', `solutions/verify-l${n}.sh`, checkout],
     needs: 'a DSH checkout',

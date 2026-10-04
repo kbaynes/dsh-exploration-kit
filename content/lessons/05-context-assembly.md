@@ -53,18 +53,35 @@ export function apply(ctx) {
     return next()
   })
 
-  ctx.on('agent/created', (agent) => {
-    console.log('[l5-observer] agent created')
+  ctx.on('agent/created', ({ agent }) => {
+    console.log(`[l5-observer] agent created: ${agent.session.id ?? '(session)'}`)
   })
 
   console.log('[l5-observer] ACTIVE — watching agent/pre-step')
 }
 ```
 
-Boot the profile and start a conversation, then read what actually arrives. Do this
-**before** writing any injection logic — the payload's shape tells you what is
-available at this stage, and guessing it is the usual source of broken context
-plugins.
+The declared payload is:
+
+```ts
+'agent/pre-step'(payload: {
+  agent: Agent
+  messages: UserMessage[]
+  turn: number
+  step: number
+  signal: AbortSignal
+}, next: () => Promise<PreStepDecision>): Promise<PreStepDecision>
+```
+
+**Take the shape from the declaration, not from the event name.** The payload is an
+object, and the subject is `payload.agent` — the same trap that bit this kit's own
+`agent/created` listeners, where reading `payload.session` instead of
+`payload.agent.session` produced `undefined` and, behind a `try`/`catch`, a plugin that
+silently did nothing.
+
+Boot the profile and start a conversation, then read what actually arrives there. The
+declaration says which fields *exist*; only a real turn shows you what is *in* them, and
+guessing either is the usual source of broken context plugins.
 
 `agent/pre-step` is a **waterfall**: return `next()` to delegate. Several
 first-party plugins already listen here, including `agent-instructions`, `plan-mode`,
@@ -86,7 +103,8 @@ export const name = 'l5-inject'
 export const inject = ['agents']
 
 export function apply(ctx) {
-  ctx.on('agent/created', (agent) => {
+  // The payload is `{ agent, source, signal }`, not the agent: destructure it.
+  ctx.on('agent/created', ({ agent }) => {
     try {
       agent.inject(createUserMessage({
         content: [
@@ -100,7 +118,9 @@ export function apply(ctx) {
       console.log('[l5-inject] context appended to the next admitted request')
     } catch (error) {
       // The agent may already be disposed; never let a notification kill a plugin.
-      console.log(`[l5-inject] skipped: ${error.message}`)
+      // Keep it LOUD — a silent catch hides a wrong payload shape, which is how this
+      // plugin previously did nothing at all without anyone noticing.
+      console.log(`[l5-inject] FAILED to inject: ${error.message}`)
     }
   })
 
@@ -118,6 +138,12 @@ Three contract points, each verified against the runtime's own types:
   `UserMessage` source and will not typecheck.
 - **It is not a wake-up.** Injected context lands in the *next* admitted request; an
   idle agent stays idle. Guard against a disposed agent, as above.
+- **`agent/created` hands you a payload, not an agent.** The listener receives
+  `{ agent, source, signal }`, so it is `({ agent }) => …` — not `(agent) => …`. Getting
+  this wrong is quiet: `agent.session` is `undefined`, and a `try`/`catch` around it turns
+  the whole plugin into a no-op that logs a cheerful success message. That is why the
+  catch here says `FAILED` rather than `skipped`, and why this lesson's probe creates a
+  session — an agent-created listener that never fires is invisible until one exists.
 
 To confirm the durability claim yourself, inject a distinctive sentence, run one
 turn, close the session, reopen it, and search the replayed history for your text.

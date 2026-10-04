@@ -68,7 +68,7 @@ rm -f "$BOOTLOG"
 
 echo
 echo "== 4. the pinned versions are installed =="
-manifest="$HOME/.dsh/profiles/$PROFILE/package.json"
+manifest="${DSH_HOME:-$HOME/.dsh}/profiles/$PROFILE/package.json"
 for pkg in dsh-schedule dsh-webhook; do
   if [[ -f "$manifest" ]] && grep -q "@deepseek-ai/$pkg\": \"$VERSION\"" "$manifest"; then
     echo "PASS  $pkg pinned to $VERSION"

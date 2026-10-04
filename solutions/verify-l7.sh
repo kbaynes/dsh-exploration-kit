@@ -80,7 +80,7 @@ fi
 
 echo
 echo "== 4. the pinned optional package is installed =="
-manifest="$HOME/.dsh/profiles/$PROFILE/package.json"
+manifest="${DSH_HOME:-$HOME/.dsh}/profiles/$PROFILE/package.json"
 if [[ -f "$manifest" ]]; then
   if grep -q 'dsh-tool-session-query' "$manifest"; then
     echo "PASS  installed in the profile manifest"

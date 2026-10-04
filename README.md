@@ -132,6 +132,14 @@ pnpm run check:examples      # examples/ matches the canonical bundle
 DSH_CHECKOUT=~/src/deepseek-harness pnpm run check:upstream
 ```
 
+`$DSH_HOME` is honoured throughout — the scripts read `${DSH_HOME:-$HOME/.dsh}`, and
+`dsh` itself takes the variable, so pointing the harness home elsewhere (for example at a
+sandbox-writable location) needs no changes here:
+
+```sh
+DSH_HOME=/tmp/dsh-verify pnpm run check:kit
+```
+
 It exists because the curriculum links to DSH documentation by absolute GitHub URL,
 and a plausible-looking path such as `docs/harness/plugins.md` can simply not
 exist. CI runs the environment-free checks on every push; the full set, including the

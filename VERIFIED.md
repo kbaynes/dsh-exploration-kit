@@ -98,7 +98,7 @@ row that admits it has not been checked yet.
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
-| L6 — Give the session durable state | **Partly executed** | Executed: both plugins load on the real composition; the projection's fold is **unit-tested** (`kit-plugins/l6/fold.test.mjs`, 4 tests, in CI) including the same-reference contract and the delta-corruption hazard. **Not** executed: appending to a real session, JSONL inspection, and restart replay — each needs a session. |
+| L6 — Give the session durable state | **Executed** | A probe creates a real session (no model), appends `l6/step` events, and reads the registered projection through `stateOf`: `0 → 1 → 9`, proving the append path, the fold, and the **complete-state** rule (a second event saying 9 yields 9, not 1+9). The fold's pure core is unit-tested (4 tests). **Found by this probe: both the counter and L5's inject plugin read the `agent/created` payload as the agent**, so the counter crashed on any real session and the inject plugin silently did nothing. Both fixed. Still unverified: JSONL-on-disk inspection and restart replay. |
 | L7 — Operate the harness | **Partly executed** | Executed: the overlay composes as one override plus three inserts, and a boot applies it with **zero activation warnings**; the optional tool package is installed pinned to the dsh version. **Not** executed: any query, the authority refusal, token deltas, `/compact`, and the invariant findings — each needs a session. |
 | L8 — Orchestrate multiple agents | **Partly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (no kit plugin needed), and the workflow's pure core passes **7 unit tests with a fake engine** — pipeline drives every item, the schema passes through, and a partially failed fan-out still yields a dense array. **Not** executed: any real delegation, fork, or fan-out — each needs a provider. |
 | L9 — Automate the harness | **Partly executed** | Executed: `schedule` and `webhook` are confirmed opt-in (no shipped bundle provides them), the overlay composes, and a web-backed profile activates both with **no warnings** while a base-backed profile leaves them `PENDING` naming the missing services; both packages install pinned. The Python snippet is a real upstream example. **Not** executed: any headless run, `--json` events, an SDK round trip, a schedule firing, a webhook delivery — each needs a provider. |
@@ -344,6 +344,41 @@ deltas, `/compact`, and the invariant sweep's findings. Each needs a session.
    version-named successors such as `session.v4.jsonl.zstd`. L6 told readers to "open the
    session file under `$DSH_HOME/sessions/`", which would have failed three ways. Both L6
    and L7 now give the real path and note `zstd -dc` as the way to read it.
+
+## Evidence: L6 executed (and two shipped bugs found)
+
+**The full claim, executed without a model.** `ctx.agents.create()` makes a session and
+runs no turn, so the append path and the projection registry are reachable offline:
+
+```
+[l6-probe] projection before any event: {"total":0}
+[l6-probe] after append count=1: {"total":1}
+[l6-probe] after append count=9: {"total":9}
+```
+
+The third line is the lesson's subtle rule made observable: the event carries the
+**complete post-change state**, so the fold replaces rather than accumulates — `9`, not
+`1 + 9`. It also proves the event *committed*, since a projection only folds committed
+events.
+
+**Two shipped bugs found by the same probe**, recorded as ADR-0022:
+
+```
+[l6-probe] FAILED: Invalid value used as weak map key
+[l6-probe] stack:
+    at WeakMap.set
+    at kit-plugins/l6/counter.js:9:12
+```
+
+`agent/created` delivers `{ agent, source, signal }`, not the agent. Lesson 6's counter
+therefore crashed on the first real session; Lesson 5's inject plugin hit the same error,
+**caught it**, and logged `skipped` — so it did nothing at all while appearing to work.
+Both now destructure `{ agent }`, and the inject plugin's catch reports `FAILED` rather
+than a benign skip.
+
+Both were invisible because an `agent/created` listener that never fires looks identical
+to one that works, and no boot before this created a session. `solutions/verify-l6.sh`
+now fails if any plugin throws on session creation.
 
 ## Evidence: L6 plugins load, and the fold is unit-tested
 

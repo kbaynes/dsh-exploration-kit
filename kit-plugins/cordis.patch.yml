@@ -71,3 +71,9 @@
 
     - id: l6-projection
       name: dsh-exploration-kit-plugins/l6/projection.js
+
+    # Opt-in diagnostic: creates a session, appends l6/step events, and reads the folded
+    # projection, verifying Lesson 6 without a model. See solutions/l6.probe.patch.yml.
+    - id: l6-probe
+      name: dsh-exploration-kit-plugins/l6/projection-probe.js
+      disabled: true

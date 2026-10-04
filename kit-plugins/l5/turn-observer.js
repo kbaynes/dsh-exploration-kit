@@ -6,8 +6,8 @@ export function apply(ctx) {
     return next()
   })
 
-  ctx.on('agent/created', (agent) => {
-    console.log('[l5-observer] agent created')
+  ctx.on('agent/created', ({ agent }) => {
+    console.log(`[l5-observer] agent created: ${agent.session.id ?? '(session)'}`)
   })
 
   console.log('[l5-observer] ACTIVE — watching agent/pre-step')

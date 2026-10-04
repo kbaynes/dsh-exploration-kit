@@ -52,3 +52,5 @@ without re-running the experiment.
 - [ADR-0019 — A row resolves against the installation; only missing packages need installing](0019-what-must-be-installed-vs-what-resolves.md)
 - [ADR-0020 — Full verification runs against the pinned commit, on a schedule](0020-verify-against-the-pinned-commit.md)
 - [ADR-0021 — Policy decisions are verifiable without a model, and the denying layer must be identified](0021-exercise-the-tool-pipeline-without-a-model.md)
+- [ADR-0022 — Event payloads are objects, and a catch-all catch hides getting that wrong](0022-event-payloads-are-objects-and-silent-catches-hide-that.md)
+- [ADR-0023 — Verification honours DSH_HOME, so it never has to touch the real harness home](0023-verification-runs-against-a-relocatable-home.md)

@@ -5,7 +5,10 @@ export const inject = ['agents']
 const counts = new WeakMap()
 
 export function apply(ctx) {
-  ctx.on('agent/created', (agent) => {
+  // The payload is an OBJECT ({ agent, source, signal }), not the agent itself.
+  // Treating it as the agent gives `payload.session === undefined`, which fails with
+  // "Invalid value used as weak map key" the first time a real session is created.
+  ctx.on('agent/created', ({ agent }) => {
     counts.set(agent.session, 0)
     console.log('[l6-counter] tracking a new session')
   })

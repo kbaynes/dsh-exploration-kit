@@ -20,7 +20,7 @@ WEB_PROFILE="$(node -e "console.log(require('$TARGET_JSON').profiles.web)")"
 failures=0
 assert_pin() { # assert_pin <profile> <package> <version>
   local profile="$1" pkg="$2" want="$3"
-  local manifest="$HOME/.dsh/profiles/$profile/package.json"
+  local manifest="${DSH_HOME:-$HOME/.dsh}/profiles/$profile/package.json"
   if [[ ! -f "$manifest" ]]; then
     echo "FAIL  no manifest for profile '$profile' at $manifest"; failures=$((failures + 1)); return
   fi
@@ -41,7 +41,7 @@ assert_pin "$WEB_PROFILE"  "@deepseek-ai/dsh-webhook" "$VERSION"
 echo
 echo "== the kit bundle is installed and linked, not copied =="
 for profile in "$BASE_PROFILE" "$WEB_PROFILE"; do
-  manifest="$HOME/.dsh/profiles/$profile/package.json"
+  manifest="${DSH_HOME:-$HOME/.dsh}/profiles/$profile/package.json"
   [[ -f "$manifest" ]] || continue
   if grep -q '"dsh-exploration-kit-plugins": "link:' "$manifest"; then
     echo "PASS  kit bundle linked in profile '$profile'"

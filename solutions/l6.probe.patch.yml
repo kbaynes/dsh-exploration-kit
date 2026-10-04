@@ -1,0 +1,8 @@
+# Enable Lesson 6's projection probe, which creates a session, appends `l6/step` events,
+# and reads the folded projection — no model provider involved.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l6.probe.patch.yml --port 0 --no-open
+- id: l6-probe
+  disabled: false
+  config:
+    enabled: true
