@@ -58,6 +58,12 @@
     - id: l5-commands
       name: dsh-exploration-kit-plugins/l5/commands.js
 
+    # Opt-in diagnostic: tests whether injected context survives a restart, which is
+    # Lesson 5's durability claim. See solutions/l5.probe.patch.yml.
+    - id: l5-probe
+      name: dsh-exploration-kit-plugins/l5/context-probe.js
+      disabled: true
+
     # Lesson 5: observe the turn flow, then inject durable context.
     - id: l5-observer
       name: dsh-exploration-kit-plugins/l5/turn-observer.js

@@ -97,7 +97,7 @@ row that admits it has not been checked yet.
 | L2 — Register a tool, compose with config | **Executed** | The plugin loads through the installed bundle; the Schemastery schema rejects an invalid value; an overlay changes the installed row's config; and the **tool itself is called through the real pipeline** by a shipped probe — the configured default reaches it, an explicit unit overrides it, invalid arguments are rejected before `execute` runs, and `value`/`content` show the canonical/render split. Outside this lesson's scope: whether a model *chooses* to call it. See evidence below. |
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
-| L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
+| L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; the skills overlay composes; and injected context is proved **durable across a restart** in two processes — the text is re-read from the persisted log, carried by a first-party `agent/inbox/spliced` event. **Not** executed: what a model's skill catalog contains, and whether `/l5-facts` answers in a real composer. |
 | L6 — Give the session durable state | **DEFECT — claim false as written** | The lesson taught that a plugin can add durable state by declaring and appending a new event type. Executed two-boot experiment: the event writes and folds fine in-process, and after a restart the session **cannot be opened at all** — `contains event type "l6/step" … unknown to this harness and not marked ignorable; refusing to interpret the log`. Step 4 is corrected to teach the failure and the supported replacement (fold a known event); the shipped plugins still need the refactor ([PLAN.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/PLAN.md)), and the ledger row stays demoted until they have it. See evidence below. |
 | L7 — Operate the harness | **Partly executed** | Executed: the overlay composes as one override plus three inserts, and a boot applies it with **zero activation warnings**; the optional tool package is installed pinned to the dsh version. **Not** executed: any query, the authority refusal, token deltas, `/compact`, and the invariant findings — each needs a session. |
 | L8 — Orchestrate multiple agents | **Partly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (no kit plugin needed), and the workflow's pure core passes **7 unit tests with a fake engine** — pipeline drives every item, the schema passes through, and a partially failed fan-out still yields a dense array. **Not** executed: any real delegation, fork, or fan-out — each needs a provider. |
@@ -470,6 +470,33 @@ exception for a package whose *teaching is the point*. It is now in the bundle's
 
 **Deliberately unverified:** appending to a real session, reading `l6/step` rows from
 JSONL, and confirming the total survives a restart. Each needs a session.
+
+## Evidence: L5 injected context survives a restart
+
+The lesson's durability claim, tested in **two processes** because one cannot distinguish the
+queue from the log — `agent/created` fires while the session is being built:
+
+```
+PHASE ONE  (create)   [l5-inject] context appended to the next admitted request
+PHASE TWO  (fresh)    [l5-probe] re-read 5 event(s): permission/preset, sandbox/mode,
+                                   approval/policy, agent/inbox/spliced, agent/inbox/spliced
+                      [l5-probe] injected text present after restart: true
+                      [l5-probe] carried by: agent/inbox/spliced
+```
+
+Two things the probe made explicit rather than assumed:
+
+1. **The durable carrier is an inbox event, not a `user/message`.** `agent.inject()` queues
+   into the agent's inbox; that queue is what persists.
+2. **It is a first-party event type**, which is why the log stays readable after the restart.
+   A plugin-declared carrier would have made the session unopenable (ADR-0024).
+
+`solutions/verify-l5.sh` runs both phases and asserts the text survives, plus that the log
+is readable — the check that fails if a plugin invents an event type.
+
+**Found earlier by the same probe:** the inject plugin was reading the `agent/created`
+payload as the agent, so it threw, caught the error, and logged `skipped` — doing nothing at
+all while appearing to work. Fixed under ADR-0022, and the catch now reports `FAILED`.
 
 ## Evidence: L5 plugins load (session-dependent claims unverified)
 

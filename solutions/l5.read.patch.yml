@@ -1,0 +1,8 @@
+# Second phase of Lesson 5's durability check: read the session's persisted log in a FRESH
+# process and look for the injected sentence.
+- id: l5-probe
+  disabled: false
+  config:
+    enabled: true
+    mode: read
+    sessionId: !!js "process.env.L5_SESSION_ID"

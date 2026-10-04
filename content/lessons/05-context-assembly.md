@@ -145,10 +145,34 @@ Three contract points, each verified against the runtime's own types:
   catch here says `FAILED` rather than `skipped`, and why this lesson's probe creates a
   session — an agent-created listener that never fires is invisible until one exists.
 
-To confirm the durability claim yourself, inject a distinctive sentence, run one
-turn, close the session, reopen it, and search the replayed history for your text.
-It is in the session log because the log is the source of truth — which is what L6
-builds on.
+### Confirming the durability claim — in two processes, with no model
+
+Durability cannot be checked in one process. `agent/created` fires while the session is
+being built, so an in-process assertion measures the *queue*, not the log. The kit ships a
+probe that does it properly:
+
+```sh
+export L5_SESSION_ID="session-l5-check-$RANDOM"
+dsh --profile kitdemo --patch <kit>/solutions/l5.probe.patch.yml --port 0 --no-open   # creates a session
+dsh --profile kitdemo --patch <kit>/solutions/l5.read.patch.yml  --port 0 --no-open   # a FRESH process
+```
+
+```
+[l5-probe] re-read 5 event(s): permission/preset, sandbox/mode, approval/policy, agent/inbox/spliced, agent/inbox/spliced
+[l5-probe] injected text present after restart: true
+[l5-probe] carried by: agent/inbox/spliced
+```
+
+**The carrier is worth noticing: an inbox event, not a `user/message`.** `agent.inject()`
+queues into the agent's inbox, and that is the durable record. It is also a *first-party*
+event type, which is why the log stays readable — the constraint
+[ADR-0024](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/0024-do-not-invent-session-event-types.md)
+records, and the reason L6's original approach had to be rebuilt.
+
+`bash <kit>/solutions/verify-l5.sh` runs both phases and asserts the text is still there.
+
+That is the mechanism L6 builds on: the log is the source of truth, and anything durable
+about a session is in it.
 
 ## Step 3 — A skill the agent discovers on its own
 

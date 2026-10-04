@@ -85,9 +85,48 @@ else
 fi
 
 echo
+echo "== 6. injected context survives a RESTART =="
+# Lesson 5's durability claim. It cannot be checked in one process: `agent/created` fires
+# while the session is being built, so an in-process assertion measures the queue rather
+# than the log. Two processes, like Lesson 6's restart test.
+#
+# The kit bundle carries the inject plugin, so it needs no overlay of its own; the probe
+# only creates the session in phase one and reads it in phase two.
+export L5_SESSION_ID="session-l5-verify-$RANDOM$RANDOM"
+
+phase() { # phase <overlay> <logfile>
+  local overlay="$1" log="$2"
+  ( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" --patch "$overlay" --port 0 --no-open >"$log" 2>&1 ) &
+  local pid=$!
+  sleep 25
+  kill "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+}
+
+L5LOG1="$(mktemp)"; L5LOG2="$(mktemp)"
+phase "$KIT/solutions/l5.probe.patch.yml" "$L5LOG1"
+check "phase one reports the injection happened" \
+  'context appended' "$(grep '\[l5-inject\]' "$L5LOG1")"
+phase "$KIT/solutions/l5.read.patch.yml" "$L5LOG2"
+check "the injected text is in the log after a restart" \
+  'injected text present after restart: true' "$(grep '\[l5-probe\]' "$L5LOG2")"
+check "it is carried by a first-party event type" \
+  'carried by: agent/inbox/spliced' "$(grep '\[l5-probe\]' "$L5LOG2")"
+# The persistence contract refuses a log containing an unknown type (ADR-0024), so a
+# readable log here is further evidence no plugin invented one.
+if grep -qE 'unknown to this harness|refusing to interpret' "$L5LOG2"; then
+  echo "FAIL  the persisted log is unreadable"
+  failures=$((failures + 1))
+else
+  echo "PASS  the persisted log is readable"
+fi
+rm -f "$L5LOG1" "$L5LOG2"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 5 wiring verified. Session-dependent claims are recorded as"
-  echo "unverified in VERIFIED.md."
+  echo "Lesson 5 verified, including that injected context survives a restart."
+  echo "Still unverified (needs a provider): whether a model's skill catalog shows the"
+  echo "skill, and whether /l5-facts answers in a real composer."
 else
   echo "$failures check(s) failed."; exit 1
 fi

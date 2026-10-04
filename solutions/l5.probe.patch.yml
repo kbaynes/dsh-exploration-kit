@@ -1,0 +1,11 @@
+# Enable Lesson 5's context probe. Apply TOGETHER with the kit bundle, which carries the
+# inject plugin under test.
+#
+#   L5_SESSION_ID=session-l5-check-$$ dsh --profile kitdemo \
+#     --patch <kit>/solutions/l5.probe.patch.yml --port 0 --no-open
+- id: l5-probe
+  disabled: false
+  config:
+    enabled: true
+    mode: write
+    sessionId: !!js "process.env.L5_SESSION_ID"
