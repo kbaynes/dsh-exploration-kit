@@ -86,6 +86,20 @@ Authored and verified against **DeepSeek Harness `0.2.0-rc.2`** (commit
 records exactly which steps have been executed against that version and which are
 documented but unverified — read it before trusting a lesson's stronger claims.
 
+## Project status and plan
+
+This kit is **not finished**. Only Lesson 1 has been executed end to end; the
+remaining lessons are written but unverified.
+
+- [ROADMAP.md](ROADMAP.md) — status at a glance, phase by phase and lesson by lesson.
+- [PLAN.md](PLAN.md) — the detailed, checkbox-driven implementation plan covering
+  build, test, review, publication readiness, and promotion.
+
+The rule that governs the project: **a step is verified only when it has been run
+and the observed result recorded.** If you hit something that does not work as
+written, that is a defect worth an issue — see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+
 ## Contributing
 
 Corrections, clearer explanations, and new lessons are welcome. See

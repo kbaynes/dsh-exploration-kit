@@ -6,6 +6,10 @@ map and the relevant lesson rather than reasoning from memory.
 
 ## Source of truth
 
+- **[PLAN.md](PLAN.md)** is the working plan — detailed, checkbox-driven, covering
+  build, test, review, publication, and promotion. **Pick work from it and tick
+  items as they complete.** [ROADMAP.md](ROADMAP.md) is the at-a-glance status view
+  and must be kept in sync.
 - **[content/](content/)** is the curriculum — an Open Knowledge Format (OKF) bundle.
   Every `.md` file there is a concept with YAML frontmatter. Do not put
   non-concept files inside `content/`; OKF reserved filenames are `index.md` and
