@@ -55,6 +55,21 @@
     # schedule package. See solutions/l9.probe.patch.yml.
     # Opt-in diagnostic: seeds a child session from a parent's events, so Lesson 8's fork
     # heredity can be tested without a model. See solutions/l8.probe.patch.yml.
+    # Opt-in diagnostic: plants a passphrase in a parent and delegates, so Lesson 8's "a child does
+    # not share the parent's context" claim can be tested. Needs a REAL provider: a scripted answer
+    # does not depend on what the child was given. See solutions/l8.context.patch.yml.
+    - id: l8-context-probe
+      name: dsh-exploration-kit-plugins/l8/context-probe.js
+      disabled: true
+
+    # Opt-in diagnostic: spawns a background child, messages it, and interrupts it, so Lesson 8's
+    # "send_message reaches a live child" claim can be tested. Needs a REAL provider: only a model
+    # can name a child whose session id exists only after the spawn.
+    # See solutions/l8.control.patch.yml.
+    - id: l8-control-probe
+      name: dsh-exploration-kit-plugins/l8/control-probe.js
+      disabled: true
+
     - id: l8-probe
       name: dsh-exploration-kit-plugins/l8/fork-probe.js
       disabled: true

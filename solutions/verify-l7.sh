@@ -331,6 +331,79 @@ fi
 rm -f "$FOREIGN_LOG" "$MISSING_LOG" "$AUTH_MODEL_PATCH"
 
 echo
+echo "== 10. the token delta from mounting a tool (needs a REAL provider) =="
+# Lesson 7's last unexecuted item: you can state the token delta caused by mounting
+# `tool-session-query`. It cannot be measured against the mock, whose `input_tokens` is a constant
+# 3 whatever the request contains - the delta is an INPUT-side effect, so it needs a provider that
+# counts the real prompt.
+#
+# OPT-IN, because the repository must stay keyless by default: set DSH_REAL_PROVIDER_PATCH to a
+# patch file that registers a real provider route (see VERIFIED.md for the OpenRouter one used
+# here), and this phase runs; leave it unset and it skips.
+#
+# The comparison holds the composition still and toggles ONE row: both boots mount the store and the
+# turn probe, and only `tool-session-query` differs. The same prompt is sent to the same model, so
+# the difference in reported input tokens is the tool's schema.
+if [[ -z "${DSH_REAL_PROVIDER_PATCH:-}" ]]; then
+  echo "SKIP  set DSH_REAL_PROVIDER_PATCH to a real-provider patch to run this"
+else
+  OFF_PATCH="$(mktemp)"
+  cat > "$OFF_PATCH" <<'PATCH'
+- id: tool-session-query
+  disabled: true
+PATCH
+  # The turn probe passes its OWN provider/model to `agents.create`, so a real run must set them on
+  # the PROBE as well as on the default-model row. A probe that keeps its defaults sends the turn to
+  # the mock route and fails with "no API key for provider route deepseek-official" - which is what
+  # the first version of this phase reported, as zero tokens on both sides.
+  REAL_MODEL_PATCH="$(mktemp)"
+  cat > "$REAL_MODEL_PATCH" <<PATCH
+- id: agent-default-model
+  config:
+    provider: ${DSH_REAL_PROVIDER:-openrouter}
+    model: ${DSH_REAL_MODEL:-deepseek/deepseek-chat}
+
+- id: l7-turn-probe
+  config:
+    enabled: true
+    provider: ${DSH_REAL_PROVIDER:-openrouter}
+    model: ${DSH_REAL_MODEL:-deepseek/deepseek-chat}
+    # A prompt that cannot trigger a tool, so each run is exactly ONE step. A real model's totals
+    # otherwise reflect how many steps it chose to take, and the first version of this phase
+    # compared 14,533 against 39,201 tokens - a difference in trajectory, not in tool schema.
+    prompt: "Do not use any tools. Reply with exactly one word: ready"
+PATCH
+  token_phase() { # token_phase <extra overlay|-> <logfile>
+    local extra="$1" log="$2"
+    local args=("$KIT/solutions/l7.patch.yml" "$KIT/solutions/l7.turn.patch.yml" "$DSH_REAL_PROVIDER_PATCH" "$REAL_MODEL_PATCH")
+    [[ "$extra" != "-" ]] && args+=("$extra")
+    boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$log" '\[l7-turn\] done' 120 "${args[@]}" \
+      || failures=$((failures + 1))
+  }
+  WITH_LOG="$(mktemp)"; WITHOUT_LOG="$(mktemp)"
+  token_phase - "$WITH_LOG"
+  token_phase "$OFF_PATCH" "$WITHOUT_LOG"
+  with_tokens="$(grep -o '"uncachedInputTokens":[0-9]*' "$WITH_LOG" | head -1 | grep -o '[0-9]*$')"
+  without_tokens="$(grep -o '"uncachedInputTokens":[0-9]*' "$WITHOUT_LOG" | head -1 | grep -o '[0-9]*$')"
+  echo "[l7-tokens] with tool-session-query:    ${with_tokens:-none} input tokens"
+  echo "[l7-tokens] without tool-session-query: ${without_tokens:-none} input tokens"
+  # The comparison is only meaningful at one step each: say so rather than assuming it.
+  with_steps="$(grep -o "assistant messages: [0-9]*" "$WITH_LOG" | head -1 | grep -o '[0-9]*$')"
+  without_steps="$(grep -o "assistant messages: [0-9]*" "$WITHOUT_LOG" | head -1 | grep -o '[0-9]*$')"
+  echo "[l7-tokens] steps: with=${with_steps:-none} without=${without_steps:-none}"
+  if [[ "$with_steps" != "1" || "$without_steps" != "1" ]]; then
+    echo "FAIL  both runs must be a single step for the totals to be comparable"
+    failures=$((failures + 1))
+  elif [[ -n "$with_tokens" && -n "$without_tokens" && "$with_tokens" -gt "$without_tokens" ]]; then
+    echo "PASS  mounting the tool adds $((with_tokens - without_tokens)) input tokens to the request"
+  else
+    echo "FAIL  expected the tool-mounted run to report MORE input tokens (with=${with_tokens:-none}, without=${without_tokens:-none})"
+    failures=$((failures + 1))
+  fi
+  rm -f "$WITH_LOG" "$WITHOUT_LOG" "$OFF_PATCH" "$REAL_MODEL_PATCH"
+fi
+
+echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 7 verified: the store, the query service, the tool scope, the invented-type caveat"
   echo "(with cleanup), a COMPLETED turn with its own assistant message, the trajectory being"

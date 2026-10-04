@@ -1,0 +1,11 @@
+# Lesson 8's agent-control probe: spawn a background child, send it a message, interrupt it.
+#
+# Needs a REAL provider (set DSH_REAL_PROVIDER_PATCH, DSH_REAL_PROVIDER and DSH_REAL_MODEL when
+# invoking the lesson check). The child's session id exists only after the spawn, so only a model
+# can name it - a scripted call cannot, which is why this claim was provider-bound.
+- id: l8-control-probe
+  disabled: false
+  config:
+    enabled: true
+    provider: !!js "process.env.DSH_REAL_PROVIDER || 'deepseek-official'"
+    model: !!js "process.env.DSH_REAL_MODEL || 'deepseek-flash'"

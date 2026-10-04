@@ -208,7 +208,11 @@ Items 5, 6, and 8 are executed and recorded in [VERIFIED.md](https://github.com/
 
 What that comparison does **not** establish is the *magnitude*: the mock's input is a constant 3 tokens and its output is a scripted reply's character count, so the totals prove correct attribution across agents, not a realistic price.
 
-Items 4 and 7 are not executed, and both need a **real provider** for the same reason: the mock's output is scripted, so it does not depend on what the child was given. Item 4 asks the child to show what it did *not* know; item 7 needs a model that chooses to `send_message` or `interrupt_agent` rather than a script that calls them.
+Items 4 and 7 are executed with a **real provider**, and both are opt-in (`DSH_REAL_PROVIDER_PATCH`) so the default suite stays keyless.
+
+**Item 4** is tested mechanically rather than judgementally: a unique passphrase is planted in the parent, the child is asked for it, and the assertion is about the child's **session log** — the passphrase is present in the parent's conversation and absent from the child's, while the child answers `NOT-TOLD`. What the child *says* is printed for the reader; the absence is what is asserted.
+
+**Item 7** is the only claim in this lesson that needs the model to *choose*, because the child's session id exists only after the spawn — a scripted call could never name it. The check asserts all four calls were made (`subagent`, `list_agents`, `send_message`, `interrupt_agent`), that the message's marker arrives in the child's log, and that the child's turn closes as an **abort** rather than completing.
 
 **If your child's session looks truncated, check the scheduling before suspecting the harness.** During this project a delegated child was left open in 5 of 10 runs, and it was not a harness fault: the scripted call took the default background scheduling, the parent finished, and the headless process exited while the child was still working. Passing `run_in_background: false` closed it every time. The verification asks for the result in the same turn, and still retries and prints how many attempts it needed, so that a regression would show up as a rising attempt count rather than as silence.
 

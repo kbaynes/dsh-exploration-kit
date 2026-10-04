@@ -195,7 +195,9 @@ Items 9 and 10 need no model, only a scripted **tool call**: the mock asks for t
 
 Item 12 is executed too: after a turn there is history to compact, and `/compact` reports `Compacted 4 history items (~4742 tokens)` — a measurable reduction, not just a settled command.
 
-Item 11 is not executed, and the reason is narrower than it looks. It needs a provider whose **input** tokens reflect the request, so that mounting a tool shows up as a larger prompt. The mock reports a constant `input_tokens: 3` regardless of what is sent, so no delta can be observed however the request changes. Every other accounting claim here is asserted with the mock's real numbers.
+Item 11 is executed too, with a real provider, because it needs a provider whose **input** tokens reflect the request — the mock reports a constant `input_tokens: 3` regardless of what is sent, so no delta can be observed however the request changes. The check holds the composition still and toggles one row: mounting `tool-session-query` costs **1,664 input tokens** (14,544 against 12,880) for the same prompt and model.
+
+Two things about that measurement are worth copying. It requires **one step per run**, and the first attempt proved why: with a conversational prompt the model took seven steps with the tools mounted and one without, so the comparison measured trajectory rather than schema. And it is **opt-in** (`DSH_REAL_PROVIDER_PATCH`), because the repository stays keyless by default. Every item in this lesson is executed, all but this one keyless.
 
 ## Exit check — you should now be able to explain
 

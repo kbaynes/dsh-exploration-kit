@@ -256,3 +256,70 @@ else
   echo "$failures check(s) failed."; exit 1
 fi
 rm -f "$MODEL_PATCH"
+
+echo
+echo "== 7. a spawned child does NOT share the parent's context (needs a REAL provider) =="
+# Lesson 8's item 4. The mock cannot show this - scripted output does not depend on what the child
+# was given - which is why it was recorded as provider-bound.
+#
+# OPT-IN, like lesson 7's token phase: set DSH_REAL_PROVIDER_PATCH to a patch registering a real
+# route. The assertion is mechanical rather than judgemental: a passphrase goes into the parent, the
+# child is asked for it, and the check asserts the passphrase is ABSENT from the child's session log
+# while present in the parent's. What the child SAYS is printed for the reader, not asserted.
+if [[ -z "${DSH_REAL_PROVIDER_PATCH:-}" ]]; then
+  echo "SKIP  set DSH_REAL_PROVIDER_PATCH to a real-provider patch to run this"
+else
+  REAL_MODEL_PATCH="$(mktemp)"
+  cat > "$REAL_MODEL_PATCH" <<PATCH
+- id: agent-default-model
+  config:
+    provider: ${DSH_REAL_PROVIDER:-openrouter}
+    model: ${DSH_REAL_MODEL:-deepseek/deepseek-chat}
+PATCH
+  CONTEXT_LOG="$(mktemp)"
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$CONTEXT_LOG" '\[l8-context\] done' 180 \
+    "$KIT/solutions/l7.patch.yml" "$DSH_REAL_PROVIDER_PATCH" "$REAL_MODEL_PATCH" \
+    "$KIT/solutions/l8.context.patch.yml" || failures=$((failures + 1))
+  ctx_out="$(grep '\[l8-context\]' "$CONTEXT_LOG")"
+  check "the passphrase reaches the parent's own conversation" "the parent's own log contains the passphrase: true" "$ctx_out"
+  check "the delegation created a child session" 'child session: ' "$ctx_out"
+  check "the child's session is a real conversation" "the child's log is non-empty: true" "$ctx_out"
+  check "the child's turn closed" "the child's turn closed: true" "$ctx_out"
+  # The claim: the parent's passphrase is not in the child's conversation.
+  check "the child does NOT have the parent's passphrase" "the child's log contains the passphrase: false" "$ctx_out"
+  check "and the child says it was not told" "the child replied NOT-TOLD: true" "$ctx_out"
+  rm -f "$CONTEXT_LOG" "$REAL_MODEL_PATCH"
+fi
+
+echo
+echo "== 8. send_message reaches a LIVE child, and interrupt_agent stops it (needs a REAL provider) =="
+# Lesson 8's item 7, and the only claim in the lesson that needs the MODEL to choose: the child's
+# session id exists only after the spawn, so a scripted call could never name it. OPT-IN via
+# DSH_REAL_PROVIDER_PATCH, like the phases above.
+if [[ -z "${DSH_REAL_PROVIDER_PATCH:-}" ]]; then
+  echo "SKIP  set DSH_REAL_PROVIDER_PATCH to a real-provider patch to run this"
+else
+  CONTROL_MODEL_PATCH="$(mktemp)"
+  cat > "$CONTROL_MODEL_PATCH" <<PATCH
+- id: agent-default-model
+  config:
+    provider: ${DSH_REAL_PROVIDER:-openrouter}
+    model: ${DSH_REAL_MODEL:-deepseek/deepseek-chat}
+PATCH
+  CONTROL_LOG="$(mktemp)"
+  boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$CONTROL_LOG" '\[l8-control\] done' 240 \
+    "$KIT/solutions/l7.patch.yml" "$DSH_REAL_PROVIDER_PATCH" "$CONTROL_MODEL_PATCH" \
+    "$KIT/solutions/l8.control.patch.yml" || failures=$((failures + 1))
+  control_out="$(grep '\[l8-control\]' "$CONTROL_LOG")"
+  # The calls are counted structurally: a substring search is satisfied by the tool CATALOGUE in the
+  # request header, which lists every tool name.
+  check "the model called subagent" "the parent called subagent: true" "$control_out"
+  check "the model called list_agents" "the parent called list_agents: true" "$control_out"
+  check "the model called send_message" "the parent called send_message: true" "$control_out"
+  check "the model called interrupt_agent" "the parent called interrupt_agent: true" "$control_out"
+  check "a live child session existed" "the delegation created a child session: true" "$control_out"
+  check "the message REACHED the live child" "the message reached the child: true" "$control_out"
+  check "the child's turn closed" "the child's turn closed: true" "$control_out"
+  check "and it was INTERRUPTED rather than completing" "the child was interrupted rather than completing: true" "$control_out"
+  rm -f "$CONTROL_LOG" "$CONTROL_MODEL_PATCH"
+fi

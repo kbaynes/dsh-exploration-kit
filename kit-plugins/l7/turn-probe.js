@@ -14,6 +14,14 @@ export const Config = Schema.object({
    */
   provider: Schema.string().default('deepseek-official'),
   model: Schema.string().default('deepseek-flash'),
+  /**
+   * The prompt for the probe's turn. Configurable because a REAL provider's token totals depend on
+   * how many steps it chooses to take: with the session-query tools mounted, the conversational
+   * default made the model take SEVEN steps (104,966 input tokens) while the same run without them
+   * took one (12,869) - a difference in trajectory, not in tool schema. A token measurement needs a
+   * prompt that cannot trigger a tool, so both runs are a single step.
+   */
+  prompt: Schema.string().default('say hi'),
   delayMs: Schema.number().default(1500),
 })
 
@@ -52,7 +60,7 @@ export function apply(ctx, config) {
       // nothing about this session.
       const marker = `l7-turn-marker-${Date.now()}`
       agent.followup(createUserMessage({
-        content: [{ type: 'text', text: `say hi ${marker}` }],
+        content: [{ type: 'text', text: `${config.prompt} ${marker}` }],
         source: { kind: 'user' },
       }))
       await agent.whenIdle()

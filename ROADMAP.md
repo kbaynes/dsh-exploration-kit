@@ -6,7 +6,7 @@ A fast status view. The detailed task list with checkboxes lives in [PLAN.md](PL
 
 **Current phase: 4 — Publication readiness.** All nine lessons are built and executed; the kit is one owner substitution away from publishable, and publication is deliberately held until more hardening is done.
 
-**Three exit-check items remain unexecuted, and all three need a real model rather than a keyless provider**: L7's input-token delta (the mock reports a constant `input_tokens: 3`, so no delta is observable however the request changes), and L8's "a child shows what it did not know" and "a model chooses `send_message`/`interrupt_agent`" (scripted output does not depend on what a child was given, and a script does not choose). Everything else in all nine lessons is executed — including L9's webhook, which turned out not to need a credential at all.
+**Every exit-check item in all nine lessons is now executed.** The last three needed a real model rather than the scriptable keyless provider, and all three were closed against the operator's own OpenRouter credential: L7's input-token delta from mounting a tool (**1,664 tokens**), and L8's "a child does not know the parent's conversation" and "a model chooses `send_message` and `interrupt_agent`". Those checks are **opt-in** (`DSH_REAL_PROVIDER_PATCH`), so the default suite stays keyless and prints `SKIP` for them. The only thing still unproven anywhere is the *magnitude* of L8's cost comparison, which is a property of a price list rather than of the harness.
 
 A turn-killing bug in the kit's **own** Lesson 5 listener (`JSON.stringify` of a live event payload — see [ADR-0028](decisions/0028-never-stringify-a-live-event-payload.md)) had been misrecorded as an upstream harness defect for two rounds. Fixing it closed the L5 skill catalogue, L7's completed turn, and L9's delivery, all of which are now asserted by the suite rather than described as unverified.
 
@@ -35,8 +35,8 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | 4 | Build a policy gate | ✅ | 🟡 | ✅ |
 | 5 | Assemble context deliberately | ✅ | ✅ | ✅ |
 | 6 | Give the session durable state | ✅ | 🟡 | ✅ |
-| 7 | Operate the harness | ✅ | 🟡 | ✅ |
-| 8 | Orchestrate multiple agents | ✅ | 🟡 | ✅ |
+| 7 | Operate the harness | ✅ | ✅ | ✅ |
+| 8 | Orchestrate multiple agents | ✅ | ✅ | ✅ |
 | 9 | Automate the harness | ✅ | ✅ | ✅ |
 
 "Tested" means executed end-to-end against a real DSH checkout and recorded in [VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it. A partial 🟡 means the mechanism was executed but the lesson's own exercise was not.

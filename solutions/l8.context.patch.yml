@@ -1,0 +1,12 @@
+# Lesson 8's context-heredity probe: plants a passphrase in a parent, delegates, and checks whether
+# the child's own session log contains it.
+#
+# Needs a REAL provider (set DSH_REAL_PROVIDER_PATCH and DSH_REAL_PROVIDER / DSH_REAL_MODEL when
+# invoking the lesson check): a scripted mock answer does not depend on what the child was given, so
+# it cannot show that the child lacks the parent's conversation.
+- id: l8-context-probe
+  disabled: false
+  config:
+    enabled: true
+    provider: !!js "process.env.DSH_REAL_PROVIDER || 'deepseek-official'"
+    model: !!js "process.env.DSH_REAL_MODEL || 'deepseek-flash'"

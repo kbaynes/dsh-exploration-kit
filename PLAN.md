@@ -183,7 +183,7 @@ The substance of the project. Repeat this block for each lesson. **Order is inde
       scripts the call; the harness runs the tool), and asserts `SESSION_QUERY_TOOL_UNAUTHORIZED`
       with `isError: true`. It also compares that refusal with the one for a nonexistent id after
       normalising volatile ids: **indistinguishable**, so the target's existence does not leak.
-- [ ] Measure the token delta caused by mounting `tool-session-query` — **blocked by the mock, not by the harness**: the delta is an *input*-token effect, and the mock reports a constant `input_tokens: 3` whatever the request contains, so no delta is observable. Needs a provider that counts the real prompt.
+- [x] Measure the token delta caused by mounting `tool-session-query` — **done with a real provider**: mounting the tool costs **1,664 input tokens** (14,544 vs 12,880) for the same prompt and model, with one row toggled and both runs held to a single step. The mock could never show it (a constant `input_tokens: 3`); the phase is opt-in via `DSH_REAL_PROVIDER_PATCH`. Original note, kept for the reason: **blocked by the mock, not by the harness**: the delta is an *input*-token effect, and the mock reports a constant `input_tokens: 3` whatever the request contains, so no delta is observable. Needs a provider that counts the real prompt.
 - [x] Confirm `/compact` produces a measurable reduction — `solutions/verify-l7.sh` phase 7 asserts the command reports `Compacted 4 history items (~4742 tokens)` after a turn. The mock's usage is real (`input_tokens: 3`, `output_tokens` = the scripted reply's character count), so the accounting is asserted with exact numbers rather than shape alone; an earlier round asserted only the shape on the false premise that the mock reported no usage.
 - [x] Confirm `session_event_read` returns an event as JSON with neighbours —
       `solutions/verify-l7.sh` phase 9: a scripted `session_event_read` call (the tool's
@@ -208,13 +208,14 @@ The substance of the project. Repeat this block for each lesson. **Order is inde
 
 ### Lesson 8 — Orchestrate multiple agents
 
-- [ ] Run a spawned child and confirm it lacks parent context
+- [x] Run a spawned child and confirm it lacks parent context — with a real provider: a passphrase is planted in the parent, absent from the child's session log, and the child answers `NOT-TOLD` (`solutions/verify-l8.sh` phase 7, opt-in).
 - [ ] Run a forked child and confirm it inherits the cut
 - [ ] Execute the workflow script and confirm a dense, schema-validated array
 - [ ] Confirm a failing stage drops that item to `null`
 - [ ] Confirm a misused hook ends the script with a naming error
 - [x] Capture the monolithic-vs-fan-out comparison with real token numbers — `solutions/verify-l8.sh` phase 6 measures **26 tokens for one turn and 57 for the same task as a fan-out** (parent 31 + child 26), summing the parent from the headless `--json` stream and the child from its **own** session log, with each half asserted non-zero. Publishing the *magnitude* stays open: the mock's input is a constant 3 and its output is a scripted reply's character count, so the totals prove attribution across agents, not a realistic price.
 - [x] **Investigate the intermittent child turn** — solved, and it was not a harness fault. The base bundle's `subagent` uses the `continuable` background mode, so `run_in_background` defaults to **true**: the parent gets a handle back, the child is scheduled independently, and a one-shot headless task exits while the child is still working, leaving its session open with no `assistant/message` and no `turn/end` (5 of 10 observed runs). Passing `run_in_background: false` closes it every time (3/3, and the phase now asserts the child's turn closed rather than counting model requests). The lesson teaches the argument and the symptom.
+- [x] Confirm `send_message` reaches a live child and `interrupt_agent` stops it — with a real provider: the model calls all four tools, the marker arrives in the child's log, and the child's turn closes as an abort (`solutions/verify-l8.sh` phase 8, opt-in).
 - [ ] Confirm `ctx.agents.create({ seed, meta })` fork behaves as described
 - [ ] Read the agent-team profile patch and decide whether L8's optional step
       should stay
