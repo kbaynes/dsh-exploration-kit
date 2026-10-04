@@ -172,7 +172,7 @@ Observable without a session:
 
 Executed keyless, against the repository's scriptable mock provider (ADR-0027) — a real turn, with the model's *output* scripted:
 
-5. A real turn records an assistant answer that **full-text search then finds** from the trajectory, and the accounting projection is exposed with its documented shape (`totals` + `last`). The numbers are zero here because the mock reports no usage for scripted text; a real provider fills them.
+5. A real turn records an assistant answer that **full-text search then finds** from the trajectory, and the accounting projection is exposed with its documented shape (`totals` + `last`) **and real numbers**. The mock reports `input_tokens: 3` and an output count equal to its scripted reply's character count, so the check asserts exact non-zero values rather than shape alone.
 6. `/compact` settles as a command (`{"kind":"success","text":"No compactable history yet."}` on a fresh session).
 7. `sessionStats` is *absent* on a base-backed profile, which is why step 3 above tells you to use a web-backed one for statistics.
 
@@ -193,7 +193,9 @@ Items 4–10 are executed and recorded in [VERIFIED.md](https://github.com/kbayn
 
 Items 9 and 10 need no model, only a scripted **tool call**: the mock asks for the call and the harness dispatches the tool for real. The refusal in item 10 is produced by the tool *executor*, so only a dispatched call can reach it — and the check compares the refusals for an existing foreign target and a nonexistent one, because "both were refused" would pass for two different messages.
 
-Items 11 and 12 are not executed: both need a provider that reports real token usage, and the mock purposely scripts the model's output without any — the right trade for the contract-shaped claims above and the wrong one for a cost claim.
+Item 12 is executed too: after a turn there is history to compact, and `/compact` reports `Compacted 4 history items (~4742 tokens)` — a measurable reduction, not just a settled command.
+
+Item 11 is not executed, and the reason is narrower than it looks. It needs a provider whose **input** tokens reflect the request, so that mounting a tool shows up as a larger prompt. The mock reports a constant `input_tokens: 3` regardless of what is sent, so no delta can be observed however the request changes. Every other accounting claim here is asserted with the mock's real numbers.
 
 ## Exit check — you should now be able to explain
 

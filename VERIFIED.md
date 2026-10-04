@@ -87,8 +87,8 @@ DSH is a developer preview with explicitly breaking changes. On each upstream re
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; injected context is proved **durable across a restart** in two processes (carried by a first-party `agent/inbox/spliced` event); the skills overlay composes; and the **command path is executed** — `/l5-facts` dispatches through `ctx.commands.execute`, returns its text, logs `command/run` + `command/done`, and records **zero model-request events**. The **model-visible skill catalogue** is executed end to end: against the mock provider a real turn assembles a request, the session log carries the skill catalogue with the skill's BODY absent, and when the model then **calls the `skill` tool** the body loads through the real tool pipeline — announced on demand, loaded on demand. A skill **added to a watched root live** also reaches the catalog with **no restart**: two sessions in one process see different catalogs once a new skill directory is written, and the added skill's body is not shipped either. Nothing in L5 is left unexecuted. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
-| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider a **real turn COMPLETES** — it produces its own assistant message, ends `{"kind":"completed"}`, is searchable back to its own session, and exposes the **token-accounting projection shape**; `/compact` is exercised. An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it now searches for a marker unique to the run and asserts the hit is this session. `session_event_read` is executed through a real tool call and returns the target event as JSON with `Before:`/`After:` neighbour summaries. The **workspace-authority refusal** is executed too, via a real model-driven tool call into a session under a different `cwd`: the tool result is refused with `SESSION_QUERY_TOOL_UNAUTHORIZED`, and a nonexistent target produces a byte-identical refusal, so the target's existence does not leak. **Not** executed: a token delta for mounting `tool-session-query` and a measurable `/compact` reduction, both of which need a provider that reports real usage. |
-| L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. **Not** executed: the monolith-versus-fan-out cost comparison, which needs real token usage. |
+| L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted with self-cleanup; the invariant rows are asserted to report **no violation**; and against the mock provider a **real turn COMPLETES** — it produces its own assistant message, ends `{"kind":"completed"}`, is searchable back to its own session, and exposes the **token-accounting projection** with real numbers — `uncachedInputTokens: 3` and `outputTokens: 23`, the mock's constants, not zeroes; `/compact` reports a **measurable reduction** (`Compacted 4 history items (~4742 tokens)`). An earlier version of this row claimed the turn's text was searchable: that check was green because the search matched OTHER sessions, and it now searches for a marker unique to the run and asserts the hit is this session. `session_event_read` is executed through a real tool call and returns the target event as JSON with `Before:`/`After:` neighbour summaries. The **workspace-authority refusal** is executed too, via a real model-driven tool call into a session under a different `cwd`: the tool result is refused with `SESSION_QUERY_TOOL_UNAUTHORIZED`, and a nonexistent target produces a byte-identical refusal, so the target's existence does not leak. **Not** executed: a token delta for mounting `tool-session-query`. It needs a provider whose **input** tokens reflect the request, and the mock reports a constant `input_tokens: 3` — so a delta cannot be observed no matter how the request changes. (An earlier version of this row said the mock reported no usage at all. It always did; only the input side is constant.) |
+| L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. The **monolith-versus-fan-out cost comparison** is executed and measured: one turn costs 26 tokens, the same task as a fan-out costs 57 (parent 31 + child 26), and the child's 26 are attributed to the **child's own session** rather than pooled. A **finding surfaced while measuring it**: a delegated child's turn is sometimes left open (no `assistant/message`, no `turn/end`) while the parent returns normally — 5 of 10 observed runs. The check retries and reports the attempts rather than hiding it. **Not** executed: the *magnitude* of that comparison. The mock's input is a constant 3 tokens and its output is a scripted reply's character count, so the totals prove correct attribution across agents rather than a realistic price. |
 | L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; **delivery** is verified end to end — a due task splices its reminder, records a delivery receipt, resumes the session and **completes the scheduled work** (a second assistant message, `{"kind":"completed"}`); the **headless contract** (exit codes, stdout/stderr, `--json` phases, and a real **tool call with its correlated result** in the stream) runs keyless; and a **real SDK round trip** runs keyless too — the SDK drives a turn, receives the model's answer, reports the session, and observes 15 notifications. **Not** executed: a webhook delivery, which is a different transport. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
@@ -308,6 +308,49 @@ The request count is the evidence that matters: **three** requests means the par
 
 **A counter bug worth recording:** the first version of that check grepped the session files for `parentSession` and always reported zero, because the log is `zstd`-compressed. It now decompresses only recently-touched sessions.
 
+## Evidence: L8 the same task costs 26 tokens, or 57 as a fan-out
+
+The lesson asks the reader to run one task monolithically and again as a fan-out, then compare the four audit parts. That comparison is measurable, and `solutions/verify-l8.sh` phase 6 performs it:
+
+```
+[l8-cost] parent session: session-7f500193-…
+[l8-cost] fan-out parent tokens: 31
+[l8-cost] fan-out child tokens: 26
+[l8-cost] monolith tokens: 26
+[l8-cost] fan-out total tokens: 57
+PASS  the monolith's tokens are recorded and non-zero (26)
+PASS  the CHILD's tokens are attributed to the child's own session (26)
+PASS  the fan-out costs more tokens than one turn (57 > 26)
+```
+
+Three things make this real rather than decorative. The parent's 31 is summed from the headless `--json` stream's `status`/`step_end` usage events, and the child's 26 from its **own** session log, so the comparison exercises attribution across agents instead of a single counter. Each half is asserted non-zero, because a zero would make every sum vacuously small. And the child's session is read only after waiting for its usage to appear: a child session is durably recorded when it is announced, but its tail is flushed asynchronously, and the first version of this phase read a turn that was still open and reported 0 (ADR-0032's rule, met a second time).
+
+**What this does not establish** is the magnitude. The mock's input is a constant 3 tokens and its output is the character count of a scripted reply, so `57 > 26` proves the harness attributes and sums cost correctly across agents; a realistic price still needs a real provider.
+
+### A finding this surfaced: a delegated child's turn does not always close
+
+Measuring the child's share required reading the child's session, and the child's session is sometimes left **open** — it ends after `request/context` with no `assistant/message`, no `step/end`, and no `turn/end` — while the parent still returns a normal answer and exits 0. Counted across the delegation runs made while investigating:
+
+```
+child session (uuid)  events  turn closed
+e8862110-…              19    yes
+efdfb3f5-…              19    yes
+167ca512-…              19    yes
+b248ca74-…              19    yes
+0aba05c6-…              19    yes
+90be2113-…              15    NO
+1223c99f-…              15    NO
+6a5f4b7c-…              15    NO
+06602690-…              15    NO
+0863805a-…              15    NO
+```
+
+Five of ten closed; five stalled permanently (a stall does not complete on a later read — re-checked after 30 seconds on one run, and the log stayed at its stalled length while other runs closed within the same window).
+
+This is recorded rather than worked around. `solutions/verify-l8.sh` retries the fan-out until a child completes and **prints how many attempts it needed**, so the intermittency stays visible in the check's own output, and the phase fails if no attempt ever produces a completed child. Whether the child's teardown is raced by the parent's turn ending, or its response is dropped, is not established here: the observation is the stall and its rate, which is what a future investigation needs.
+
+
+
 ## Evidence: L8 fork heredity, verified through derived state
 
 Executed without a model — creating and seeding sessions is not a model call:
@@ -380,6 +423,21 @@ Phase 9 asserts each part separately: the target event is JSON (`"type": "sandbo
 
 **Why a dedicated probe for this.** The first attempt reused the authority probe, which truncated every tool result to 700 characters — cutting off exactly the neighbour lists the claim is about. A check that cannot see its own evidence is a check that will pass for the wrong reason, so the event-read probe prints results in full.
 
+## Evidence: L7 the accounting carries REAL numbers, and /compact reduces measurably
+
+Two claims in this row were wrong or unproven because of one false premise — that the mock reports no usage for scripted text. It always did. `llm-mock-server` sends `input_tokens: 3` (a constant) and an `output_tokens` equal to `Array.from(successText).length`, which is 23 for `mock response recovered` and 2 for a tool call:
+
+```
+[l7-turn] tokenUsage: {"totals":{"uncachedInputTokens":3,"outputTokens":23,"cacheReadTokens":0,
+           "cacheWriteTokens":0},"last":{"turn":1,"step":1,"buckets":{…}}}
+[l7-turn] /compact outcome: {"kind":"success","text":"Compacted 4 history items (~4742 tokens).",
+           "sourceEventSeq":27}
+```
+
+So phase 7 asserts exact values (`"uncachedInputTokens":3`, `"outputTokens":23`) rather than the shape alone, and asserts that `/compact` reports how much it removed.
+
+The correction matters beyond the numbers. A shape-only check was justified by a limitation that did not exist, and it stayed that way for several rounds — the same failure as the search that matched other sessions, in a quieter form: an assertion that was true but weaker than the claim.
+
 ## Evidence: L7 a cross-workspace read is refused, and a missing target looks identical
 
 The authority check lives in the tool **executor** (`packages/session-query/tool-session-query`'s `workspace-access.ts`), not in the query service, so a text-only mock cannot reach it. The mock scripts the CALL and the harness runs the tool for real, which is what makes this reachable with no credential:
@@ -429,7 +487,7 @@ Against `dsh-llm-mock-server` (ADR-0027), so the loop, log and accounting are re
 [l7-turn] /compact outcome: {"kind":"success","text":"No compactable history yet."}
 ```
 
-`13 hit(s)` is the claim that matters: the text the **assistant** produced is findable in the trajectory. The accounting projection is asserted for its shape, not its numbers — the mock reports no usage for scripted text, which is a limitation of the mock rather than of the harness.
+`13 hit(s)` is the claim that matters: the text the **assistant** produced is findable in the trajectory. The accounting projection is asserted for its shape **and its numbers**: the mock reports `input_tokens: 3` (a constant) and `output_tokens` equal to the character count of its scripted reply, so `uncachedInputTokens: 3` and `outputTokens: 23` are exact and checkable. An earlier version of this paragraph claimed the mock reported no usage for scripted text; that was simply wrong, and it held the check at shape-only for several rounds.
 
 **The caveat is asserted with cleanup.** A second phase appends an invented event type and shows it is invisible to a type filter, a text filter, and full-text search — then removes the session it created, because an unreadable session breaks search for the whole home. That cleanup is not politeness: 37 such sessions had accumulated in the verification home during development, which is what made the search assertions fail with a confusing error.
 

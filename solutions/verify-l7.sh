@@ -198,10 +198,19 @@ if start_mock_llm "$DSH_CHECKOUT" 8132 success; then
 
   turn_out="$(grep '\[l7-turn\]' "$TURN_LOG")"
   check "token accounting is exposed with its documented shape" '"totals":' "$turn_out"
-  # The mock reports no usage for scripted text, so the numbers are zero; the shape is the claim.
   check "the accounting keys are the documented ones" 'uncachedInputTokens' "$turn_out"
+  # The mock reports REAL usage, so the NUMBERS are asserted too: `input_tokens` is a constant 3,
+  # and `output_tokens` is the character count of its scripted reply (23 for "mock response
+  # recovered"). An earlier version of this phase asserted only the shape, on the false premise
+  # that the mock reported no usage at all.
+  check "the totals carry the provider's input tokens" '"uncachedInputTokens":3' "$turn_out"
+  check "and a non-zero output count" '"outputTokens":23' "$turn_out"
   check "the statistics unit is absent in a base-backed profile" 'sessionStats (web-only): not mounted' "$turn_out"
   check "/compact settles as a command" '/compact outcome: {"kind":"success"' "$turn_out"
+  # Lesson 7's remaining /compact claim: a MEASURABLE reduction, not just a settled command. After
+  # a turn there is history to compact, and the command reports how much it removed.
+  check "and reports a measurable reduction" 'Compacted' "$turn_out"
+  check "naming the token estimate it removed" '(~' "$turn_out"
 
   # What the turn ACTUALLY did. An earlier version of this phase pinned a failure instead: turns
   # died at `turn/start` with 'cannot get property "toJSON" without inject', which was recorded as

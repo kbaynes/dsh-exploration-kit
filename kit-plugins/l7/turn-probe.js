@@ -57,9 +57,11 @@ export function apply(ctx, config) {
       }))
       await agent.whenIdle()
 
-      // The projection exists and carries the documented shape. Its numbers are zero here for a
-      // reason worth stating: the mock reports no usage for scripted text, so accounting has
-      // nothing to record. The SHAPE is what this asserts; a real provider fills the numbers.
+      // The projection exists and carries the documented shape AND real numbers: the mock reports
+      // `input_tokens: 3` (a constant) and `output_tokens` equal to the character count of its
+      // scripted reply (23 for "mock response recovered"). An earlier version of this comment said
+      // the numbers were zero because the mock reported no usage - which was simply wrong, and it
+      // kept a weaker check (shape only) in the suite for several rounds.
       // Whether THIS turn actually produced an assistant message. The first version of this probe
       // did not ask, and its full-text search then found 'mock response' in OTHER sessions from
       // earlier headless runs - a green check measuring the wrong thing.

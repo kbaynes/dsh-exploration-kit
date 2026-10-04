@@ -183,8 +183,8 @@ The substance of the project. Repeat this block for each lesson. **Order is inde
       scripts the call; the harness runs the tool), and asserts `SESSION_QUERY_TOOL_UNAUTHORIZED`
       with `isError: true`. It also compares that refusal with the one for a nonexistent id after
       normalising volatile ids: **indistinguishable**, so the target's existence does not leak.
-- [ ] Measure the token delta caused by mounting `tool-session-query`
-- [ ] Confirm `/compact` produces a measurable reduction
+- [ ] Measure the token delta caused by mounting `tool-session-query` — **blocked by the mock, not by the harness**: the delta is an *input*-token effect, and the mock reports a constant `input_tokens: 3` whatever the request contains, so no delta is observable. Needs a provider that counts the real prompt.
+- [x] Confirm `/compact` produces a measurable reduction — `solutions/verify-l7.sh` phase 7 asserts the command reports `Compacted 4 history items (~4742 tokens)` after a turn. The mock's usage is real (`input_tokens: 3`, `output_tokens` = the scripted reply's character count), so the accounting is asserted with exact numbers rather than shape alone; an earlier round asserted only the shape on the false premise that the mock reported no usage.
 - [x] Confirm `session_event_read` returns an event as JSON with neighbours —
       `solutions/verify-l7.sh` phase 9: a scripted `session_event_read` call (the tool's
       `session_id` is optional, so it targets the caller's own session) returns the target event as
@@ -213,8 +213,8 @@ The substance of the project. Repeat this block for each lesson. **Order is inde
 - [ ] Execute the workflow script and confirm a dense, schema-validated array
 - [ ] Confirm a failing stage drops that item to `null`
 - [ ] Confirm a misused hook ends the script with a naming error
-- [ ] Capture the monolithic-vs-fan-out comparison with real token numbers and
-      decide whether to publish the numbers
+- [x] Capture the monolithic-vs-fan-out comparison with real token numbers — `solutions/verify-l8.sh` phase 6 measures **26 tokens for one turn and 57 for the same task as a fan-out** (parent 31 + child 26), summing the parent from the headless `--json` stream and the child from its **own** session log, with each half asserted non-zero. Publishing the *magnitude* stays open: the mock's input is a constant 3 and its output is a scripted reply's character count, so the totals prove attribution across agents, not a realistic price.
+- [ ] **Investigate the intermittent child turn**: a delegated child's session is sometimes left open (no `assistant/message`, no `turn/end`) while the parent returns normally - 5 of 10 observed runs. The cost comparison retries and reports the attempts, but the cause is not established: either the child's teardown is raced by the parent's turn ending, or its response is dropped. Reproduce with `bash solutions/verify-l8.sh` and read the child's session log.
 - [ ] Confirm `ctx.agents.create({ seed, meta })` fork behaves as described
 - [ ] Read the agent-team profile patch and decide whether L8's optional step
       should stay

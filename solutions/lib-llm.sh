@@ -82,3 +82,102 @@ for path in root.rglob("session.v*.jsonl.zstd"):
 print(count)
 COUNTEOF
 }
+
+# --- Token accounting helpers -------------------------------------------------------------
+#
+# The mock reports REAL usage: `input_tokens` is a constant 3, and `output_tokens` is the
+# character count of its scripted reply (23 for "mock response recovered"). The harness records
+# that usage twice, which is what makes a cost comparison verifiable at all:
+#
+#   * the headless `--json` stream carries it on each `status`/`step_end` event;
+#   * each session's log carries it on its `assistant/message` events, per turn and per session.
+#
+# An earlier round of this kit asserted only the SHAPE of the accounting, on the false premise
+# that the mock reported no usage. It always did.
+
+# Sum `usage.totalTokens` across a headless `--json` stream's step_end events.
+#   sum_stream_usage <stream-file>
+sum_stream_usage() {
+  STREAM="$1" python3 - <<'SUMSTREAM'
+import json, os
+total = 0
+for line in open(os.environ["STREAM"], encoding="utf-8", errors="replace"):
+    try:
+        event = json.loads(line)
+    except Exception:
+        continue
+    if event.get("type") == "status" and event.get("phase") == "step_end":
+        total += (event.get("usage") or {}).get("totalTokens", 0)
+print(total)
+SUMSTREAM
+}
+
+# Sum `data.usage.totalTokens` across a compressed session log's assistant messages.
+#   sum_log_usage <session.v*.jsonl.zstd>
+sum_log_usage() {
+  LOG="$1" python3 - <<'SUMLOG'
+import json, os, subprocess
+path = os.environ["LOG"]
+body = subprocess.run(["zstd", "-dc", path], capture_output=True, timeout=30).stdout
+total = 0
+for line in body.decode("utf-8", "replace").splitlines():
+    try:
+        event = json.loads(line)
+    except Exception:
+        continue
+    if event.get("type") == "assistant/message":
+        total += ((event.get("data") or {}).get("usage") or {}).get("totalTokens", 0)
+print(total)
+SUMLOG
+}
+
+# Print the log path of a recent session whose header names the given parent session.
+#   find_child_log <parent-session-id> <minutes>
+find_child_log() {
+  DSH_HOME="${DSH_HOME:-$HOME/.dsh}" PARENT="$1" SCAN_MINUTES="${2:-5}" python3 - <<'FINDCHILD'
+import os, pathlib, subprocess, time
+root = pathlib.Path(os.environ["DSH_HOME"]) / "sessions"
+cutoff = time.time() - float(os.environ["SCAN_MINUTES"]) * 60
+needle = ('"parentSession":"%s"' % os.environ["PARENT"]).encode()
+found = []
+for path in root.rglob("session.v*.jsonl.zstd"):
+    try:
+        if path.stat().st_mtime < cutoff:
+            continue
+        body = subprocess.run(["zstd", "-dc", str(path)], capture_output=True, timeout=20).stdout
+    except Exception:
+        continue
+    if needle in body:
+        found.append((path.stat().st_mtime, str(path)))
+if found:
+    print(max(found)[1])
+FINDCHILD
+}
+
+# Wait for a child's usage, retrying the LOOKUP as well as the read.
+#
+# A child session is durably recorded when it is announced, but two asynchronous steps stand
+# between the parent finishing and its usage being readable: the child's log must appear with its
+# header (which carries `parentSession`), and its tail - including the assistant message that
+# carries `usage` - must be flushed. The first version of this waited only on the read, so when the
+# log was not yet visible the lookup returned nothing and the check reported 0 tokens without
+# waiting at all; it passed standalone and failed in the suite (ADR-0032's rule, again).
+#
+# Prints "<tokens><TAB><log-path>", with 0 tokens on timeout.
+#   await_child_usage <parent-session-id> [timeout-seconds]
+await_child_usage() {
+  local parent="$1" timeout="${2:-25}" waited=0 log="" tokens=0
+  while (( waited < timeout )); do
+    log="$(find_child_log "$parent" 5)"
+    if [[ -n "$log" ]]; then
+      tokens="$(sum_log_usage "$log")"
+      if (( tokens > 0 )); then
+        printf '%s\t%s\n' "$tokens" "$log"
+        return
+      fi
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  printf '0\t%s\n' "$log"
+}

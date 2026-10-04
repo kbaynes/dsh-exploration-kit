@@ -199,7 +199,13 @@ Requires a real provider:
 7. A real fan-out returns schema-validated rows.
 8. You can produce the four-part audit for a monolithic run *and* a decomposed run of the same task.
 
-Items 4–8 are recorded as unverified in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 2 is the reason this lesson is worth more than its prose: the orchestration *contract* is tested even though the agents are not.
+Items 6 and 8 are executed and recorded in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Item 6 is a real delegation — a genuine fan-out where the parent calls the tool, a child runs its own turn, and the child is durably recorded with a parent link. Item 8's four-part audit is produced by the check itself, which measures **26 tokens for one turn and 57 for the same task as a fan-out (parent 31 + child 26)**, attributing the child's share to the child's own session rather than pooling it.
+
+What that comparison does **not** establish is the *magnitude*: the mock's input is a constant 3 tokens and its output is a scripted reply's character count, so the totals prove correct attribution across agents, not a realistic price. Items 4, 5, and 7 remain unverified.
+
+**A warning worth carrying into your own runs.** Measuring that comparison surfaced an intermittency: a delegated child's turn is sometimes left open — the child's session ends after `request/context`, with no assistant message and no `turn/end` — while the parent still returns a normal answer. It happened in 5 of 10 observed runs. If you fan out and the child's session looks truncated, that is this, not your workflow. The verification retries and prints how many attempts it needed so the rate stays visible.
+
+Item 2 is the reason this lesson is worth more than its prose: the orchestration *contract* is tested even though the agents are not.
 
 ## Exit check — you should now be able to explain
 
