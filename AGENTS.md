@@ -24,11 +24,13 @@ Highest-value starting points:
 - [ADR-0002 — Never cite upstream paths unchecked](decisions/0002-verify-upstream-links.md):
   a workspace knowledge bundle's paths are not the upstream repository's paths.
 
-**Verify that an edit applied.** A search-and-replace that does not match is a no-op, and
-reporting it as success is how a ledger row stayed wrong for a round: L6's status was
-promoted to *Executed* after its rebuild, the replacement silently did not match, and the
-row read *DEFECT* until a later pass noticed. Assert the match — in a script, `assert old in
-text` before replacing; when editing by hand, re-read the line afterwards.
+**Verify that an edit applied — including that the old text is gone.** A search-and-replace
+that does not match is a no-op, and reporting it as success is how a ledger row stayed wrong
+for two rounds: L7's row still claimed a turn was "searchable by its own assistant text"
+after that claim had been disproved, because the correction's anchor never matched and the
+failed assertion was misread. Assert both directions where it matters — in a script,
+`assert old in text` before replacing *and* `assert new in text and old not in text`
+afterwards; when editing by hand, re-read the line.
 
 **Add an ADR when you learn something a future contributor could re-learn the hard
 way** — a mechanism that does not work, a tool that behaves differently than
