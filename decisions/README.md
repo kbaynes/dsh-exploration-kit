@@ -43,3 +43,4 @@ without re-running the experiment.
 - [ADR-0010 — Separate what a boot proves from what a session proves](0010-separate-what-a-boot-proves.md)
 - [ADR-0011 — Load `.ts` lesson plugins only for type-only imports](0011-typescript-erasure-limits.md)
 - [ADR-0012 — The curriculum, the bundle, and examples are one source of truth](0012-single-source-of-truth.md)
+- [ADR-0013 — Pin optional DSH package versions; npm's `latest` tag is stale](0013-pin-optional-package-versions.md)

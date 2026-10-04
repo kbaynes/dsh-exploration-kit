@@ -1,0 +1,25 @@
+# Lesson 7: enable programmatic session history.
+#
+# `session-query-sqlite` is already mounted by the web bundle with `openAt: never`,
+# so this is an override of an existing row — no `insert`, no `name`.
+# `tool-session-query` is not mounted by any shipped bundle, so it is an insert.
+#
+# Compare with Lesson 3's `disabled: true` trick: the same override mechanism turned
+# a provider off; here it turns a store on.
+
+- id: session-query-sqlite
+  config:
+    path: ':memory:'
+    openAt: startup
+
+- insert:
+    - id: tool-session-query
+      name: '@deepseek-ai/dsh-tool-session-query'
+
+    # Lesson 7 step 5: the runtime invariant checks are mounted only by sdk-minimal,
+    # so a web profile needs them added explicitly.
+    - id: invariants
+      name: '@deepseek-ai/dsh-invariants'
+
+    - id: session-invariant
+      name: '@deepseek-ai/dsh-session/invariant'

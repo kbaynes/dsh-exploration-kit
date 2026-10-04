@@ -35,45 +35,84 @@ Reference: [observability & auditing](https://github.com/deepseek-ai/deepseek-ha
 ## Prerequisites
 
 L1–L6 complete, including your `l6/step` events — this lesson reads them back. A
-model provider is required for the cost part of this lesson.
+model provider is required for the cost part; steps 1–4 here are testable without one.
 
 ## Step 1 — Turn on programmatic session history
 
 Session history access is a service (`ctx.sessionQuery`) plus, optionally,
-model-facing tools. Both pieces are opt-in, so enable them deliberately rather
-than assuming they are present.
+model-facing tools. Both pieces are opt-in, so enable them deliberately rather than
+assuming they are present.
 
-First make the query backend available. The web bundle ships `session-query-sqlite`
-configured with `openAt: never`, which mounts the capability without opening a
-store. `<kit>/plugins/l7.patch.yml`:
+The kit ships the overlay at `<kit>/solutions/l7.patch.yml`. Note its **shape**: one
+override and two inserts, because that is what the base bundles actually provide.
 
 ```yaml
+# already mounted by the web bundle, configured never to open — override in place
 - id: session-query-sqlite
   config:
     path: ':memory:'
     openAt: startup
+
+# not mounted by any shipped bundle — insert
 - insert:
     - id: tool-session-query
       name: '@deepseek-ai/dsh-tool-session-query'
+    - id: invariants
+      name: '@deepseek-ai/dsh-invariants'
+    - id: session-invariant
+      name: '@deepseek-ai/dsh-session/invariant'
 ```
+
+The web bundle mounts `session-query-sqlite` with `openAt: never`, which provides the
+capability without opening a store. Turning it on is therefore an **override** — no
+`insert`, no `name` — the same in-place mechanism you used to override a config in L2
+and to disable a provider in L3. The tool package, by contrast, is not in any shipped
+bundle, so it is an insert.
+
+### The tool package must be installed, and pinned
+
+A row naming a package only works if that package is resolvable in the profile. Two
+things bite here, both hit while building this lesson:
+
+```sh
+dsh plugin --profile kitdemo add @deepseek-ai/dsh-tool-session-query@<dsh version>
+```
+
+- **A row naming an uninstalled package fails at load:**
+  `tool-session-query (@deepseek-ai/dsh-tool-session-query): failed to import`,
+  because a row name resolves through the profile's installation.
+- **Do not omit the version.** npm's `latest` tag for these optional packages is
+  stale (`0.0.1-rc.1`), and dsh rejects it outright:
+  `Plugin @deepseek-ai/dsh-tool-session-query@0.0.1-rc.1 is incompatible with dsh 0.2.0-rc.2`.
+  Install the version matching your dsh runtime — `0.2.0-rc.2` here — and it installs
+  cleanly and activates.
+
+That second point is a real trap for a reader: the obvious command is the one without
+a version, and it appears to work until the boot.
 
 Now the model has five read-only tools: `session_search`, `session_event_search`,
 `session_trace`, `session_event_trace`, and `session_event_read`.
 
-Two contract details are worth understanding before you rely on them:
+Two contract details worth understanding before you rely on them:
 
-- **Authorization is workspace-scoped.** Cross-session access requires the
-  target session's `cwd` to equal the caller's exactly; a caller without a `cwd`
-  can inspect only itself. Unauthorized boundaries appear as markers without
-  hidden ids, and missing versus cross-workspace guesses behave identically — no
-  information leak either way.
-- **Search is cursor-free and capped.** A capped result asks the model to narrow
-  its query rather than exposing offsets or page sizes. The caller's own session
-  is always omitted from search, and for the current session the tools stop before
-  the step that invoked them.
+- **Authorization is workspace-scoped.** Cross-session access requires the target
+  session's `cwd` to equal the caller's exactly; a caller without a `cwd` can inspect
+  only itself. Unauthorized boundaries appear as markers without hidden ids, and
+  missing versus cross-workspace guesses behave identically — no information leak
+  either way.
+- **Search is cursor-free and capped.** A capped result asks the model to narrow its
+  query rather than exposing offsets or page sizes. The caller's own session is always
+  omitted from search, and for the current session the tools stop before the step that
+  invoked them.
 
-Enabling this package adds fixed guidance plus five tool schemas to **every**
-model request, so it is a real prompt-budget decision, not a free toggle.
+Enabling this package adds fixed guidance plus five tool schemas to **every** model
+request, so it is a real prompt-budget decision, not a free toggle.
+
+Boot with the overlay to confirm the whole composition still activates:
+
+```sh
+dsh --profile kitdemo --patch <kit>/solutions/l7.patch.yml --port 0 --no-open
+```
 
 ## Step 2 — Read the trajectory instead of the terminal
 
@@ -130,22 +169,20 @@ deliberately whether an exploration workspace should emit anything.
 
 `@deepseek-ai/dsh-invariants` checks runtime properties — including the
 "model-visible means logged" invariant that L6 depended on. It is **not** mounted by
-the base, web, or headless bundles (only `sdk-minimal` carries it), so add it
-yourself to `l7.patch.yml`:
+the base, web, or headless bundles (only `sdk-minimal` carries it), which is why
+`solutions/l7.patch.yml` inserts it alongside the session-specific half:
 
 ```yaml
-- insert:
     - id: invariants
       name: '@deepseek-ai/dsh-invariants'
     - id: session-invariant
       name: '@deepseek-ai/dsh-session/invariant'
 ```
 
-The second row is the session-specific half; the shipped composition pairs them,
-and copying only the first leaves the session checks unarmed. Boot with the patch,
-run a session, and read the output. An invariant failure here is the cheapest
-possible way to find a design mistake you would otherwise discover through
-corrupted replays weeks later.
+The shipped composition pairs them; copying only the first leaves the session checks
+unarmed. Both are already in the overlay, so a boot with it runs the checks. An
+invariant failure here is the cheapest possible way to find a design mistake you would
+otherwise discover through corrupted replays weeks later.
 
 Then write the audit down. A defensible cost statement has four parts: the task,
 the turn and step count, the token totals, and the events that prove them. If any
@@ -153,13 +190,35 @@ part is missing, the number is a guess.
 
 ## Verification
 
-1. `session_event_read` returns your `l6/step` events as JSON with neighbors.
-2. A deliberate cross-workspace query is refused with `SESSION_QUERY_TOOL_UNAUTHORIZED`,
-   and a missing target is indistinguishable from an unauthorized one.
-3. You can state the token delta caused by mounting `tool-session-query`.
-4. `/compact` produces a measurable reduction on a long session.
-5. You can name the environment variable that opts this process out of telemetry
-   and why config alone cannot disable the row.
+```sh
+bash <kit>/solutions/verify-l7.sh <path/to/deepseek-harness>
+```
+
+Observable without a session:
+
+1. The overlay's shape is right: `session-query-sqlite` is an *override* (the web
+   bundle already mounts it) while `tool-session-query` and the two invariants rows are
+   *inserts*.
+2. `openAt: startup` is present — the shipped default is `never`, so without it the
+   store never opens.
+3. A boot with the overlay produces **no activation warnings**. The first attempt at
+   this lesson produced
+   `tool-session-query ...: failed to import`, which is how the install requirement
+   was discovered.
+4. The profile manifest shows `@deepseek-ai/dsh-tool-session-query` pinned to your dsh
+   version — not to npm's stale `latest` tag, which dsh rejects as incompatible.
+
+Requires a session, and therefore a provider:
+
+5. `session_event_read` returns events as JSON with neighbours.
+6. A deliberate cross-workspace query is refused, and a missing target is
+   indistinguishable from an unauthorized one.
+7. You can state the token delta caused by mounting `tool-session-query`.
+8. `/compact` produces a measurable reduction on a long session.
+9. The invariant sweep reports no failure on the kit's composition.
+
+Items 5–9 are recorded as unverified in
+[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
 
 ## Exit check — you should now be able to explain
 

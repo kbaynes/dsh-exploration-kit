@@ -8,7 +8,7 @@ A fast status view. The detailed task list with checkboxes lives in
 | Phase | Goal | Status |
 |---|---|---|
 | 0 | Groundwork — version pin, baseline checks, issue templates | ✅ Done |
-| 0.5 | Rewrite lessons for the verified bundle mechanism | 🔄 L1–L6 done; L7–L9 to go |
+| 0.5 | Rewrite lessons for the verified bundle mechanism | 🔄 L1–L7 done; L8–L9 to go |
 | 1 | Build, test, and review each lesson | 🔄 In progress (1–2 of 9) |
 | 2 | Test infrastructure — automated verification in CI | 🔄 `check:kit` runner + unit tests landed |
 | 3 | Whole-kit review — editorial and technical pass | ⬜ Not started |
@@ -29,7 +29,7 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | 4 | Build a policy gate | ✅ | 🟡 | ⬜ |
 | 5 | Assemble context deliberately | ✅ | 🟡 | ⬜ |
 | 6 | Give the session durable state | ✅ | 🟡 | ⬜ |
-| 7 | Operate the harness | ⬜ | ⬜ | ⬜ |
+| 7 | Operate the harness | ✅ | 🟡 | ⬜ |
 | 8 | Orchestrate multiple agents | ⬜ | ⬜ | ⬜ |
 | 9 | Automate the harness | ⬜ | ⬜ | ⬜ |
 

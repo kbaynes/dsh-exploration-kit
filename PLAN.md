@@ -78,7 +78,7 @@ by package name. Lesson 2's plugin loads and mounts its tool through it.
 - [x] Establish `link:` (not `file:`) as the documented install, verified: `file:`
       copies so edits do not propagate, which defeats every "edit and observe" step
 - [ ] Rewrite steps 2–4 of **every remaining lesson** before building it
-      (L7–L9 outstanding)
+      (L8–L9 outstanding)
 - [x] Rewrite **Lesson 3** for the bundle, and correct two upstream-tutorial traps
       found by running it (`FiberState` const enum, non-schema `Config`)
 - [ ] Replace the `<kit>/plugins/*.patch.yml` convention with a documented
@@ -408,7 +408,7 @@ fixed and re-verified.
 ## Decision records (ADRs)
 
 The durable engineering lessons of this project are recorded in
-[`decisions/`](decisions/README.md) as ADRs, each with Status, Context, Decision,
+[`decisions/`](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/decisions/README.md) as ADRs, each with Status, Context, Decision,
 Consequences, and Evidence. They exist so a future agent or contributor reads the
 reason *before* acting and does not repeat a mistake that cost real debugging time.
 

@@ -38,6 +38,15 @@ rather than duplicated.
   so.
 - VitePress refuses links that escape its source root, which is why root documents are
   synced in rather than linked across the boundary.
+- **A synced root document cannot link relatively to anything outside `content/`.** Its
+  copy sits inside the site root, so `decisions/README.md` resolves to
+  `content/decisions/README.md`, which does not exist. This broke the build three
+  times — twice in `VERIFIED.md`, once in `CONTRIBUTING.md` — and the fix is always the
+  same: a synced root document references the ADR corpus by **absolute repository URL**.
+  Documents that are not synced (`AGENTS.md`, `README.md`) may link relatively.
+
+That last point is the kind of rule that is obvious once stated and invisible three
+times in practice, which is why it is written down here instead of being rediscovered.
 
 Rejected alternative: hand-maintaining `examples/`. It is the kind of copy that looks
 fine for a month and then quietly lies.
