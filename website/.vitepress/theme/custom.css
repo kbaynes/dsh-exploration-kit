@@ -1,0 +1,33 @@
+/**
+ * Optional theme customization.
+ *
+ * VitePress default styling is deliberate: the content is plain markdown, and
+ * the site should look like a documentation site rather than a bespoke product.
+ * Anything added here should serve readability, not decoration.
+ */
+
+:root {
+  --vp-c-brand-1: #0b7285;
+  --vp-c-brand-2: #1098ad;
+  --vp-c-brand-3: #22b8cf;
+}
+
+/* Lesson steps are long and frequently refer back to a table; keep those tables
+   readable on narrow screens without turning every page into a horizontal scroll. */
+.vp-doc table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* The verification and exit-check lists are the part readers skim to decide
+   whether they are done — give them a little more breathing room. */
+.vp-doc li > p {
+  margin: 0.35rem 0;
+}
+
+/* "Goal / Why here / Prerequisites" lead-ins are bolded paragraphs; keep them
+   visually distinct from ordinary prose. */
+.vp-doc > p > strong:first-child {
+  color: var(--vp-c-text-1);
+}

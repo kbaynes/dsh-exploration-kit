@@ -1,0 +1,38 @@
+okf_version: "0.1"
+
+# okflint manifest — declares the OKF standard for the DSH Exploration Kit bundle.
+# Usage: okflint validate --manifest okf-base.yaml ./content/
+
+base:
+  name: DSH Exploration Kit
+  # The bundle root is content/. Run okflint from the repository root:
+  #   okflint validate --manifest okf-base.yaml
+  roots:
+    - path: "content"
+  # OKF reserved filenames (spec §6): directory listing and change history.
+  reserved_files:
+    index: index.md
+    log: log.md
+
+profile:
+  # Every concept must carry the OKF-required `type` plus the two recommended
+  # fields. `resource` stays optional — abstract concepts have no URI.
+  types:
+    Feature Map:
+      required: [type, title, description]
+      optional: [resource, tags, timestamp]
+    Lesson Plan:
+      required: [type, title, description]
+      optional: [resource, tags, timestamp]
+    Exploration Lesson:
+      required: [type, title, description]
+      optional: [resource, tags, timestamp]
+  date_fields: [timestamp]
+
+hygiene:
+  # DSH is the authority for every upstream claim, so a broken internal link is
+  # always a real defect. External links are checked separately, if at all.
+  broken_links: error
+  reserved_files: error
+  unknown_fields: warn
+  split_candidates: warn

@@ -1,0 +1,67 @@
+name: site
+
+# Builds the VitePress site and publishes it to GitHub Pages.
+#
+# One-time setup in the repository: Settings → Pages → Build and deployment →
+# Source: "GitHub Actions". The site then serves from
+# https://<owner>.github.io/<repo>/. If you serve from a custom domain or a
+# user/org root site, change `base` in website/.vitepress/config.mts.
+#
+# Requires no secrets. No DSH checkout or API key is needed to build the site:
+# the curriculum is documentation, not executable code.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        # shamefully-hoist is set in .npmrc and is required: the VitePress source
+        # root (content/) is outside website/, so vue must resolve from the root.
+        run: pnpm install --frozen-lockfile
+
+      - name: Check internal links
+        run: pnpm run check:links
+
+      - name: Build site
+        run: pnpm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/.vitepress/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

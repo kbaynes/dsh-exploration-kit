@@ -1,0 +1,31 @@
+{
+  "name": "dsh-exploration-kit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A hands-on, nine-lesson curriculum for learning DeepSeek Harness by building real plugins.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "dsh",
+    "tutorial",
+    "curriculum",
+    "agents",
+    "cordis"
+  ],
+  "scripts": {
+    "dev": "vitepress dev website --host 127.0.0.1 --port 5173",
+    "build": "vitepress build website",
+    "preview": "vitepress preview website --host 127.0.0.1 --port 4173",
+    "validate": "okflint validate --manifest okf-base.yaml",
+    "check:links": "node scripts/check-links.mjs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.13"
+  }
+}

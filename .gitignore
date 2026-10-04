@@ -1,0 +1,16 @@
+# Build output
+website/.vitepress/dist/
+website/.vitepress/cache/
+node_modules/
+**/node_modules/
+*.tsbuildinfo
+
+# Exercise artifacts created while working the lessons
+plugins/
+!plugins/README.md
+
+# Local environment
+.DS_Store
+.env
+.env.*
+*.log

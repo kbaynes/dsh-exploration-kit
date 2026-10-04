@@ -1,0 +1,103 @@
+# Contributing to the DSH Exploration Kit
+
+Thanks for helping. The most valuable contributions, in order:
+
+1. **Verification** — running a lesson end-to-end and reporting exactly what
+   differed.
+2. **Clarity fixes** — a step that confused you is a defect; say which step and
+   what you expected.
+3. **Compatibility updates** — what broke on a newer DSH version.
+4. **New lessons** — appreciated, but only in the established shape.
+
+## The verification rule
+
+**Never mark a step verified unless you ran it.** [VERIFIED.md](VERIFIED.md) records
+the status of every lesson. Documented-but-unrun is a legitimate status; overstating
+verification is the most damaging error this repository can make. If you run a
+lesson, update its row and add your environment to the "Tested against" table.
+
+## Lesson shape
+
+Every lesson uses the same sections, in this order:
+
+```md
+---
+type: Exploration Lesson
+title: "L<N> — <short title>"
+description: <one sentence: what the learner will have built>
+resource: dsh
+tags: [deepseek-harness, lesson, <topic tags>]
+timestamp: <ISO date>
+---
+
+# L<N> — <short title>
+
+**Goal.** What exists and works at the end.
+
+**Why here.** Why this lesson follows the previous one.
+
+## Concepts taught
+| Concept | What you learn |
+
+## Prerequisites
+Which earlier lessons must be complete.
+
+## Step <n> — <imperative title>
+Explanation, then a tested code block.
+
+## Verification
+Numbered, observable checks.
+
+## Exit check — you should now be able to explain
+Open questions that prove understanding, not recall.
+
+## Next
+Link to the following lesson.
+```
+
+Rules for the body:
+
+- **One new seam per lesson.** A lesson introduces exactly one new extension
+  point, so a failure is attributable.
+- **Every code block must be runnable as written**, or explicitly labelled as a
+  sketch. No pseudo-API.
+- **Say when something is unverified.** "This is documented but I have not run it"
+  beats a confident claim that wastes a reader's afternoon.
+- **Own your failure modes.** A troubleshooting table of ways the step breaks is
+  worth more than another paragraph of explanation.
+
+## Links
+
+- **Inside the kit:** relative markdown links (`./lessons/03-....md`). These are
+  link-checked in CI and a broken one is an error.
+- **To DSH's own docs:** absolute URLs to
+  `https://github.com/deepseek-ai/deepseek-harness/blob/main/...`, so the kit works
+  when cloned on its own.
+
+## Conventions
+
+- `<kit>` means this repository's root. Exercise plugins live under
+  `<kit>/plugins/`.
+- Do not put non-concept files inside `content/` — it is an Open Knowledge Format
+  bundle, and only `index.md` and `log.md` are reserved filenames.
+- Every concept file needs frontmatter with at least `type`, `title`, and
+  `description`.
+
+## Before you open a pull request
+
+```sh
+# validate the OKF bundle (if okflint is installed)
+okflint validate --manifest okf-base.yaml ./content/
+
+# make sure the site still builds
+cd website && pnpm install && pnpm run build
+```
+
+Then confirm your internal links resolve and that `VERIFIED.md` matches what you
+actually did.
+
+## Licensing
+
+Contributions are MIT licensed. By opening a pull request you confirm you have the
+right to contribute the material and that newly derived upstream content is
+recorded in [THIRD-PARTY.md](THIRD-PARTY.md).
