@@ -1,0 +1,15 @@
+# Bundle plugin-row reference
+#
+# Plugin rows reference this package BY NAME rather than by relative file path.
+# That is not a style choice: a relative path resolves to a source file whose
+# `@deepseek-ai/*` imports cannot be resolved from outside a dsh installation
+# (pnpm symlinks only declared dependencies). Rows named by package resolve
+# through the profile's own installation, which is how external plugins work.
+#
+# Exercise rows are added here as each lesson is built. See content/lessons/.
+
+- insert:
+    - id: l2-wordcount
+      name: dsh-exploration-kit-plugins/l2/wordcount.js
+      config:
+        defaultUnit: lines

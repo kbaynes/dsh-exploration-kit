@@ -52,6 +52,37 @@ against it.
       development history to `CHANGELOG.md` and keep `log.md` OKF-only
       *(tracked as an open decision below)*
 
+## Phase 0.5 — Rewrite the lessons for the bundle mechanism
+
+**Blocking all lesson work.** A verified design finding invalidated the mechanism
+the lessons teach: a plugin that imports anything from dsh **cannot** be loaded by
+pointing a `--patch` overlay at a loose file, because pnpm symlinks only declared
+dependencies and `@deepseek-ai/*` is unreachable from outside a dsh installation.
+Full evidence is in [VERIFIED.md](VERIFIED.md) ("Design pivot").
+
+The fix is verified and in place: `kit-plugins/` is a real dsh bundle, installed
+with `dsh plugin --profile <name> add file:<kit>/kit-plugins`, with rows referenced
+by package name. Lesson 2's plugin loads and mounts its tool through it.
+
+- [x] Reproduce and confirm the failure mode (outside and inside the checkout)
+- [x] Build `kit-plugins/` as a bundle and verify the plugin loads
+- [x] Pin `@deepseek-ai/*` to the release under test in the bundle manifest
+- [ ] Rewrite **Lesson 1** step 2–4 to install the bundle instead of using a
+      `--patch` overlay; keep the overlay only where it explains *config override*
+- [ ] Rewrite **Lesson 2** the same way, and re-express last-write-wins as
+      overriding an *installed* row's config
+- [ ] Rewrite steps 2–4 of **every remaining lesson** before building it
+- [ ] Replace the `<kit>/plugins/*.patch.yml` convention with a documented
+      "install the bundle, then patch config" workflow
+- [ ] Update `plugins/README.md`, `examples/README.md`, `solutions/README.md`, and
+      the README's repository-layout section to describe `kit-plugins/`
+- [ ] Move Lesson 2's solution into `kit-plugins/l2/` and retire
+      `solutions/l2/` + `solutions/*.patch.yml` (they encode the broken approach)
+- [ ] Update `solutions/verify-l2.sh` to assert against the installed bundle
+- [ ] Add a `kit-plugins` version-bump step to the per-release verification process
+- [ ] Decide whether the bundle ships as a published npm package or stays
+      `file:`-installed; record the decision below
+
 ## Phase 1 — Build, test, and review each lesson
 
 The substance of the project. Repeat this block for each lesson. **Order is
@@ -85,7 +116,8 @@ or via PTC; 5 and 7–9 need a configured provider.
 - [ ] Confirm `!!js` interpolates in `config` and `disabled`
 - [ ] Add the exact files to `examples/l2/`
 - [ ] Review the explanation for clarity
-- [x] Update the `VERIFIED.md` row to *Partly executed* with evidence
+- [x] Update the `VERIFIED.md` row to *Mostly executed* with evidence
+- [x] Confirm the plugin mounts through the installed bundle (executed)
 
 ### Lesson 3 — Services, isolation, and hot reload
 

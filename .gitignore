@@ -23,3 +23,6 @@ content/THIRD-PARTY.md
 .env
 .env.*
 *.log
+
+# Bundle dependencies (installed per checkout; the manifest and lockfile are tracked)
+kit-plugins/node_modules/

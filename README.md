@@ -38,7 +38,8 @@ content/          The curriculum — an Open Knowledge Format bundle
   learning-path.md  Curriculum design (ordering, checkpoints)
   lessons/        The nine lessons
 website/          VitePress configuration and theme (renders content/ in place)
-plugins/          Exercise plugins you build while working the lessons
+kit-plugins/      The dsh bundle that carries each lesson's exercise plugin
+plugins/          Your own scratch space for writing the exercises
 examples/         Read-only exact files as each lesson presents them
 solutions/        Answer key, for diffing when stuck
 scripts/          Verification tooling
@@ -51,7 +52,16 @@ duplicated.
 
 **To read the lessons** you need a
 [DeepSeek Harness source checkout](https://github.com/deepseek-ai/deepseek-harness)
-with `pnpm run build` already run, and `dsh` on your `PATH`. The lessons create and
+with `pnpm run build` already run, and `dsh` on your `PATH`. You then install this
+kit's exercise bundle into a dsh profile:
+
+```sh
+cd kit-plugins && pnpm install && cd ..
+dsh plugin --profile kitdemo add file:$PWD/kit-plugins
+```
+
+See [kit-plugins/README.md](kit-plugins/README.md) for why plugins must be shipped
+as a bundle rather than loaded as loose files. The lessons create and
 boot real plugins against that checkout, so the curriculum cannot be completed
 without it. See DSH's
 [development guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md)

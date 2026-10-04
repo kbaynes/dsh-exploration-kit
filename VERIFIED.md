@@ -33,7 +33,7 @@ version, expect to adjust commands and package import paths.
 | Lesson | Status | Notes |
 |---|---|---|
 | L1 — Mount your first plugin | **Executed** | See evidence below. This is the only lesson verified end-to-end. |
-| L2 — Register a tool, compose with config | **Partly executed** | Overlay composition, module-resolution path, config carry-through, closed-union Schemastery declaration, and last-write-wins across stacked `--patch` overlays **executed** via `solutions/verify-l2.sh`. Tool registration at runtime and rejection of an invalid config value are **not** executed (dump-config does not run validation). See evidence below. |
+| L2 — Register a tool, compose with config | **Mostly executed** | Overlay composition, module-resolution path, config carry-through, closed-union Schemastery declaration, and last-write-wins across stacked `--patch` overlays **executed** via `solutions/verify-l2.sh`. Runtime tool registration **is** executed: the plugin mounts via the installed bundle and logs `ACTIVE — defaultUnit=lines`. Still **not** executed: an actual model tool call, and rejection of an invalid config value. See evidence below. |
 | L3 — Services, isolation, and hot reload | **Partly executed** | `PENDING` semantics and the fiber state machine read from `docs/cordis-tutorial/02..03`; the `diagnose.ts` registry walk and the HMR reload observation are **documented, not run**. |
 | L4 — Build a policy gate | **Partly executed** | The `PreToolDecision` union and pipeline order are verified against `packages/core/tools/src/index.ts` and `packages/core/tools/README.md`. The example gate plugin has **not** been executed. |
 | L5 — Assemble context deliberately | **Documented** | Verified against `docs/architecture.md`, `docs/cookbook/adding-a-tool.md` (`agent.inject()` semantics), `packages/skill/skill-filesystem/README.md`, and `packages/interaction/commands/README.md`. Not run; needs a model. |
@@ -41,6 +41,49 @@ version, expect to adjust commands and package import paths.
 | L7 — Operate the harness | **Documented** | Bundle rows, `tool-session-query` contract, and telemetry env vars verified against the bundle patches and package READMEs. Query authorization and cost measurement not run; needs a model. |
 | L8 — Orchestrate multiple agents | **Documented** | Subagent provider rows verified against `packages/bundle/base/cordis.patch.yml`; agent-team caps verified against `packages/experimental/agent-team-profile/cordis.patch.yml`. Needs a model. |
 | L9 — Automate the harness | **Documented** | Headless CLI contract, SDK usage, schedule and webhook contracts read from package READMEs. **The Python snippet in step 3 is a placeholder** and must be replaced or removed before publication. Needs a model. |
+
+## Design pivot: plugins must be a bundle, not a `--patch` overlay
+
+**Verified finding.** Pointing a `--patch` overlay at a loose plugin file works only
+when that plugin imports **nothing** from dsh. A plugin that imports
+`@deepseek-ai/dsh-tools` fails to load:
+
+```
+dsh: warning: 1 entry did not activate
+l2-wordcount (file:///.../solutions/l2/wordcount.ts): failed to import
+```
+
+The loader resolves the relative path outside the dsh installation, and pnpm
+symlinks only declared dependencies, so `@deepseek-ai/*` is unreachable from an
+arbitrary directory. This was reproduced both outside the checkout and from inside
+it (`packages/dsh-exploration-kit/`), so it is a module-resolution property, not a
+path bug.
+
+**Verified fix.** Package the exercises as a real bundle. `kit-plugins/` now
+declares `dsh.bundle`, names its rows by package, and is installed with
+`dsh plugin --profile <name> add file:<kit>/kit-plugins`. Verified end-to-end:
+
+```
+$ dsh --profile kitdemo --dump-config | grep -A4 l2-wordcount
+# == dsh-exploration-kit-plugins
+- id: l2-wordcount
+  name: dsh-exploration-kit-plugins/l2/wordcount.js
+  config:
+    defaultUnit: lines
+
+$ dsh --profile kitdemo
+[l2-wordcount] ACTIVE — defaultUnit=lines
+```
+
+The plugin imports `@deepseek-ai/dsh-tools` and `@deepseek-ai/schemastery`, mounts
+its tool, and receives validated config. **This supersedes the `--patch` overlay
+instructions throughout the lessons**, which must be rewritten to install the
+bundle. The overlay concept remains useful for *overriding* an installed row's
+config, which is still how Lesson 2's last-write-wins exercise should be taught.
+
+**Dependency versions** are pinned to the release under test: `@deepseek-ai/dsh-*`
+at `0.2.0-rc.2`, `@deepseek-ai/schemastery` at `^3.18.4`. Bump them with each
+verification pass.
 
 ## Evidence: L2 partly executed
 
