@@ -22,7 +22,7 @@ timestamp: 2026-09-30
 | Plugin rows | How the loader resolves a row's `name` to actual code |
 | Plugin shapes | The function shape now; the `Service` subclass arrives in L3 |
 | The fiber | The runtime handle for one loaded plugin instance |
-| Lifecycle | The six fiber states, including `FAILED` and the silent `PENDING` |
+| Lifecycle | The six fiber states, including `FAILED` and `PENDING` — silent from the plugin's side, since its `apply` never runs, while the startup summary names the missing service |
 | Effects | A registration that is undone when the plugin unloads |
 
 Reference: the [plugin framework guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/framework/index.md) and the repository's [first-plugin tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cordis-tutorial/01-first-plugin.md).
@@ -191,7 +191,7 @@ Revert `inject` before continuing.
 4. Ctrl-C prints the disposer line.
 5. You can state, without looking it up, why a plugin that imports a dsh package cannot be loaded from a loose file by a `--patch` overlay.
 
-> **Where this lesson stands.** Every step above has been executed against a real harness; the exact output is quoted in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). What remains unverified there is what needs a model provider, and it is named rather than glossed.
+> **Where this lesson stands.** Every step above has been executed against a real harness; the exact output is quoted in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Nothing in this lesson needs a model provider, and nothing in it is unverified.
 
 ## Exit check — you should now be able to explain
 

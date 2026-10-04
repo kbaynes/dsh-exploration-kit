@@ -115,7 +115,7 @@ With a model available, ask the agent to write a file **outside** `l4-sandbox` a
 
 Both outcomes matter. A gate you have only seen deny is a gate you have not tested — an over-broad policy that blocks everything looks identical to a working one until you try the permitted case.
 
-**No API key?** You can still verify everything except the decision itself: the listener registers, the plugin loads, and the configured root reaches `apply`. The allow/deny outcome is the one claim that needs a tool call, and it is recorded as unverified in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md) rather than asserted.
+**No API key?** You can still verify everything except the decision itself: the listener registers, the plugin loads, and the configured root reaches `apply`. The allow/deny outcome **is** asserted without a model: `solutions/l4.probe.patch.yml` dispatches synthetic tool calls through the real pipeline, and `solutions/verify-l4.sh` requires an outside write to be `GATE-DENIED` with the lesson's reason and an inside write *not* to be denied by this gate. What remains open is the `ask` path, which needs a real approval flow — named in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md) rather than glossed.
 
 ## Step 3 — Make a denial irreversible
 

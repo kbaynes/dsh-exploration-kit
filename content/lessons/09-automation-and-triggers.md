@@ -95,7 +95,7 @@ sessionId=session-0f92550e57ce453688600f03413614a1
 notifications=15
 ```
 
-`notifications=15` is worth having: a run whose final text arrived but whose event feed was empty would mean the stream is not wired, which the final text alone would not reveal. `solutions/sdk-roundtrip.mjs` is the script; `verify-l9.sh` runs it.
+**A non-empty notification feed** is the thing worth having, and its exact count varies by run (15 in the run above, 23 in a later one — it reflects however many session events the turn produced): a run whose final text arrived but whose event feed was empty would mean the stream is not wired, which the final text alone would not reveal. `solutions/sdk-roundtrip.mjs` is the script; `verify-l9.sh` runs it and asserts the feed is non-empty rather than a fixed number.
 
 > **The SDK needs its own harness home.** Its profile persists sessions **uncompressed** (`session.v4.jsonl`), while the base and web profiles write `session.v4.jsonl.zstd`. Pointing the SDK at a home another profile has written fails with *"uses .jsonl.zstd, but this backend is configured for compression none; use a separate root or select the matching compression mode"*. That is a property of sharing a `DSH_HOME` across profiles, not a bug, and it is the kind of thing worth knowing before you point a second surface at a working home.
 
@@ -124,6 +124,8 @@ with DeepSeekHarness(
 
 print(result.final_response)
 ```
+
+**This snippet is documented, not executed here.** It is the upstream example, and [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md) records it as unrun — the kit's own SDK verification drives the TypeScript client, which is what its checks assert. The three differences below are read from the SDK's own source and from doing the TypeScript equivalent, so treat them as a map rather than as a transcript of a run.
 
 Three differences from the TypeScript path are worth knowing before you build:
 
@@ -271,7 +273,7 @@ Observable without a model:
 2. Booting a **web-backed** profile with both installed produces **no activation warnings**. On a base-backed profile the same overlay leaves both rows `PENDING`, naming the missing services — which is the point, not a defect.
 3. The profile manifest pins both packages to your dsh version rather than npm's stale `latest`.
 
-Requires a provider:
+Needs a running provider — the keyless mock is enough:
 
 4. A headless run returns the documented exit code for success and for a forced failure.
 5. `--json` output contains a tool-call event you can assert on.

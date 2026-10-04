@@ -45,17 +45,9 @@ import { readFile } from 'node:fs/promises'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import Schema from '@deepseek-ai/schemastery'
 
-```ts
-import { readFile } from 'node:fs/promises'
-import type { Context } from '@deepseek-ai/cordis'
-import { defineTool } from '@deepseek-ai/dsh-tools'
-import Schema from '@deepseek-ai/schemastery'
-
 export const name = 'l2-wordcount'
 export const inject = ['tools']
 
-// One export is both a TypeScript type and a runtime validator: consumers get the
-// type, Cordis gets the validator that runs before apply().
 export const Config = Schema.object({
   defaultUnit: Schema.union(['words', 'lines', 'chars']).default('words'),
 })
@@ -77,21 +69,18 @@ export function apply(ctx, config) {
           count: { type: 'number', required: true },
         },
       },
-      render: (_args, value) => [
-        { type: 'text', text: `${value.count} ${value.unit}` },
-      ],
+      render: (_args, value) => [{ type: 'text', text: `${value.count} ${value.unit}` }],
     },
     async execute(args, exec) {
       const text = await readFile(args.path, { encoding: 'utf8', signal: exec.signal })
       const unit = args.unit ?? config.defaultUnit
-      const count = unit === 'lines'
-        ? text.split('\n').length - 1
-        : unit === 'chars'
-          ? text.length
-          : text.split(/\s+/).filter(Boolean).length
+      const count = unit === 'lines' ? text.split('\n').length - 1
+        : unit === 'chars' ? text.length
+        : text.split(/\s+/).filter(Boolean).length
       return { unit, count }
     },
   }))
+  console.log(`[l2-wordcount] ACTIVE — defaultUnit=${config.defaultUnit}`)
 }
 ```
 

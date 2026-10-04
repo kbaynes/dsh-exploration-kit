@@ -43,7 +43,7 @@ Get the repo consistent and its checks trustworthy before writing nine lessons a
 
 **Blocking all lesson work.** A verified design finding invalidated the mechanism the lessons teach: a plugin that imports anything from dsh **cannot** be loaded by pointing a `--patch` overlay at a loose file, because pnpm symlinks only declared dependencies and `@deepseek-ai/*` is unreachable from outside a dsh installation. Full evidence is in [VERIFIED.md](VERIFIED.md) ("Design pivot").
 
-The fix is verified and in place: `kit-plugins/` is a real dsh bundle, installed with `dsh plugin --profile <name> add file:<kit>/kit-plugins`, with rows referenced by package name. Lesson 2's plugin loads and mounts its tool through it.
+The fix is verified and in place: `kit-plugins/` is a real dsh bundle, installed with `dsh plugin --profile <name> add link:<kit>/kit-plugins`, with rows referenced by package name. Lesson 2's plugin loads and mounts its tool through it.
 
 - [x] Reproduce and confirm the failure mode (outside and inside the checkout)
 - [x] Build `kit-plugins/` as a bundle and verify the plugin loads
@@ -352,7 +352,7 @@ The full suite boots the harness 27-odd times, once or twice per lesson. It runs
 - [x] **Replaced the blind wait with a readiness poll.** `solutions/lib.sh` provides
       `boot_and_wait <checkout> <profile> <log> <pattern> <timeout> [overlay...]`, which polls
       for the probe's own `[<lesson>-probe] done` line; all eight booting scripts use it.
-      **The suite went from ~11 minutes to 1m50s**, and the silent-failure mode is gone: a boot
+      **The suite went from ~11 minutes to under 3 minutes** (1m50s at 19 checks, 165s once the real-provider phases and the L8 cost comparison were added), and the silent-failure mode is gone: a boot
       killed early used to leave an empty log, which a check asserting on a pattern's *absence*
       would still pass. The motivation was concrete — a fixed 18-second wait made L6's second
       phase fail while its "log is readable" check passed for the wrong reason.
@@ -389,7 +389,7 @@ Neither is blocking publication. Both matter because a suite that takes eleven m
       this repository's own ADR-0026 quotes the recipe, and `website/.vitepress/config.mts` holds
       the token as a fallback sentinel that a fork needs. The substitution also confirmed the
       gate's remaining teeth: `check:publication` still refuses, now naming only the git author.
-- [ ] Rewrite the git author identity — **needs the maintainer identity**; the history
+- [x] Rewrite the git author identity — done: all commits are `Kevin Baynes <kevin1421@baynes.net>` as author and committer, the local git config matches, and `check:publication` reports READY. The tested recipe stays in PUBLISHING.md step 3 for forks. Original note: Rewrite the git author identity — **needs the maintainer identity**; the history
       currently carries `kit@example.invalid`, which is a placeholder rather than an invented
       real identity. The recipe in `PUBLISHING.md` is **tested**: a non-interactive
       `git rebase --root --exec 'git commit --amend --reset-author --no-edit'` with the identity

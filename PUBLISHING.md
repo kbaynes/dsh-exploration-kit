@@ -51,7 +51,7 @@ That check exists because a published repository containing `REPLACE_OWNER` prod
 
 ## 3. Set the git author identity
 
-The current history was authored by `DSH Exploration Kit <kit@example.invalid>`, which is a placeholder so that no real identity was invented on your behalf. Rewrite it before the first push — after the push it is permanent, and GitHub will never link those commits to an account.
+**Already done for this repository.** The history was rewritten to `Kevin Baynes <kevin1421@baynes.net>` before the first push, so `check:publication` reports this item READY. Keep the recipe below for a fork or a fresh clone, and note that authorship is permanent once pushed.
 
 **Tested, non-interactive recipe** — rewrites every commit's author and committer in one pass, using the identity in the environment:
 
@@ -72,7 +72,9 @@ git -c user.name="<Your Name>" -c user.email="<you>@users.noreply.github.com" co
 
 **Not recommended as written:** `git filter-repo` is the usual tool for this and it is **not installed** on a stock machine (`command -v git-filter-repo` fails). It needs `pip install git-filter-repo` first, which is another thing to go wrong before a first push.
 
-`pnpm run check:publication` fails while the placeholder identity is still in the history, which is what makes this step impossible to forget.
+`pnpm run check:publication` fails while the placeholder identity is still in the history, which is what makes this step impossible to forget. (It rejects `kit@example.invalid` specifically: any other address, including a personal one, passes the gate unnoticed — decide deliberately which address you want in public history.)
+
+**One setting to enable, because a document points at it.** `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md` both direct a reporter to **Security → Report a vulnerability**, and that channel does not exist until private vulnerability reporting is turned on in the repository's settings. Enable it as part of publishing, or the reporting path a reader is promised is a dead end.
 
 ## 4. Repository description and topics
 

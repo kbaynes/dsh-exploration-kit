@@ -89,7 +89,7 @@ $ for p in $(pgrep -f 'apps/cli/lib/bin.js'); do [ "$p" = 4401 ] && continue; ki
 $ pgrep -f 'apps/cli/lib/bin.js' | wc -l
        0
 $ lsof -nP -iTCP:3080 -sTCP:LISTEN | tail -1
-node    4401 kevinbaynes   15u  IPv4 … TCP 127.0.0.1:3080 (LISTEN)
+node    4401 <user>       15u  IPv4 … TCP 127.0.0.1:3080 (LISTEN)
 ```
 
 And the leak test after the fix — two lesson checks, both of which boot the harness several times:

@@ -19,7 +19,7 @@ Three rules produced the order:
 
 1. **Mechanism before capability.** You cannot reason about a policy gate until you have watched a plugin load, fail, and unload. Lessons 1–3 teach only the mechanism; no lesson before L4 asks you to make a judgment about agent behavior.
 2. **One new seam per lesson.** A lesson introduces exactly one new extension point, so a failure is attributable. L2 adds `ctx.tools`, L3 adds a service and the reload path, L4 adds `tools/*` events, L5 adds context hooks, L6 adds `ctx.sessionProjections` over a known first-party event, and so on.
-3. **Cheap feedback loops first.** Lessons 1–8 are verified by booting a real profile and reading its output; the headless and SDK paths in L9 are documented but not yet run. The expensive lessons (L8 orchestration, L9 automation) come last, because by then you can debug them with the introspection skills L3 and L7 taught.
+3. **Cheap feedback loops first.** Every lesson is verified by booting a real profile and reading its output; L9's headless and SDK paths are executed too, keyless against the repository's scriptable mock provider. The expensive lessons (L8 orchestration, L9 automation) come last, because by then you can debug them with the introspection skills L3 and L7 taught.
 
 ## The lessons and what each unlocks
 
@@ -44,7 +44,7 @@ L1 ──> L2 ──> L3 ──> L4 ──> L5 ──> L6 ──> L7
                                          L8 ──> L9
 ```
 
-Read it as the *required* order rather than the only useful one: L8 depends on the whole of L1–L7 (its prerequisites say so, and step 4 boots the L7 overlay to read a session log), which is why the edge runs from L7. The earlier version of this graph drew L8 off L4 and L6, which was wrong in both directions.
+Read it as the *required* order rather than the only useful one: L8 depends on the whole of L1–L7 (its prerequisites say so, and step 4 boots the L7 overlay to read a session log), which is why the edge runs from L7.
 
 - L1 → L2 → L3 is strictly linear: each adds one lifecycle concept the next assumes.
 - L4 depends on L1–L3 only for the mechanics of mounting a listener.

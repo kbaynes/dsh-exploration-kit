@@ -48,6 +48,10 @@ jobs:
           repository: deepseek-ai/deepseek-harness
           ref: ${{ steps.pin.outputs.commit }}
           path: .dsh-checkout
+          # The suite asserts the checkout's TAG equals the pin (`git describe --tags --always`).
+          # A shallow, tag-less clone describes as an abbreviated SHA, so that check could never
+          # pass; full history brings the tag with it.
+          fetch-depth: 0
 
       # Both repositories pin the same pnpm, so one setup serves both.
       - uses: pnpm/action-setup@v4

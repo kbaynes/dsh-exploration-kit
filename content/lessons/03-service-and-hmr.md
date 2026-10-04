@@ -105,7 +105,7 @@ Boot again. The consumer prints **nothing at all**, and the stamp is gone:
 dsh: warning: 1 entry did not activate
 ```
 
-That is this lesson's most valuable moment, and it sharpens what L1 taught. The `[l3-diagnose]` line comes from this lesson's third plugin — step 3 builds it — so you can already see the shape of the fix before you write it. A throwing `apply` is loud and names your file. A missing dependency produces **no output of its own** — the consumer's `apply` never runs — and the only signal is a line in the startup summary. Nearly every "my plugin does nothing" report is this state.
+That is this lesson's most valuable moment, and it sharpens what L1 taught. The `[l3-diagnose]` line comes from this lesson's third plugin, which already ships wired into the bundle — step 3 reads it with you — so you can see the shape of the fix before you write anything. A throwing `apply` is loud and names your file. A missing dependency produces **no output of its own** — the consumer's `apply` never runs — and the only signal is a line in the startup summary. Nearly every "my plugin does nothing" report is this state.
 
 Revert `disabled` before continuing.
 
@@ -221,7 +221,7 @@ Observable without a model:
 4. Editing `l3/uses-clock.js` while the process runs changes the printed stamp without a restart.
 5. `dsh plugin --profile kitdemo list` shows the bundle, and `--dump-config` shows your entry ids and their enablement.
 
-> **Where this lesson stands.** Every step above has been executed against a real harness; the exact output is quoted in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). What remains unverified there is what needs a model provider, and it is named rather than glossed.
+> **Where this lesson stands.** Every step above has been executed against a real harness; the exact output is quoted in [VERIFIED.md](https://github.com/kbaynes/dsh-exploration-kit/blob/main/VERIFIED.md). Nothing in this lesson needs a model provider, and nothing in it is unverified — including the service isolation and the reload loop.
 
 ## Exit check — you should now be able to explain
 

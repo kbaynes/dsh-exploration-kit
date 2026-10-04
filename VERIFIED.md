@@ -245,7 +245,7 @@ Three things this establishes that nothing else does:
 
 ## Evidence: L9 an SDK run loads a patches file and executes an earlier lesson's tool
 
-Item 6 of Lesson 9's exit check, and the strongest of the SDK claims: the SDK composes a profile from a **patches file** and a tool from an earlier lesson actually runs.
+Verification item 6 in Lesson 9, and the strongest of the SDK claims: the SDK composes a profile from a **patches file** and a tool from an earlier lesson actually runs.
 
 The mock scripts a `word_count` call that **omits** `unit`, and the patch is Lesson 2's own override:
 
@@ -556,7 +556,7 @@ The authority check lives in the tool **executor** (`packages/session-query/tool
 ```
 [l7-auth] foreign session created: session-l7-foreign-workspace
 [l7-auth] foreign workspace: /var/folders/…/dsh-l7-foreign-workspace
-[l7-auth] caller workspace: /Users/kevinbaynes/MyDocs/MyRepos/deepseek-harness
+[l7-auth] caller workspace: <checkout>
 [l7-auth] tool/result events: 1
 [l7-auth] result 0: {…"text":"Error: session target is outside the caller workspace"…
                     "isError":true…"code":"SESSION_QUERY_TOOL_UNAUTHORIZED"}
@@ -1025,7 +1025,7 @@ This confirms `LOADING → ACTIVE → UNLOADING → DISPOSED`, that effects unwi
 | Workflow | Status |
 |---|---|
 | `site` (environment-free checks, Pages deploy) | Documented. Its checks all pass locally; the Actions orchestration is not exercised here. |
-| `verify against dsh` (full per-lesson suite at the pinned commit) | **Steps verified locally; YAML validated, not executed.** The command sequence — install the CLI shim, provision the profiles, `check:target`, `check:kit` — was run locally with `dsh` resolved only from that shim, reporting `16 passed, 0 failed`. The workflow files themselves are now parsed and structurally checked by `pnpm run check:configs` (triggers, jobs, `runs-on`, steps, and for this workflow that it uses the pinned commit and asserts it). GitHub Actions cannot be run from the authoring environment, so the orchestration is still unverified. |
+| `verify against dsh` (full per-lesson suite at the pinned commit) | **Steps verified locally; YAML validated, not executed.** The command sequence — install the CLI shim, provision the profiles, `check:target`, `check:kit` — was run locally with `dsh` resolved only from that shim, reporting `20 passed, 0 failed` (`16` when this row was written; the suite has grown since). The workflow files themselves are now parsed and structurally checked by `pnpm run check:configs` (triggers, jobs, `runs-on`, steps, and for this workflow that it uses the pinned commit and asserts it). GitHub Actions cannot be run from the authoring environment, so the orchestration is still unverified. |
 
 ### Configuration artifacts are now machine-checked
 

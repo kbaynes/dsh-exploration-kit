@@ -17,7 +17,7 @@ A turn-killing bug in the kit's **own** Lesson 5 listener (`JSON.stringify` of a
 | 1 | Build, test, and review each lesson | ✅ All nine built and executed |
 | 2 | Test infrastructure — automated verification in CI | ✅ 20 checks, version gate, full CI run (~3m), leaves no processes behind |
 | 3 | Whole-kit review — editorial and technical pass | ✅ Two independent audits triaged and fixed |
-| 4 | Publication readiness — placeholders, licensing, metadata | 🔄 owner set (`kbaynes`); only the git author identity remains |
+| 4 | Publication readiness — placeholders, licensing, metadata | ✅ owner `kbaynes`, author identity set, `check:publication` 6/6 READY |
 | 4.5 | Tag the release against a harness state | ⬜ Pending publication |
 | 5 | Publish and promote | ⬜ Not started |
 | 6 | After publication — maintenance and contributions | ⬜ Not started |
@@ -29,17 +29,16 @@ Legend: ✅ done · 🟡 partial · ⬜ not started
 | # | Lesson | Implemented | Tested | Reviewed |
 |---|---|---|---|---|
 | 1 | Mount your first plugin | ✅ | ✅ | ✅ |
-| 2 | Register a tool, compose with config | ✅ | 🟡 | ✅ |
-| — | **Lessons need rewriting to install the bundle** — see PLAN Phase 0.5 | | | |
-| 3 | Services, isolation, and hot reload | ✅ | 🟡 | ✅ |
+| 2 | Register a tool, compose with config | ✅ | ✅ | ✅ |
+| 3 | Services, isolation, and hot reload | ✅ | ✅ | ✅ |
 | 4 | Build a policy gate | ✅ | 🟡 | ✅ |
 | 5 | Assemble context deliberately | ✅ | ✅ | ✅ |
-| 6 | Give the session durable state | ✅ | 🟡 | ✅ |
+| 6 | Give the session durable state | ✅ | ✅ | ✅ |
 | 7 | Operate the harness | ✅ | ✅ | ✅ |
 | 8 | Orchestrate multiple agents | ✅ | ✅ | ✅ |
 | 9 | Automate the harness | ✅ | ✅ | ✅ |
 
-"Tested" means executed end-to-end against a real DSH checkout and recorded in [VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it. A partial 🟡 means the mechanism was executed but the lesson's own exercise was not.
+"Tested" means executed end-to-end against a real DSH checkout and recorded in [VERIFIED.md](VERIFIED.md). Designing a lesson is not implementing it. A 🟡 means part of a lesson's verification is still open, and the ledger row names which part — today only Lesson 4, whose `ask` path needs a real approval flow rather than a scripted decision.
 
 ## The gate that matters
 
