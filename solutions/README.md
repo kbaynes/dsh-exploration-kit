@@ -23,6 +23,37 @@ PATH=/tmp/dsh-bin:$PATH bash scripts/setup-verify-profiles.sh
 
 **Each script states what it does not check.** Every lesson has claims that need a model provider — a real tool call, a payload shape, a fan-out — and no script pretends to cover them. Those are listed per lesson in [VERIFIED.md](../VERIFIED.md).
 
+## Running the checks that need a real provider
+
+Three exit-check items need real model judgement rather than the scriptable mock: L7's input-token delta, and L8's "a child does not know the parent's conversation" and "a model chooses `send_message`/`interrupt_agent`". They are **opt-in**. With no provider patch set, those phases print `SKIP` and the suite stays keyless.
+
+Point `DSH_REAL_PROVIDER_PATCH` at a patch that registers a real route. Any provider the `llm-pi-ai` adapter knows works; this recipe is the one that was run:
+
+```yaml
+# /tmp/real-provider.patch.yml
+- id: llm-pi-ai
+  config:
+    providers:
+      openrouter:
+        apiKeyEnv: OPENROUTER_API_KEY
+```
+
+```sh
+export DSH_REAL_PROVIDER=openrouter
+export DSH_REAL_MODEL=deepseek/deepseek-chat
+export DSH_REAL_PROVIDER_PATCH=/tmp/real-provider.patch.yml
+bash solutions/verify-l7.sh <path/to/deepseek-harness>
+bash solutions/verify-l8.sh <path/to/deepseek-harness>
+```
+
+Details that cost iterations, and are worth not repeating:
+
+- **The patch registers the ROUTE; the two env vars tell the probes which route to hand to `agents.create()`.** Setting one without the other is the usual half-configuration, and it fails in a way that looks like a provider fault: the turn runs on the mock route and reports zero tokens.
+- **`apiKeyEnv` is a credential *reference*, resolved per request** — inherited process environment first, then `$DSH_HOME/.credentials.yaml`, then `.env` fallbacks. `export` works, and so does an entry under `refs:` in that file. Where `DSH_HOME` points decides which credential file is read.
+- **`models:` is optional.** A provider profile that declares none inherits the models `@earendil-works/pi-ai` ships for that provider id, so a catalog slug needs no hand-written entry.
+- **Two error signatures mean different things.** `NO_ADAPTER: no adapter registered for provider "…"` means the route did not register (the patch, the profile, or the row id). `no API key for provider route "…"` means a turn ran on the **wrong** route — the caller chose it, not the patch.
+- **`settings.yaml` is the wrong lever.** The active provider config is a profile patch; `settings.yaml` is a legacy document imported once, and writing it by hand does not register the route.
+
 ## Overlays
 
 | File | Lesson | What it does |
