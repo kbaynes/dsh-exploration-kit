@@ -55,3 +55,4 @@ without re-running the experiment.
 - [ADR-0022 — Event payloads are objects, and a catch-all catch hides getting that wrong](0022-event-payloads-are-objects-and-silent-catches-hide-that.md)
 - [ADR-0023 — Verification honours DSH_HOME, so it never has to touch the real harness home](0023-verification-runs-against-a-relocatable-home.md)
 - [ADR-0024 — A plugin must not invent a session event type for durable state](0024-do-not-invent-session-event-types.md)
+- [ADR-0025 — plugin_manager manages profile rows and bundles, not rows a bundle contributes](0025-plugin-manager-manages-profiles-not-bundle-rows.md)

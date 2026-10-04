@@ -74,9 +74,25 @@ else
 fi
 
 echo
+echo "== 5. plugin_manager's view of the tree =="
+# Lesson 3 says plugin_manager can list and toggle rows. It can - but NOT rows contributed by
+# a bundle, which is where this lesson's rows live. Asserted because the lesson's original
+# instruction ("disable l3-uses-clock from plugin_manager") cannot work at all.
+source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+MANAGER_LOG="$(mktemp)"
+boot_and_wait "$DSH_CHECKOUT" "$PROFILE" "$MANAGER_LOG" '\[l3-probe\] done' 60 \
+  "$KIT/solutions/l3.probe.patch.yml" || failures=$((failures + 1))
+manager_out="$(grep '\[l3-probe\]' "$MANAGER_LOG")"
+
+check "the manager lists the profile's rows" 'row(s) total' "$manager_out"
+check "it lists the kit bundle" 'kit bundle present: true' "$manager_out"
+check "it does NOT see the kit's own rows" 'ids containing "l3-uses-clock": (none)' "$manager_out"
+check "toggling such a row fails as an unknown target" '"application":"failed"' "$manager_out"
+rm -f "$MANAGER_LOG"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 3 wiring verified. Behavioural claims were executed manually;"
-  echo "see VERIFIED.md for the quoted output."
+  echo "Lesson 3 verified: services, PENDING, reload, and the plugin_manager layer boundary."
 else
   echo "$failures check(s) failed."; exit 1
 fi

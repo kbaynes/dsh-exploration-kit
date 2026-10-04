@@ -93,9 +93,9 @@ row that admits it has not been checked yet.
 
 | Lesson | Status | Notes |
 |---|---|---|
-| L1 — Mount your first plugin | **Mostly executed** | Lifecycle cycle verified twice: originally via a patch overlay, and again after the bundle pivot (`dsh --profile kitdemo`), which is what the lesson now teaches. Both the `FAILED` throw and the `PENDING` inject experiments **are** executed, and their real output corrected two draft assumptions. See evidence below. |
+| L1 — Mount your first plugin | **Executed** | The lifecycle cycle is verified twice — via a patch overlay originally, and again after the bundle pivot, which is what the lesson now teaches. The deliberate `FAILED` throw and the `PENDING` inject are both executed, and their real output corrected two draft assumptions in the lesson text. Nothing in this lesson is unverified. See evidence below. |
 | L2 — Register a tool, compose with config | **Executed** | The plugin loads through the installed bundle; the Schemastery schema rejects an invalid value; an overlay changes the installed row's config; and the **tool itself is called through the real pipeline** by a shipped probe — the configured default reaches it, an explicit unit overrides it, invalid arguments are rejected before `execute` runs, and `value`/`content` show the canonical/render split. Outside this lesson's scope: whether a model *chooses* to call it. See evidence below. |
-| L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
+| L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay; and the `plugin_manager` claim is executed and **corrected** — it manages the profile's rows and whole bundles, not rows a bundle contributes, so the lesson's reverse experiment now uses the bundle patch (ADR-0025). Two upstream-tutorial traps found by running it. **Not** executed: the `isolate` exploration. |
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Mostly executed** | Executed: all three plugins activate; `agent.inject()` is built from `createUserMessage`; the skills overlay composes; and injected context is proved **durable across a restart** in two processes — the text is re-read from the persisted log, carried by a first-party `agent/inbox/spliced` event. **Not** executed: what a model's skill catalog contains, and whether `/l5-facts` answers in a real composer. |
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
@@ -612,6 +612,21 @@ supplied by the bundle row with `!!js` at load time.
 **Deliberately unverified:** the allow/deny outcomes. Observing them requires a tool
 call, which requires a provider. The lesson separates what the boot proves from what
 only a call can prove, rather than presenting the former as the latter.
+
+## Evidence: L3 the plugin_manager layer boundary
+
+Lesson 3's last gap was its `plugin_manager` claim, and executing it corrected the claim:
+
+```
+[l3-probe] initial: 115 row(s) total; l3 rows:
+[l3-probe] disabled l3-uses-clock: {"application":"failed","error":{"code":"unkno…
+[l3-probe] bundles: 11 total; kit bundle present: true
+[l3-probe] ids containing "l3-uses-clock": (none)
+```
+
+The manager lists the profile's rows and the kit's *bundle*, and cannot see or toggle the
+rows that bundle contributes. The lesson now teaches the distinction and uses the bundle patch
+for the reverse experiment. Recorded as ADR-0025 and asserted by `solutions/verify-l3.sh`.
 
 ## Evidence: L3 executed (except the runtime-management extras)
 

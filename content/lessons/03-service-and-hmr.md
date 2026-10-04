@@ -243,17 +243,36 @@ Three read-only ways in, cheapest first:
    root fiber phase. Loader remains the sole lifecycle authority — this service
    owns no history and no mutation.
 2. **`plugin_manager`.** The model-facing tool can `list_plugins`, `list_bundles`,
-   and `set_plugin` to enable or disable a row. Every action requires
-   danger-full-access or approval, and changes affect **every** session in the
-   profile. Try asking the agent to list plugins, then disable a non-essential one
-   and watch the tree change.
+   `set_plugin`, and `set_bundle`. Every action requires danger-full-access or
+   approval, and changes affect **every** session in the profile.
+
+   **It does not see rows contributed by a bundle**, and this lesson's rows come
+   from one. Verified: in a composition whose plugin list reports 115 rows, none of
+   `l1-hello`, `l2-wordcount`, `l3-clock`, or `l3-uses-clock` appears — while the
+   kit's *bundle* is listed among the 11 bundles, and `set_plugin` on one of those
+   ids returns `application: "failed"` with an unknown-target error. The service
+   behind the tool, `ctx.pluginManager`, behaves the same way:
+
+   ```
+   [l3-probe] initial: 115 row(s) total; l3 rows:
+   [l3-probe] disabled l3-uses-clock: {"application":"failed","error":{"code":"unkno…
+   [l3-probe] bundles: 11 total; kit bundle present: true
+   [l3-probe] ids containing "l3-uses-clock": (none)
+   ```
+
+   So `plugin_manager` manages the **profile's own rows** and whole **bundles**; a
+   bundle-contributed row is invisible to it. That is the same layer boundary the
+   kit's install instructions depend on — rows live in the bundle, and the profile
+   composes bundles.
 3. **Cordis runtime inspection.** With the `cordis-host-runner` composition
    present, the `cordis_inspect_list` and `cordis_inspect_query` tools read the
-   live registry.
+   live registry. That one reads the Loader tree, so it *does* show your rows.
 
-Then do the reverse experiment: disable the `l3-uses-clock` row from
-`plugin_manager` and observe the consumer disappear without a restart — the same
-stranding you produced by hand in step 2, but applied at runtime.
+Then do the reverse experiment yourself, using the mechanism that works for a
+bundle-contributed row: add `disabled: true` to the `l3-uses-clock` row in
+`<kit>/kit-plugins/cordis.patch.yml`, exactly as step 2 did for the provider, and
+watch the consumer disappear — the same stranding, applied at the bundle layer
+instead of by hand. Saving is enough, because you installed with `link:`.
 
 ## Verification
 

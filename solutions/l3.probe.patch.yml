@@ -1,0 +1,9 @@
+# Enable Lesson 3's runtime-management probe, which toggles a plugin row through
+# ctx.pluginManager — the service behind the model-facing `plugin_manager` tool — so the
+# lesson's reverse experiment runs WITHOUT a model.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l3.probe.patch.yml --port 0 --no-open
+- id: l3-probe
+  disabled: false
+  config:
+    enabled: true

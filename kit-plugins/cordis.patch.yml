@@ -63,6 +63,12 @@
       name: dsh-exploration-kit-plugins/l9/schedule-probe.js
       disabled: true
 
+    # Opt-in diagnostic: toggles a plugin row through ctx.pluginManager, so Lesson 3's
+    # runtime-management claim is testable without a model. See solutions/l3.probe.patch.yml.
+    - id: l3-probe
+      name: dsh-exploration-kit-plugins/l3/manager-probe.js
+      disabled: true
+
     - id: l4-probe
       name: dsh-exploration-kit-plugins/l4/policy-probe.js
       disabled: true
