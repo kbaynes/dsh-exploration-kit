@@ -94,7 +94,7 @@ row that admits it has not been checked yet.
 | Lesson | Status | Notes |
 |---|---|---|
 | L1 — Mount your first plugin | **Mostly executed** | Lifecycle cycle verified twice: originally via a patch overlay, and again after the bundle pivot (`dsh --profile kitdemo`), which is what the lesson now teaches. Both the `FAILED` throw and the `PENDING` inject experiments **are** executed, and their real output corrected two draft assumptions. See evidence below. |
-| L2 — Register a tool, compose with config | **Mostly executed** | Executed: the plugin loads through the installed bundle and logs `ACTIVE — defaultUnit=lines`; the Schemastery schema rejects `paragraphs` with a field-naming error; an overlay patch on the *installed* row changes the value to `chars`. Still **not** executed: an actual model tool call (needs a provider). See evidence below. |
+| L2 — Register a tool, compose with config | **Executed** | The plugin loads through the installed bundle; the Schemastery schema rejects an invalid value; an overlay changes the installed row's config; and the **tool itself is called through the real pipeline** by a shipped probe — the configured default reaches it, an explicit unit overrides it, invalid arguments are rejected before `execute` runs, and `value`/`content` show the canonical/render split. Outside this lesson's scope: whether a model *chooses* to call it. See evidence below. |
 | L3 — Services, isolation, and hot reload | **Mostly executed** | Executed: the service is provided as `ctx.lessonClock` and consumed; disabling the provider strands the consumer and the scoped sweep names it `PENDING`; editing a plugin file reloads it live under the `hmr` overlay. Two upstream-tutorial traps were found by running it. Not executed: the `plugin_manager` and `isolate` explorations. |
 | L4 — Build a policy gate | **Executed** | Both plugins load, the missing-`inject` failure was reproduced, and the gate's **decisions** are exercised through the real tool pipeline by a shipped probe: an outside write is `GATE-DENIED` with the lesson's reason, and an inside write is *not* denied by the gate (a second policy layer stops it, since the target is outside the agent's workspace). Still unverified: `ask` decisions and guard undo-ability against a live competing listener. |
 | L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
@@ -471,6 +471,31 @@ overlay with `root` set to the kit's plugin directory:
 2. **`Config` must be a real Standard Schema.** A hand-rolled `{ parse }` object
    fails with `TypeError: Cannot read properties of undefined (reading 'validate')`.
    Schemastery works and is already a bundle dependency.
+
+## Evidence: L2 executed, tool included
+
+**The tool's behaviour, called through the real pipeline** (`kit-plugins/l2/tool-probe.js`,
+ADR-0021's technique):
+
+```
+[l2-probe] default-unit:   {"isError":false,"content":[{"type":"text","text":"2 lines"}],"value":{"unit":"lines","count":2}}
+[l2-probe] explicit-words: {"isError":false,"content":[{"type":"text","text":"3 words"}],"value":{"unit":"words","count":3}}
+[l2-probe] explicit-chars: {"isError":false,"content":[{"type":"text","text":"17 chars"}],"value":{"unit":"chars","count":17}}
+[l2-probe] invalid-unit:   {"isError":true,"error":{"message":"invalid arguments: \"unit\" must be one of [\"words\",\"lines\",\"chars\"]"}}
+```
+
+This proves four things the lesson claims, in one run: the row's `config` reaches
+`apply`; an explicit argument overrides it; argument validation rejects a bad value
+*before* `execute` runs; and `value` (canonical JSON) and `content` (rendered prose) are
+genuinely separate channels — visible together in a single result rather than asserted.
+
+`solutions/verify-l2.sh` asserts all four, plus the rendered-prose pairing.
+
+**Narrowed, not eliminated:** whether a *model* chooses to call this tool, and whether it
+restates the value well, is a question about the model rather than the tool, and remains
+outside the kit's verification.
+
+### Earlier evidence
 
 ## Evidence: L2 executed (except the model call)
 

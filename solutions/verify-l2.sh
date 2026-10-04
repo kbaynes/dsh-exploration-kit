@@ -90,11 +90,45 @@ out2="$(dump --patch "$KIT/solutions/l2.override.patch.yml")"
 check "override value wins" "defaultUnit: chars" "$out2"
 
 echo
+echo "== 4. the TOOL itself, called through the real pipeline =="
+# Lesson 2's tool claim used to need a model. It does not: ctx.tools.execute() runs the
+# same pipeline a model-direct call runs, so the probe dispatches word_count and the
+# result is inspected directly. See ADR-0021.
+PROBE_LOG="$(mktemp)"
+( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" \
+    --patch "$KIT/solutions/l2.probe.patch.yml" --port 0 --no-open >"$PROBE_LOG" 2>&1 ) &
+probepid=$!
+sleep 24
+kill "$probepid" 2>/dev/null
+wait "$probepid" 2>/dev/null
+
+probe() { grep -o "\[l2-probe\] $1: .*" "$PROBE_LOG" | head -1; }
+
+check "the configured default reaches the tool" \
+  '"value":{"unit":"lines","count":2}' "$(probe default-unit)"
+check "an explicit unit overrides the default" \
+  '"value":{"unit":"words","count":3}' "$(probe explicit-words)"
+check "the count is correct for the content" \
+  '"count":17' "$(probe explicit-chars)"
+# The message is JSON-encoded in the result, so the inner quotes arrive escaped; assert
+# on the parts that are not affected by that rather than on an exact rendering.
+check "invalid arguments are rejected before execute runs" \
+  '"isError":true' "$(probe invalid-unit)"
+check "the rejection names the offending argument" \
+  'must be one of' "$(probe invalid-unit)"
+# The render/value split the lesson teaches: `value` is the canonical JSON, `content` the
+# model-facing prose derived from it. Both appear in one result.
+check "the rendered prose accompanies the canonical value" \
+  '"content":[{"type":"text","text":"2 lines"}]' "$(probe default-unit)"
+rm -f "$PROBE_LOG"
+
+echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 2 verified: bundle row resolution, package naming, closed-union"
-  echo "schema, and overlay override of an installed row."
-  echo "NOT verified here: rejection of an invalid value at load — that needs a"
-  echo "harness boot; the observed output is quoted in the lesson."
+  echo "Lesson 2 verified: bundle row resolution, package naming, closed-union schema,"
+  echo "overlay override, and the tool's own behaviour — the configured default reaching"
+  echo "apply, an explicit unit overriding it, argument rejection, and the"
+  echo "canonical-value/render split appearing together in one result."
+  echo "Still needing a provider: nothing in this lesson."
 else
   echo "$failures check(s) failed."
   exit 1

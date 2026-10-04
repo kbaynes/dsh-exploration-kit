@@ -119,7 +119,9 @@ or via PTC; 5 and 7–9 need a configured provider.
       `required: true`)
 - [x] Confirm the tool registers at load and its schema reaches prompt assembly
       (executed: the plugin logs ACTIVE through the installed bundle)
-- [ ] Execute a tool call and confirm the canonical value and render path (needs a provider)
+- [x] Execute a tool call and confirm the canonical value and render path — **no provider
+      needed**: a probe calls `word_count` through `ctx.tools.execute()` and the result shows
+      `value` (canonical) and `content` (rendered) side by side.
 - [x] Confirm an invalid enum stops the load with a field-naming error (executed;
       `--dump-config` cannot show this because it does not run validation)
 - [ ] Confirm `!!js` interpolates in `config` and `disabled`

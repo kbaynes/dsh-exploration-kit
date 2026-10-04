@@ -274,16 +274,41 @@ Observable without a model:
 3. Your overlay patch, applied with `--patch`, changes the startup line to
    `defaultUnit=chars` without you editing the bundle.
 
-Requires a provider:
+**The tool's own behaviour does not need a provider either.** `ctx.tools.execute()` runs
+the same pipeline a model-direct call runs, so
+`<kit>/kit-plugins/l2/tool-probe.js` can call `word_count` directly and you can read the
+result:
 
-4. `word_count` executes and returns canonical JSON that the model restates correctly —
-   proof the render step is doing its job.
+```sh
+dsh --profile kitdemo --patch <kit>/solutions/l2.probe.patch.yml --port 0 --no-open
+```
 
-> **Where this lesson stands.** Every step that does not need a provider has been
-> executed against a real harness, and the exact output is quoted in
+```
+[l2-probe] default-unit:    {"isError":false,"content":[{"type":"text","text":"2 lines"}],"value":{"unit":"lines","count":2}}
+[l2-probe] explicit-words:  {"isError":false,"content":[{"type":"text","text":"3 words"}],"value":{"unit":"words","count":3}}
+[l2-probe] invalid-unit:    {"isError":true,"error":{"message":"invalid arguments: \"unit\" must be one of ..."}}
+```
+
+Four claims, one run:
+
+1. **The row's `config` reaches the tool** — `default-unit` returns `lines`, the value the
+   bundle row supplies, not the schema default.
+2. **An explicit argument overrides it** — `explicit-words` returns `words`.
+3. **Invalid arguments are rejected before `execute` runs** — the third line is an
+   argument-validation error, not a result from your code.
+4. **`value` and `content` are separate.** `content` carries the rendered prose (`"2
+   lines"`) while `value` carries the canonical JSON (`{"unit":"lines","count":2}`). That
+   is the split the contract asks for, visible in a single result rather than asserted.
+
+What still needs a model is narrower than it looks: whether a model *chooses* to call the
+tool, and whether it restates the value well. That is a question about the model, not
+about your tool.
+
+> **Where this lesson stands.** Every step above has been executed against a real harness,
+> and the output is quoted in
 > [VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
-> What remains unverified there is exactly the part above marked "Requires a
-> provider" — the model tool call — and it is named rather than glossed.
+> Nothing in this lesson needs a provider; what remains outside it is the model's own
+> behaviour, which is named rather than glossed.
 
 ## Exit check — you should now be able to explain
 

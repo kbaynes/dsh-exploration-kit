@@ -17,6 +17,12 @@
       config:
         defaultUnit: lines
 
+    # Opt-in diagnostic: calls word_count through the real pipeline so Lesson 2's tool
+    # claim can be verified without a model. Enable with solutions/l2.probe.patch.yml.
+    - id: l2-probe
+      name: dsh-exploration-kit-plugins/l2/tool-probe.js
+      disabled: true
+
     # Lesson 3: provide a service, then consume it in a separate plugin.
     # Set `disabled: true` here to strand the consumer in PENDING and watch
     # l3-diagnose report it.

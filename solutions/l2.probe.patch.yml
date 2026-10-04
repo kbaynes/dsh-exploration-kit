@@ -1,0 +1,9 @@
+# Enable Lesson 2's tool probe, which calls `word_count` through the real pipeline so the
+# lesson's "the model can call it and gets canonical JSON" claim can be verified WITHOUT a
+# model provider. See ADR-0021.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l2.probe.patch.yml --port 0 --no-open
+- id: l2-probe
+  disabled: false
+  config:
+    enabled: true
