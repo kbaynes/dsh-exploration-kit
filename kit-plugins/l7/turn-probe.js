@@ -47,6 +47,17 @@ export function apply(ctx, config) {
       // The projection exists and carries the documented shape. Its numbers are zero here for a
       // reason worth stating: the mock reports no usage for scripted text, so accounting has
       // nothing to record. The SHAPE is what this asserts; a real provider fills the numbers.
+      // Whether THIS turn actually produced an assistant message. The first version of this probe
+      // did not ask, and its full-text search then found 'mock response' in OTHER sessions from
+      // earlier headless runs - a green check measuring the wrong thing.
+      const ownLog = await ctx.sessionQuery.readSession(session.id)
+      const ownTypes = (ownLog?.events ?? []).map(event => event.type)
+      const ownAssistant = ownTypes.filter(type => type === 'assistant/message').length
+      console.log(`[l7-turn] this turn's assistant messages: ${ownAssistant}`)
+      const ownTurnEnd = (ownLog?.events ?? []).find(event => event.type === 'turn/end')
+      const reason = ownTurnEnd?.data?.reason
+      console.log(`[l7-turn] this turn ended: ${JSON.stringify(reason)?.slice(0, 160) ?? '(no turn/end)'}`)
+
       const usage = ctx.sessionProjections.stateOf(session, 'tokenUsage')
       console.log(`[l7-turn] tokenUsage: ${JSON.stringify(usage)}`)
       // `sessionStats` is mounted by the WEB bundle, not the base one, so it is absent here -

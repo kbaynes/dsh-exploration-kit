@@ -407,6 +407,33 @@ standalone repository. Both now use `<kit>/content/...`.
 **Deliberately unverified:** any real delegation, fork, or fan-out, and the
 monolith-versus-fan-out cost comparison. Every one needs a provider.
 
+## Evidence: L7 the turn does not complete, and an earlier check measured the wrong thing
+
+The turn phase runs against the mock provider, and this is what it actually reports about its **own**
+turn:
+
+```
+[l7-turn] this turn's assistant messages: 0
+[l7-turn] this turn ended: {"kind":"error","error":{"message":
+    "cannot get property \"toJSON\" without inject","code":"UNKNOWN"}}
+[l7-turn] tokenUsage: {"totals":{"uncachedInputTokens":0,…},"last":null}
+[l7-turn] /compact outcome: {"kind":"success","text":"No compactable history yet."}
+```
+
+**It does not complete the turn.** The error is raised inside the harness's settings plugin, whose guard
+is `'toJSON' in schema` — true for a Cordis Context proxy, whose `.toJSON` then throws the inject error.
+An audit of **all 119 configuration entries** in this composition found every `Config` to be a valid
+schema with a working `toJSON()`, so the kit is not the trigger; the same error ends a schedule-delivery
+turn (see the L9 evidence), which makes it one upstream bug with two lesson impacts.
+
+**And an honest correction.** The first version of this phase asserted that the trajectory was searchable
+by "the assistant's own text", and it **passed — because the search found `mock response` in other
+sessions** left by earlier headless runs. This turn has no assistant message at all. The assertion was
+measuring the wrong thing, which is the most dangerous kind of green check, and it is now replaced by an
+assertion that *pins the observed failure* so a change in either direction is visible.
+
+`solutions/l3.audit.patch.yml` reproduces the config audit in one boot.
+
 ## Evidence: L7 a real turn, keyless, and the caveat
 
 Against `dsh-llm-mock-server` (ADR-0027), so the loop, log and accounting are real while the model's

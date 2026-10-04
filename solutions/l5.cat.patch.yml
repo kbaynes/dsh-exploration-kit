@@ -1,0 +1,6 @@
+# Enable Lesson 5's catalogue probe: a real turn against the mock provider, then the session log is
+# searched for the skill catalogue. Apply WITH the skills overlay so the kit's skill is discoverable.
+- id: l5-catalogue-probe
+  disabled: false
+  config:
+    enabled: true

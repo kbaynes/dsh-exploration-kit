@@ -187,17 +187,25 @@ if start_mock_llm "$DSH_CHECKOUT" 8132 success; then
   # The mock reports no usage for scripted text, so the numbers are zero; the shape is the claim.
   check "the accounting keys are the documented ones" 'uncachedInputTokens' "$turn_out"
   check "the statistics unit is absent in a base-backed profile" 'sessionStats (web-only): not mounted' "$turn_out"
-  # At least one, not exactly one: the verification home accumulates sessions from every run, so
-  # a legitimate query matches other turns too. What matters is that the text the ASSISTANT
-  # produced is findable.
-  hits="$(grep -o "searchSessions('mock response'): [0-9]* hit" <<<"$turn_out" | grep -o '[0-9]*' | head -1)"
-  if [[ -n "$hits" && "$hits" -ge 1 ]]; then
-    echo "PASS  the trajectory is searchable by the assistant's own text ($hits hit(s))"
-  else
-    echo "FAIL  the assistant's text was not searchable (hits: ${hits:-none})"
-    failures=$((failures + 1))
-  fi
   check "/compact settles as a command" '/compact outcome: {"kind":"success"' "$turn_out"
+
+  # WHAT THIS PHASE DOES *NOT* CLAIM. The first version asserted that the trajectory was searchable
+  # by "the assistant's own text" - and it passed, because the search had found 'mock response' in
+  # OTHER sessions left by earlier headless runs. THIS turn produced no assistant message at all:
+  # it ends with an error raised inside the harness's settings plugin. The assertion measured the
+  # wrong thing, which is the most dangerous kind of green check.
+  #
+  # So the finding is pinned instead of hidden: assert that we observed it, so a change in either
+  # direction is visible.
+  if grep -q "this turn's assistant messages: 0" <<<"$turn_out"; then
+    echo "PASS  the turn's own outcome is now reported (not inferred from other sessions)"
+    check "and the upstream turn error is pinned as observed" 'toJSON' "$turn_out"
+    echo "NOTE  turns in this composition end with 'cannot get property "toJSON" without inject',"
+    echo "      raised inside the harness's settings plugin; the kit's 119 entry Configs were audited"
+    echo "      and all are valid schemas, so this is an upstream finding (see VERIFIED.md)."
+  else
+    echo "PASS  the turn produced an assistant message (the upstream error is evidently fixed)"
+  fi
 else
   echo "FAIL  could not start the mock LLM server"; failures=$((failures + 1))
 fi
@@ -206,8 +214,10 @@ rm -f "$MODEL_PATCH" "$TURN_LOG"
 echo
 if [[ "$failures" -eq 0 ]]; then
   echo "Lesson 7 verified: the store, the query service, the tool scope, the invented-type caveat"
-  echo "(with cleanup), and a real turn's accounting, searchability and /compact."
-  echo "Still unverified: the workspace-authority refusal (needs a model-driven tool call) and the"
+  echo "(with cleanup), the accounting shape, and /compact."
+  echo "NOT verified, and pinned rather than hidden: a completed turn. Turns in this composition end"
+  echo "with an upstream error in the harness's settings plugin (see the NOTE above and VERIFIED.md)."
+  echo "Also unverified: the workspace-authority refusal (needs a model-driven tool call) and the"
   echo "invariant findings on a fresh profile."
 else
   echo "$failures check(s) failed."; exit 1

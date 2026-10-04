@@ -109,7 +109,10 @@ if start_mock_llm "$DSH_CHECKOUT" 8133 tool_call_success,success,success,success
   check "the delegating turn exits 0" '0' "$fan_status"
   check "the parent prints the model's answer" 'mock response recovered' "$(cat "$FAN_OUT")"
   # Three requests: the parent's tool call, the CHILD's own turn, then the parent's final answer.
-  requests="$(grep -c '"type":"request"' "$MOCK_LLM_LOG" 2>/dev/null || echo 0)"
+  # `grep -c` PRINTS 0 when there are no matches (and exits 1), so `|| echo 0` appends a second 0 -
+  # which turns the value into "0\n0" and makes the arithmetic test below a syntax error.
+  requests="$(grep -c '"type":"request"' "$MOCK_LLM_LOG" 2>/dev/null)"
+  requests="${requests:-0}"
   if [[ "$requests" -ge 3 ]]; then
     echo "PASS  a child agent ran its own turn (model requests served: $requests)"
   else

@@ -71,6 +71,12 @@
 
     # Opt-in diagnostic: toggles a plugin row through ctx.pluginManager, so Lesson 3's
     # runtime-management claim is testable without a model. See solutions/l3.probe.patch.yml.
+    # Diagnostic: finds the entry whose plugin Config is not a schema, which is what makes a turn
+    # fail inside DSH's settings plugin. See solutions/l3.audit.patch.yml
+    - id: l3-config-audit
+      name: dsh-exploration-kit-plugins/l3/config-audit.js
+      disabled: true
+
     - id: l3-probe
       name: dsh-exploration-kit-plugins/l3/manager-probe.js
       disabled: true
@@ -89,6 +95,12 @@
     # "no model turn" command claim is testable without a model. See solutions/l5.cmd.patch.yml.
     - id: l5-cmd-probe
       name: dsh-exploration-kit-plugins/l5/command-probe.js
+      disabled: true
+
+    # Opt-in diagnostic: runs a turn and checks the model-visible skill catalogue in the log, so
+    # Lesson 5's catalogue claim is testable against the mock provider. See solutions/l5.cat.patch.yml
+    - id: l5-catalogue-probe
+      name: dsh-exploration-kit-plugins/l5/catalogue-probe.js
       disabled: true
 
     - id: l5-probe

@@ -47,4 +47,12 @@ dsh plugin --profile "$WEB_PROFILE" add "@deepseek-ai/dsh-schedule@$VERSION"
 dsh plugin --profile "$WEB_PROFILE" add "@deepseek-ai/dsh-webhook@$VERSION"
 
 echo
+echo "NOTE  the kit bundle is deliberately NOT installed into the 'headless' profile."
+echo "      It was tried during development and it BREAKS one-shot headless turns: with the bundle"
+echo "      installed, 'dsh --profile headless' made zero model requests and exited non-zero, which"
+echo "      silently broke every headless-based check (verify-l8's delegation and verify-l9's"
+echo "      contract). The lesson verification drives headless runs, so the bundle must stay out of"
+echo "      that profile."
+
+echo
 echo "Profiles provisioned at dsh $VERSION. Verify the pins with: bash scripts/verify-target.sh"
