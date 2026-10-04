@@ -1,0 +1,6 @@
+# Enable Lesson 9's FIRING probe: it schedules a task a couple of seconds out and waits to see
+# whether delivery happens. Needs the mock provider (ADR-0027) to answer the resumed turn.
+- id: l9-fire-probe
+  disabled: false
+  config:
+    enabled: true

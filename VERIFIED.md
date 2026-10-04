@@ -101,7 +101,7 @@ row that admits it has not been checked yet.
 | L6 — Give the session durable state | **Executed** | Rebuilt on the pattern that works, and proved across a **restart in two processes**, with no model: phase one derives the session's permission mode and changes it via a real preset switch (`workspace-write` → `danger-full-access`); phase two, a fresh process, resumes the session and reports `danger-full-access` reconstructed from the persisted log. The fold uses a first-party event type, and the check fails if any plugin invents one. The earlier defect is retained as a deliberate, disabled hazard. See evidence below. |
 | L7 — Operate the harness | **Mostly executed** | Executed: the overlay composes and boots with no warnings; the pinned package installs; the query service lists and reads; all five lesson tools register in an agent root scope (5/5); the invented-type caveat is asserted **with self-cleanup** (an unknown event type is invisible to both filters and search); and against the repository's mock provider a **real turn** is searchable by its own assistant text, the token-accounting projection is exposed with its documented shape, and `/compact` settles. **Not** executed: the workspace-authority refusal (needs a model-driven tool call) and the invariant findings. |
 | L8 — Orchestrate multiple agents | **Mostly executed** | Executed: the orchestration primitives are mounted by the base bundle (no kit plugin needed); the workflow's pure core passes 7 unit tests with a fake engine; fork heredity is verified through derived state (inherited prefix, `isSeeded`, parent lineage, and L6's projection reflecting the inherited event); and a **real end-to-end delegation** is executed keyless against the mock provider — three model requests (parent call, child turn, parent finish) and a child session recorded with a parent link. **Not** executed: the monolith-versus-fan-out cost comparison, which needs real token usage. |
-| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are confirmed opt-in; the overlay composes and activates on a web-backed profile with no warnings while a base-backed one strands both in `PENDING`; both install pinned; a scheduled task **survives a restart**; and the **headless contract is executed keyless** against the repository's scriptable mock provider — exit 0 with the answer on stdout, exit 1 with the diagnostic on stderr, and a `--json` stream carrying `turn_start`, `turn_end`, a `text` event and a closing `final`. **Not** executed: an SDK round trip, a webhook delivery, and a task firing. |
+| L9 — Automate the harness | **Mostly executed** | Executed: `schedule` and `webhook` are opt-in; the overlay activates on a web-backed profile with no warnings; both install pinned; a scheduled task **survives a restart**; the **headless contract** (exit codes, stdout/stderr, `--json` phases) runs keyless against the mock provider; and **delivery is partly verified** — a due task splices its reminder into the inbox and opens a turn, which then fails inside the harness's settings plugin (`cannot get property "toJSON" without inject`, not kit code). **Not** executed: an SDK round trip, a webhook delivery, and the scheduled work completing. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
 
@@ -198,6 +198,28 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L9 delivery fires, then hits an upstream error
+
+A task scheduled two seconds out, with the mock provider supplying the model. The session log shows
+delivery working and then failing outside this repository:
+
+```
+agent/inbox/spliced -> {"target":"next-turn","inserted":[{"content":[{"type":"text",
+    "text":"[SCHEDULE REMINDER]\nThis is a scheduled message from the user\n…"}]}]}
+turn/start -> {"turn": 1}
+turn/end   -> {"turn": 1,"reason":{"kind":"error","error":{"message":
+    "cannot get property \"toJSON\" without inject"}}}
+```
+
+Delivery is proven to the point of resuming the session and opening a turn. The error comes from
+`packages/settings/settings` calling `schema.toJSON()` while describing plugin schemas; the kit has no
+`toJSON` access anywhere, so this is recorded as an upstream observation. The delivery receipt was
+consequently empty (`records: []`), and the scheduled work never completed.
+
+`solutions/l9.fire.patch.yml` reproduces it. It is **not** wired into `solutions/verify-l9.sh`: a check
+that fails for a reason outside this repository trains people to ignore the suite, which is worse than
+not having it.
 
 ## Evidence: L9 the headless contract, keyless
 

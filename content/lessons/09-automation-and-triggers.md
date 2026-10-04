@@ -218,8 +218,30 @@ memory. `bash <kit>/solutions/verify-l9.sh` runs both phases.
 > On a base-backed profile (`kitdemo`) plugin output appears normally, which is why the
 > other probes need no such arrangement.
 
-What still needs a provider is **delivery**: a due task resumes the session, and the agent
-then has to work on it. Storage is verifiable; the turn is not.
+**Delivery is partly verified.** A due task really does resume the session — with the mock
+provider supplying the model, a task scheduled two seconds out produced this in the session log:
+
+```
+agent/inbox/spliced -> {"target":"next-turn", "inserted":[{"content":[{"type":"text",
+    "text":"[SCHEDULE REMINDER]\nThis is a scheduled message from the user\n…"}]}]}
+turn/start -> {"turn": 1}
+turn/end   -> {"turn": 1, "reason": {"kind":"error","error":{"message":
+    "cannot get property \"toJSON\" without inject"}}}
+```
+
+So the reminder is spliced into the inbox and a turn opens — `schedules are Host-owned … due
+messages resume the original Session` is true. The turn then fails with an error raised inside the
+harness's **settings** plugin (`packages/settings/settings`, which calls `schema.toJSON()` while
+describing plugin schemas). The kit's plugins contain no `toJSON` access, so this is an upstream
+observation rather than a defect here, and it is recorded rather than worked around:
+
+- **Verified:** storage across restarts, and that a due task resumes the session and opens a turn.
+- **Blocked by that upstream error:** the agent actually completing the scheduled work, and the
+  delivery receipt being recorded (`records` was empty).
+
+`solutions/l9.fire.patch.yml` reproduces it in about a minute; it is deliberately **not** part of
+`solutions/verify-l9.sh`, because a check that fails for a reason outside this repository would
+just train people to ignore the suite.
 
 They arrive as ordinary follow-up messages in the original conversation — **not** email,
 SMS, or push:

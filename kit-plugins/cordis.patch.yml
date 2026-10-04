@@ -59,6 +59,12 @@
       name: dsh-exploration-kit-plugins/l8/fork-probe.js
       disabled: true
 
+    # Opt-in diagnostic: schedules a task that FIRES, so Lesson 9's delivery claim (a due task
+    # resumes the session and the agent works on it) is testable against the mock provider.
+    - id: l9-fire-probe
+      name: dsh-exploration-kit-plugins/l9/fire-probe.js
+      disabled: true
+
     - id: l9-probe
       name: dsh-exploration-kit-plugins/l9/schedule-probe.js
       disabled: true
