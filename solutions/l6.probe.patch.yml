@@ -1,8 +1,11 @@
-# Enable Lesson 6's projection probe, which creates a session, appends `l6/step` events,
-# and reads the folded projection — no model provider involved.
+# Enable Lesson 6's projection probe in 'write' mode: it creates a named session and
+# commits a real tool result through the tool pipeline (no model involved).
 #
 #   dsh --profile kitdemo --patch <kit>/solutions/l6.probe.patch.yml --port 0 --no-open
 - id: l6-probe
   disabled: false
   config:
     enabled: true
+    mode: write
+    # Supplied by the caller so a run is repeatable; sessions PERSIST.
+    sessionId: !!js "process.env.L6_SESSION_ID"

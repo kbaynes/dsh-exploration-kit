@@ -1,39 +1,41 @@
-// Run: node --test kit-plugins/l6/
+// Run: node --test kit-plugins/l6/fold.test.mjs
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { foldEvents, projection } from './fold.js'
+import { foldEvents, projection, FOLDED_EVENT } from './fold.js'
 
-test('folds l6/step events into the reported total', () => {
+test('folds the known event type into the reported mode', () => {
   const events = [
-    { type: 'tool/result' },
-    { type: 'l6/step', data: { label: 'tool-result', count: 1 } },
     { type: 'assistant/message' },
-    { type: 'l6/step', data: { label: 'tool-result', count: 2 } },
-    { type: 'l6/step', data: { label: 'tool-result', count: 3 } },
+    { type: FOLDED_EVENT, data: { mode: 'workspace-write' } },
+    { type: 'agent/inbox/spliced' },
   ]
-  assert.deepEqual(foldEvents(events), { total: 3 })
+  assert.deepEqual(foldEvents(events), { mode: 'workspace-write' })
+})
+
+test('the LATEST event wins, because the event carries complete state', () => {
+  const events = [
+    { type: FOLDED_EVENT, data: { mode: 'workspace-write' } },
+    { type: FOLDED_EVENT, data: { mode: 'danger-full-access' } },
+  ]
+  assert.deepEqual(foldEvents(events), { mode: 'danger-full-access' })
+})
+
+test('folds a type the harness knows, not a plugin-declared one', () => {
+  // The lesson's whole correction: an invented type makes the log unreadable after a
+  // restart, so the unit must fold vocabulary the harness already has.
+  assert.equal(FOLDED_EVENT, 'sandbox/mode')
+  assert.ok(!/^l6\//.test(FOLDED_EVENT), 'the folded type must not be plugin-declared')
 })
 
 test('returns the SAME reference for unrelated events', () => {
   const state = projection.init()
-  const next = projection.apply(state, { type: 'tool/result' })
+  const next = projection.apply(state, { type: 'assistant/message' })
   assert.equal(next, state, 'an unrelated event must not allocate new state')
 })
 
 test('returns a NEW reference for a relevant event', () => {
   const state = projection.init()
-  const next = projection.apply(state, { type: 'l6/step', data: { count: 5 } })
+  const next = projection.apply(state, { type: FOLDED_EVENT, data: { mode: 'read-only' } })
   assert.notEqual(next, state)
-  assert.deepEqual(next, { total: 5 })
-})
-
-test('a delta-shaped event would corrupt the total — the reason for complete state', () => {
-  // Each event says "1", not "the running total". Folding gives 1, not 3.
-  const deltaShaped = [
-    { type: 'l6/step', data: { count: 1 } },
-    { type: 'l6/step', data: { count: 1 } },
-    { type: 'l6/step', data: { count: 1 } },
-  ]
-  assert.deepEqual(foldEvents(deltaShaped), { total: 1 })
-  // The contract: producers must send the complete post-change total.
+  assert.deepEqual(next, { mode: 'read-only' })
 })

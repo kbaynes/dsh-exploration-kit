@@ -1,11 +1,15 @@
-# Lesson 6 verification — the durable event, and the projection that folds it.
+# Lesson 6 verification — durable derived state, proved across a RESTART.
+#
+# The lesson's central claim is that state derived from the log survives a restart. This
+# script tests exactly that, in TWO processes, which is the only way to test it: the
+# original lesson's claim looked true in one process and was false across two.
 #
 # Verifies without a model:
-#   1. the plugins load, and no plugin throws on a real session
-#   2. `session.append('l6/step', …)` is accepted for a log-only event
-#   3. the registered projection folds it, readable through stateOf
-#   4. the event carries the COMPLETE post-change state (the fold replaces, not adds)
-#   5. the projection's pure core passes its unit tests
+#   1. the projection's pure core passes its unit tests
+#   2. the fold uses a KNOWN event type (not a plugin-declared one)
+#   3. a session's mode is derived at creation, and changes when the preset changes
+#   4. after a RESTART, resuming the session reconstructs that mode from the persisted log
+#   5. no plugin invented an event type (a log containing one is unreadable, so 4 would fail)
 #
 # Usage: bash solutions/verify-l6.sh /path/to/deepseek-harness
 # Prereq: dsh plugin --profile kitdemo add link:<kit>/kit-plugins
@@ -32,42 +36,52 @@ else
 fi
 
 echo
-echo "== 2-4. a real session, a real append, a real fold =="
-# ctx.agents.create() makes a session and runs no turn, so no provider is involved.
-PROBE_LOG="$(mktemp)"
-( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" \
-    --patch "$KIT/solutions/l6.probe.patch.yml" --port 0 --no-open >"$PROBE_LOG" 2>&1 ) &
-probepid=$!
-sleep 26
-kill "$probepid" 2>/dev/null
-wait "$probepid" 2>/dev/null
+echo "== 2. the fold uses a known event type =="
+if grep -q "FOLDED_EVENT = 'sandbox/mode'" "$KIT/kit-plugins/l6/fold.js"; then
+  echo "PASS  folds 'sandbox/mode', a first-party log-only event"
+else
+  echo "FAIL  the folded type is not a known first-party event"; failures=$((failures + 1))
+fi
 
-check "the projection is registered and starts at zero" \
-  'projection before any event: {"total":0}' "$(grep '\[l6-probe\]' "$PROBE_LOG")"
-check "an appended log-only event is folded" \
-  'after append count=1: {"total":1}' "$(grep '\[l6-probe\]' "$PROBE_LOG")"
-# The rule the lesson teaches: the event carries the complete post-change state, so a
-# second event saying 9 yields 9 — not 1 + 9.
-check "the event carries complete state, so the fold replaces rather than adds" \
-  'after append count=9: {"total":9}' "$(grep '\[l6-probe\]' "$PROBE_LOG")"
+# Sessions persist, so a fixed id would make the SECOND run fail with "already exists".
+export L6_SESSION_ID="session-l6-verify-$RANDOM$RANDOM"
 
-# A plugin that throws on agent/created is the failure mode this probe was written for:
-# the kit's counter did exactly that, and an agent-created listener that never fires is
-# invisible until a session exists.
-if grep -q 'Invalid value used as weak map key' "$PROBE_LOG"; then
-  echo "FAIL  a plugin threw on agent/created (it is treating the payload as the agent)"
+boot() { # boot <overlay> <logfile>
+  local overlay="$1" log="$2"
+  ( cd "$DSH_CHECKOUT" && dsh --profile "$PROFILE" --patch "$overlay" --port 0 --no-open >"$log" 2>&1 ) &
+  local pid=$!
+  sleep 26
+  kill "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+}
+
+echo
+echo "== 3. phase one: derive the mode, then change it =="
+LOG1="$(mktemp)"
+boot "$KIT/solutions/l6.probe.patch.yml" "$LOG1"
+check "the mode is derived at creation" '"mode":"workspace-write"' "$(grep '\[l6-probe\]' "$LOG1")"
+check "changing the preset changes the derived mode" '"mode":"danger-full-access"' "$(grep '\[l6-probe\]' "$LOG1")"
+
+echo
+echo "== 4. phase two: a FRESH process reconstructs it from the log =="
+LOG2="$(mktemp)"
+boot "$KIT/solutions/l6.resume.patch.yml" "$LOG2"
+check "the resumed session reports the mode it ended with" \
+  'RESUMED mode: {"mode":"danger-full-access"}' "$(grep '\[l6-probe\]' "$LOG2")"
+
+# A log the harness cannot interpret would make the resume fail outright — which is exactly
+# what a plugin-declared event type does (ADR-0024).
+if grep -qE 'unknown to this harness|refusing to interpret' "$LOG2"; then
+  echo "FAIL  the persisted log is unreadable — an invented event type is present"
   failures=$((failures + 1))
 else
-  echo "PASS  no plugin threw on session creation"
+  echo "PASS  the persisted log is readable after the restart"
 fi
-check "the counter registered the new session" \
-  'tracking a new session' "$(grep '\[l6-counter\]' "$PROBE_LOG")"
-rm -f "$PROBE_LOG"
+rm -f "$LOG1" "$LOG2"
 
 echo
 if [[ "$failures" -eq 0 ]]; then
-  echo "Lesson 6 verified: a log-only event is appended, committed, and folded by the"
-  echo "registered projection, with complete-state semantics."
+  echo "Lesson 6 verified: durable derived state, reconstructed across a restart."
 else
   echo "$failures check(s) failed."; exit 1
 fi

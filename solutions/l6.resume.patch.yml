@@ -1,0 +1,11 @@
+# Second phase of Lesson 6's durability check: reopen the session the write phase created,
+# in a FRESH process, and read the projection derived from its persisted log.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l6.resume.patch.yml --port 0 --no-open
+- id: l6-probe
+  disabled: false
+  config:
+    enabled: true
+    mode: resume
+    # Supplied by the caller so a run is repeatable; sessions PERSIST.
+    sessionId: !!js "process.env.L6_SESSION_ID"

@@ -281,17 +281,17 @@ Found in this round by a two-boot experiment (ADR-0024): a plugin-declared `Sess
 type is writable and foldable, and makes the session **unopenable after a restart**. The
 lesson text is already corrected; the shipped code is not.
 
-- [ ] Refactor `kit-plugins/l6/counter.js` to stop appending `l6/step`, and refactor
-      `l6/fold.js` to fold a **known** event type (`tool/result`), accumulating as it goes.
-- [ ] Update `l6/projection-probe.js` and `solutions/verify-l6.sh` to the new event and to
-      assert the **restart** path — which is the claim that was wrong, so it must be the one
-      the check covers.
-- [ ] Decide whether `l6-counter.js` survives at all: keeping it as a deliberate hazard
-      risks a reader enabling it. If it stays, its row and comments must say it is a
-      demonstration, never a pattern to copy.
-- [ ] Re-promote L6's `VERIFIED.md` row to Executed once the two-boot check passes.
-- [ ] Add the same write/restart/read test to any other place the kit writes durable plugin
-      state.
+- [x] Rebuilt `l6/fold.js` to fold a **known** event type — `sandbox/mode`, which the
+      harness itself folds in a `sandboxMode` unit — replacing the invented `l6/step`.
+- [x] `l6/projection-probe.js` now runs in two phases, and `solutions/verify-l6.sh` asserts
+      the **restart**, which is the claim that was wrong and therefore the one the check
+      covers. It also asserts the log stays readable, so the hazard cannot return silently.
+- [x] `l6/counter.js` became `l6/hazard-custom-event.js`: **disabled by default**, with a
+      header saying it is a deliberate hazard and never a pattern to copy, enabled only by
+      `solutions/l6.hazard.patch.yml` for the demonstration.
+- [x] L6 re-promoted to Executed in `VERIFIED.md` with the two-phase evidence.
+- [x] The write/restart/read test now exists for L6 and is documented as the general rule:
+      in-process behaviour cannot distinguish durable state from a cache.
 - [ ] Add the L7 caveat that search fails for a corpus containing an unknown event type.
 
 ## Phase 3 — outcome: editorial review complete

@@ -66,8 +66,12 @@
       name: dsh-exploration-kit-plugins/l5/inject.js
 
     # Lesson 6: a durable session event and the projection that folds it.
-    - id: l6-counter
-      name: dsh-exploration-kit-plugins/l6/counter.js
+    # DELIBERATE HAZARD, disabled by default: this invents a session event type, which
+    # makes the session unreadable after a restart. Lesson 6 enables it via
+    # solutions/l6.hazard.patch.yml to demonstrate the failure. Never copy this pattern.
+    - id: l6-hazard
+      name: dsh-exploration-kit-plugins/l6/hazard-custom-event.js
+      disabled: true
 
     - id: l6-projection
       name: dsh-exploration-kit-plugins/l6/projection.js

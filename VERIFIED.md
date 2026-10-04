@@ -345,6 +345,32 @@ deltas, `/compact`, and the invariant sweep's findings. Each needs a session.
    session file under `$DSH_HOME/sessions/`", which would have failed three ways. Both L6
    and L7 now give the real path and note `zstd -dc` as the way to read it.
 
+## Evidence: L6 executed — durable state across a restart
+
+The lesson was rebuilt on `sandbox/mode`, a first-party log-only event that the harness
+itself folds in a `sandboxMode` projection unit. Both phases executed, no model involved:
+
+```
+PHASE ONE (write)          dsh --profile kitdemo --patch solutions/l6.probe.patch.yml
+  [l6-probe] mode at creation: {"mode":"workspace-write"}
+  [l6-probe] mode after switching the preset: {"mode":"danger-full-access"}
+
+PHASE TWO (fresh process)  dsh --profile kitdemo --patch solutions/l6.resume.patch.yml
+  [l6-probe] resuming session-l6-verify-… in a fresh process
+  [l6-probe] RESUMED mode: {"mode":"danger-full-access"}
+```
+
+Phase two is the whole point: on load the session replayed its persisted log, the registry
+folded it, and the state was **reconstructed** rather than remembered. `solutions/verify-l6.sh`
+runs both phases, generates a fresh session id per run (sessions persist, so a fixed id
+fails the second run with `already exists`), and asserts that the persisted log stays
+readable — the check that fails if anyone reintroduces an invented event type.
+
+The preset switch is a real service call, the same one the `/permission` control makes, so
+the probe needs no agent turn and no provider.
+
+### The defect this replaced
+
 ## Evidence: L6's durability claim is false as written
 
 **A two-boot experiment, executed:**

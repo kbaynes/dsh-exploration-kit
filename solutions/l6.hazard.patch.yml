@@ -1,0 +1,7 @@
+# Enable Lesson 6's deliberate HAZARD: a plugin that appends a session event type it
+# invented. It appears to work, and it makes the session unreadable after a restart.
+# This is for demonstrating the failure, never a pattern to copy.
+#
+#   dsh --profile kitdemo --patch <kit>/solutions/l6.hazard.patch.yml --port 0 --no-open
+- id: l6-hazard
+  disabled: false

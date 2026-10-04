@@ -1,27 +1,28 @@
 import Schema from '@deepseek-ai/schemastery'
 
 export const name = 'l6-probe'
-export const inject = ['agents', 'sessionProjections']
+export const inject = ['agents', 'sessionProjections', 'permissionPresets']
 
 export const Config = Schema.object({
-  /** Off by default: this creates a real session and appends real events. */
+  /** Off by default: this creates a session and changes its permission preset. */
   enabled: Schema.boolean().default(false),
+  /** 'write' creates a session and switches its preset; 'resume' reopens it later. */
+  mode: Schema.union(['write', 'resume']).default('write'),
+  /** The fixed session id both modes use, so a restart can find it. */
+  sessionId: Schema.string().default('session-l6-durability'),
   delayMs: Schema.number().default(1500),
 })
 
 /**
- * Verifies Lesson 6's core claim — that a log-only event can be appended and that a
- * registered projection folds it — WITHOUT a model.
+ * Verifies Lesson 6's durability claim ACROSS A RESTART, using a session event type the
+ * harness already knows. No model is involved: changing a permission preset is a service
+ * call, not a model call.
  *
- * `ctx.agents.create()` makes a session and runs no turn, so no provider is involved.
- * That is what makes the append path and the projection registry reachable offline.
- *
- * Three things are checked, and the third is the one that matters most:
- *   1. `session.append('l6/step', …)` is accepted for a log-only event.
- *   2. `stateOf(session, 'l6Steps')` reflects the folded value.
- *   3. The event carries the COMPLETE post-change state, so the fold is a replacement
- *      rather than an accumulation — visible by appending `{count: 5}` and seeing the
- *      total become 5, not 1 + 5.
+ * `mode: write`  creates a named session — which already appends a `sandbox/mode` event at
+ *                creation — then switches the preset and reads the projection.
+ * `mode: resume` runs in a LATER process, reopens that session with `ctx.agents.resume`,
+ *                and reads the same projection key. The value it reports is reconstructed
+ *                from the persisted log, which is the claim under test.
  */
 export function apply(ctx, config) {
   if (!config?.enabled) return
@@ -29,47 +30,38 @@ export function apply(ctx, config) {
   const timer = setTimeout(async () => {
     let handle
     try {
-      console.log('[l6-probe] creating a session (no turn, so no provider is involved)')
-      // A unique id per run: sessions PERSIST, so a fixed id makes the second run fail
-      // with "session ... already exists" — which is itself evidence the first run
-      // created a durable session.
-      const sessionId = `session-l6-probe-${Date.now()}`
+      const read = session => JSON.stringify(ctx.sessionProjections.stateOf(session, 'l6Mode'))
+
+      if (config.mode === 'resume') {
+        console.log(`[l6-probe] resuming ${config.sessionId} in a fresh process`)
+        handle = await ctx.agents.resume({ resumeSessionId: config.sessionId })
+        const session = handle.agent.session
+        // Reconstructed from disk: the projection folds the persisted log on load.
+        console.log(`[l6-probe] RESUMED mode: ${read(session)}`)
+        return
+      }
+
       handle = await ctx.agents.create({
-        sessionId,
+        sessionId: config.sessionId,
         meta: { cwd: process.cwd() },
       })
-      console.log(`[l6-probe] handle: ${handle ? Object.keys(handle).join(',') : String(handle)}`)
-      console.log(`[l6-probe] agent present: ${Boolean(handle?.agent)}`)
-      const session = handle?.agent?.session
-      console.log(`[l6-probe] session present: ${Boolean(session)} (type ${typeof session})`)
+      const session = handle.agent.session
+      console.log(`[l6-probe] created ${session.id}`)
+      console.log(`[l6-probe] mode at creation: ${read(session)}`)
 
-      if (!session) {
-        console.log('[l6-probe] no session on the handle; cannot read a projection')
+      // Switch a permission preset: a real service call, the same one the `/permission`
+      // control makes. It appends a known log-only `sandbox/mode` event.
+      const presets = ctx.permissionPresets
+      if (!presets) {
+        console.log('[l6-probe] permissionPresets not mounted; cannot switch the preset')
         return
       }
-
-      const read = () => JSON.stringify(ctx.sessionProjections.stateOf(session, 'l6Steps'))
-
-      console.log(`[l6-probe] projection before any event: ${read()}`)
-      if (read() === undefined) {
-        console.log('[l6-probe] the l6Steps key is NOT registered — is the projection plugin loaded?')
-        return
-      }
-
-      session.append('l6/step', { label: 'probe-1', count: 1 })
-      console.log(`[l6-probe] after append count=1: ${read()}`)
-
-      session.append('l6/step', { label: 'probe-2', count: 9 })
-      console.log(`[l6-probe] after append count=9: ${read()}`)
-
-      // Note: the fold is itself evidence the events COMMITTED — a projection only folds
-      // committed events — so there is no need to reach for the raw log here.
+      presets.set(session, 'danger-full-access')
+      console.log(`[l6-probe] mode after switching the preset: ${read(session)}`)
+      console.log('[l6-probe] now STOP this process and re-run with mode=resume')
     } catch (error) {
       console.log(`[l6-probe] FAILED: ${error.message}`)
-      // The frame matters: "Invalid value used as weak map key" means an undefined was
-      // used where a Session was expected, and only the stack says where from.
-      const frames = String(error.stack ?? '').split('\n').slice(1, 6).join('\n')
-      console.log(`[l6-probe] stack:\n${frames}`)
+      console.log(String(error.stack ?? '').split('\n').slice(1, 4).join('\n'))
     } finally {
       try { await handle?.dispose() } catch { /* already gone */ }
       console.log('[l6-probe] done')
@@ -77,5 +69,5 @@ export function apply(ctx, config) {
   }, config.delayMs)
 
   ctx.effect(() => () => clearTimeout(timer))
-  console.log('[l6-probe] ACTIVE — will create a session and append events')
+  console.log('[l6-probe] ACTIVE — will create or resume a session')
 }
