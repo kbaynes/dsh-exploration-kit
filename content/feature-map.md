@@ -14,6 +14,11 @@ Every row is a capability that ships in the repository checkout, named by the
 package or seam that provides it. The **Lesson** column points at the
 [guided lesson](index.md) that puts that capability under your hands.
 
+**Reading that column.** A link means the lesson teaches or exercises the capability. An em
+dash (`—`) means it ships in the harness but **no lesson here covers it** — this is a path
+through the harness, not a survey of it, and saying so is more useful than a link that does
+not deliver.
+
 Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md), the architecture doc's
 "where new behavior goes" table (`docs/architecture.md`), the tool schema catalog
 (`docs/tool-catalog.md`), and the shipped bundle patches
@@ -24,18 +29,19 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | Capability | Provided by | Lesson |
 |---|---|---|
 | Everything-is-a-plugin composition into one shared context | Cordis core | [L1](./lessons/01-plugin-lifecycle.md) |
-| Three plugin shapes: function, object, `Service` subclass | Cordis | [L1](./lessons/01-plugin-lifecycle.md) |
+| Two plugin shapes exercised: function, `Service` subclass (the object form is documented upstream, not taught here) | Cordis | [L1](./lessons/01-plugin-lifecycle.md), [L3](./lessons/03-service-and-hmr.md) |
 | Fiber lifecycle `PENDING → LOADING → ACTIVE → UNLOADING → DISPOSED`, plus `FAILED` | Cordis registry | [L1](./lessons/01-plugin-lifecycle.md) |
-| Reversible effects — registrations unwind on unload | `ctx.on`, `ctx.plugin`, `ctx.effect` | [L2](./lessons/02-tool-and-effects.md), [L3](./lessons/03-service-and-hmr.md) |
+| Reversible effects — registrations unwind on unload | `ctx.on`, `ctx.plugin`, `ctx.effect` | [L1](./lessons/01-plugin-lifecycle.md), [L2](./lessons/02-tool-and-effects.md), [L3](./lessons/03-service-and-hmr.md) |
 | Dependency injection and load ordering via `inject` | Cordis services | [L3](./lessons/03-service-and-hmr.md) |
-| Typed events in five dispatch modes: `emit`, `parallel`, `serial`, `bail`, `waterfall` | Cordis events | [L4](./lessons/04-policy-waterfalls.md) |
+| Typed events in five dispatch modes: `emit`, `parallel`, `serial`, `bail`, `waterfall` | Cordis events | — |
 | Config validation before `apply` runs (Schemastery) | Cordis config | [L2](./lessons/02-tool-and-effects.md) |
+| Service isolation — two groups seeing different instances of one service name | Cordis `isolate` realms | [L3](./lessons/03-service-and-hmr.md) |
 | `!!js` load-time config and `disabled` expressions | Loader | [L2](./lessons/02-tool-and-effects.md) |
-| Profiles, bundles, patches; ordered composition at boot | `dsh-base`, `dsh-web-app`, `dsh-headless`, `dsh-sdk-app` | [L2](./lessons/02-tool-and-effects.md) |
-| Live config inspection — `dsh --dump-config`, `--dump-config-schema` | `apps/cli` | [L2](./lessons/02-tool-and-effects.md) |
+| Profiles, bundles, patches; ordered composition at boot | `dsh-base`, `dsh-web-app`, `dsh-headless`, `dsh-sdk-app` | [L1](./lessons/01-plugin-lifecycle.md), [L2](./lessons/02-tool-and-effects.md) |
+| Live config inspection — `dsh --dump-config`, `--dump-config-schema` | `apps/cli` | [L1](./lessons/01-plugin-lifecycle.md), [L2](./lessons/02-tool-and-effects.md) |
 | Hot module reload of changed plugins | `@deepseek-ai/dsh-hmr` | [L3](./lessons/03-service-and-hmr.md) |
 | Read-only live loader-tree projection | `@deepseek-ai/dsh-host-plugin-inventory` | [L3](./lessons/03-service-and-hmr.md) |
-| Runtime define/run of Cordis packages, host and browser halves | `extensions/{tool-cordis,cordis-host-runner,cordis-client-runner,ui-cordis}` | [L3](./lessons/03-service-and-hmr.md) |
+| Runtime define/run of Cordis packages, host and browser halves | `extensions/{tool-cordis,cordis-host-runner,cordis-client-runner,ui-cordis}` | — |
 
 ## 2. Extension seams — where new behavior attaches
 
@@ -43,19 +49,21 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 |---|---|---|
 | Model provider | register adapter on `ctx.llm` | — (see [cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-an-llm-adapter.md)) |
 | Model-facing capability | `ctx.tools.register(...)` | [L2](./lessons/02-tool-and-effects.md) |
-| Per-session capability set | agent preset (service row needs an `isolate` realm) | [L8](./lessons/08-multi-agent-orchestration.md) |
+| Per-session capability set | agent preset (a service row there needs an `isolate` realm) | [L9](./lessons/09-automation-and-triggers.md) |
 | Shell execution backend | `ctx.shell` (`bash-local`, `bash-sandbox`, `pwsh-*`) | — (swap providers, not author) |
-| Persistent terminal backend | `ctx.terminals` + `dsh-tool-terminal` | [L7](./lessons/07-operating-the-harness.md) |
+| Persistent terminal backend | `ctx.terminals` + `dsh-tool-terminal` | — |
 | Human command (no model turn) | `ctx.commands` | [L5](./lessons/05-context-assembly.md) |
-| Background work | `ctx.jobs.start(...)` + `job_*` tools | [L9](./lessons/09-automation-and-triggers.md) |
+| Background work | `ctx.jobs.start(...)` + `job_*` tools | — |
 | External webhook → new Session | `ctx.webhookRuntime` + a provider adapter | [L9](./lessons/09-automation-and-triggers.md) |
 | Filesystem provider or policy | `ctx.fs` provider, `fs/*` events | [L4](./lessons/04-policy-waterfalls.md) |
 | Process confinement | `ctx.sandbox` backend | [L4](./lessons/04-policy-waterfalls.md) |
-| Interception of requests, tools, turns | `agent/*`, `tools/*` events | [L4](./lessons/04-policy-waterfalls.md), [L6](./lessons/06-durable-session-state.md) |
+| Interception of requests, tools, turns | `agent/*`, `tools/*` events | [L4](./lessons/04-policy-waterfalls.md), [L5](./lessons/05-context-assembly.md) |
+| Monotonic tool guards — a denial no later listener can reverse | `ctx.tools.guard()` | [L4](./lessons/04-policy-waterfalls.md) |
 | Model-facing context injection | `agent.inject()` | [L5](./lessons/05-context-assembly.md) |
-| Durable session state | extend `SessionEventMap` | [L6](./lessons/06-durable-session-state.md) |
-| Skill discovery | `ctx.skills` + `dsh-tool-skill` | [L5](./lessons/05-context-assembly.md) |
-| UI / editor integration | `ctx.agents`, `session/event`, `ConversationNodeDefinition` | [L7](./lessons/07-operating-the-harness.md) |
+| Durable session state | `ctx.sessionProjections.register(…)` folding a **known** first-party event | [L6](./lessons/06-durable-session-state.md) |
+| Stored-event vocabulary validation — a log containing an unknown event type is refused unless the event is marked `ignorable` | `validateStoredEvents`, `KNOWN_SESSION_EVENT_TYPES` | [L6](./lessons/06-durable-session-state.md), [L7](./lessons/07-operating-the-harness.md) |
+| Skill discovery | `skill-filesystem` (`customSkillDirs`) + the `skill` tool | [L5](./lessons/05-context-assembly.md) |
+| UI / editor integration | `ctx.agents`, `session/event`, `ConversationNodeDefinition` | — |
 | Session title generation | `ctx.sessionTitle` provider | — |
 
 ## 3. Agent runtime
@@ -97,7 +105,7 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | Fork the current conversation into a child | `subagent_fork` + `subagent-fork-in-process` | [L8](./lessons/08-multi-agent-orchestration.md) |
 | Continuable children: message, interrupt, list | `send_message`, `interrupt_agent`, `list_agents` | [L8](./lessons/08-multi-agent-orchestration.md) |
 | Scripted fan-out with phases, pipelines, barriers, schema-validated results | `workflow` tool + `ctx.workflowEngine` | [L8](./lessons/08-multi-agent-orchestration.md) |
-| Fresh child per round on one immutable objective | `ralph` tool | [L8](./lessons/08-multi-agent-orchestration.md) |
+| Fresh child per round on one immutable objective | `ralph` tool | — |
 | Alternative delegation backends (ACP, Claude Code, Codex, dsh-sdk) | `subagent-*` providers | [L8](./lessons/08-multi-agent-orchestration.md) |
 | Roster + task board + mailbox coordination | experimental `agent-team` (`ctx.agentTeams`) | [L8](./lessons/08-multi-agent-orchestration.md) |
 
@@ -107,8 +115,8 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 |---|---|---|
 | `AGENTS.md` / `CLAUDE.md` auto-loading with directory precedence | `dsh-agent-instructions` | [L5](./lessons/05-context-assembly.md) |
 | Skills (filesystem, office, badges) loaded on demand | `skill*`, `tool-skill` | [L5](./lessons/05-context-assembly.md) |
-| File and session references with `@path` semantics | `file-reference*`, `session-reference` | [L5](./lessons/05-context-assembly.md) |
-| Ambient time and tmux context | `time-context`, `tmux-context` | [L5](./lessons/05-context-assembly.md) |
+| File and session references with `@path` semantics | `file-reference*`, `session-reference` | — |
+| Ambient time and tmux context | `time-context`, `tmux-context` | — |
 | Credential redaction in context | `dsh-credentials` | [L4](./lessons/04-policy-waterfalls.md) |
 
 ## 7. Sessions, state, and persistence
@@ -116,11 +124,11 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | Capability | Provided by | Lesson |
 |---|---|---|
 | Durable session log as the source of truth | `dsh-session`, `session-format` | [L6](./lessons/06-durable-session-state.md) |
-| JSONL persistence with versioned migrations | `session-persistence-jsonl`, `session-format-vN-to-vN+1` | [L6](./lessons/06-durable-session-state.md) |
+| JSONL persistence with versioned migrations | `session-persistence-jsonl`, `session-format-vN-to-vN+1` | — |
 | Incremental projections and cached client views | `session-projection`, `session-projection-cache` | [L6](./lessons/06-durable-session-state.md) |
-| SQLite session query and export | `session-query-sqlite`, `session-log-export` | [L7](./lessons/07-operating-the-harness.md) |
-| Fork and resume at a turn boundary | `ctx.agents.create({ seed, meta })` | [L8](./lessons/08-multi-agent-orchestration.md) |
-| Checkpointing policy | `session-checkpoint-policy` | [L6](./lessons/06-durable-session-state.md) |
+| SQLite session query and export | `session-query-sqlite`, `session-log-export` | — |
+| Fork and resume at a turn boundary | `ctx.agents.create({ seed, inheritedEventCount, meta })` / `ctx.agents.resume` | [L6](./lessons/06-durable-session-state.md), [L8](./lessons/08-multi-agent-orchestration.md) |
+| Checkpointing policy | `session-checkpoint-policy` | — |
 
 ## 8. Web GUI and client
 
@@ -142,14 +150,14 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | TypeScript SDK (spawns a runtime, drives turns) | `packages/sdk/client` | [L9](./lessons/09-automation-and-triggers.md) |
 | Python SDK over the same protocol | `python/` | [L9](./lessons/09-automation-and-triggers.md) |
 | Newline-delimited JSON-RPC wire protocol | `sdk/protocol`, `sdk/server` | [L9](./lessons/09-automation-and-triggers.md) |
-| Agent Client Protocol server for programmatic clients | `packages/acp` | [L9](./lessons/09-automation-and-triggers.md) |
+| Agent Client Protocol server for programmatic clients | `packages/acp` | — |
 | One-shot headless execution | `dsh-headless` bundle | [L9](./lessons/09-automation-and-triggers.md) |
 | Scheduled wakes (interval, absolute, daily/weekly, cron) | `dsh-schedule` + `schedule_*` tools | [L9](./lessons/09-automation-and-triggers.md) |
 | Webhook-triggered sessions, including GitHub events | `webhook`, `webhook-github` | [L9](./lessons/09-automation-and-triggers.md) |
 | Hook protocol adapters for Claude Code and Codex | `hooks-*`, `hook-protocol` | [L9](./lessons/09-automation-and-triggers.md) |
-| Remote execution over SSH | `ssh`, `fs-ssh`, `subprocess-ssh`, `sandbox-ssh` | [L4](./lessons/04-policy-waterfalls.md) |
-| HTTP API gateway with controllers | `packages/api/*` | [L9](./lessons/09-automation-and-triggers.md) |
-| Browser automation and computer use | `browser-use*`, `computer-use*` (experimental) | [L7](./lessons/07-operating-the-harness.md) |
+| Remote execution over SSH | `ssh`, `fs-ssh`, `subprocess-ssh`, `sandbox-ssh` | — |
+| HTTP API gateway with controllers | `packages/api/*` | — |
+| Browser automation and computer use | `browser-use*`, `computer-use*` (experimental) | — |
 | Speech-to-text and voice input | `experimental/speech-to-text*` | — |
 
 ## 10. Model providers

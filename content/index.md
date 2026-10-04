@@ -37,7 +37,7 @@ defensible 30-minute subset — Lessons 1 and 3 — and says what it leaves out.
 | 3 | [Services, isolation, and hot reload](./lessons/03-service-and-hmr.md) | `ctx.*` services, `inject`, HMR, inventory | No |
 | 4 | [Build a policy gate](./lessons/04-policy-waterfalls.md) | `tools/*` and `fs/*` waterfall events, guards | Optional |
 | 5 | [Assemble context deliberately](./lessons/05-context-assembly.md) | Context hooks, skills, commands | Yes |
-| 6 | [Give the session durable state](./lessons/06-durable-session-state.md) | `SessionEventMap`, projections, replay | No |
+| 6 | [Give the session durable state](./lessons/06-durable-session-state.md) | `ctx.sessionProjections`, durable derived state | No |
 | 7 | [Operate the harness](./lessons/07-operating-the-harness.md) | Session query, telemetry, token accounting | Yes |
 | 8 | [Orchestrate multiple agents](./lessons/08-multi-agent-orchestration.md) | Subagents, forks, workflow engine | Yes |
 | 9 | [Automate the harness](./lessons/09-automation-and-triggers.md) | Headless, SDK/ACP, schedules, webhooks | Yes |

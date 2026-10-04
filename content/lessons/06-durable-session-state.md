@@ -1,7 +1,7 @@
 ---
 type: Exploration Lesson
 title: "L6 — Give the session durable state"
-description: Add a new SessionEventMap event, append it durably, fold it into a projection a client can read, and prove it survives a restart.
+description: Fold a known first-party session event into a projection, prove the derived state survives a restart, and learn why inventing an event type destroys the session.
 resource: dsh
 tags: [deepseek-harness, lesson, sessions, persistence, projections, session-events]
 timestamp: 2026-09-30

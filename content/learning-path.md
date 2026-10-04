@@ -31,7 +31,7 @@ Three rules produced the order:
 2. **One new seam per lesson.** A lesson introduces exactly one new extension
    point, so a failure is attributable. L2 adds `ctx.tools`, L3 adds a service
    and the reload path, L4 adds `tools/*` events, L5 adds context hooks, L6 adds
-   `SessionEventMap`, and so on.
+   `ctx.sessionProjections` over a known first-party event, and so on.
 3. **Cheap feedback loops first.** Lessons 1–8 are verified by booting a real profile and
    reading its output; the headless and SDK paths in L9 are documented but not yet run.
    The expensive lessons (L8 orchestration, L9 automation) come last, because by
@@ -43,23 +43,27 @@ Three rules produced the order:
 |---|---|---|---|
 | L1 | Mount your first plugin | Plugin tree, bundles and rows, fiber lifecycle | Reading a `FAILED` or `PENDING` load as a diagnosis instead of a mystery |
 | L2 | A tool + config composition | `ctx.tools`, Schemastery, config override | Making DSH do something new the model can call |
-| L3 | A service + hot reload | `ctx.*` service keys, `inject`, HMR, inventory | Watching the runtime reconfigure live; inspecting your own tree |
+| L3 | A service + hot reload | `ctx.*` service keys, `inject`, HMR, isolated realms, inventory | Watching the runtime reconfigure live; inspecting your own tree |
 | L4 | A policy gate | `tools/*` and `fs/*` waterfall events, guards | Governing what the agent may do, not just what it can do |
-| L5 | Deliberate context assembly | `agent/pre-step`, `agent.inject()`, skills, commands | Controlling what the model knows and when |
-| L6 | Durable session state | `SessionEventMap`, projections, replay | State that survives a restart and is reconstructable from the log |
+| L5 | Deliberate context assembly | `agent/pre-step`, `agent/request`, `agent.inject()`, skills, commands | Controlling what the model knows and when |
+| L6 | Durable session state | `ctx.sessionProjections` folding a known first-party event | State that survives a restart and is reconstructable from the log |
 | L7 | Operate the harness | OTel, token meter, session query, invariants | Answering "what did it cost, and what actually happened?" |
 | L8 | Multi-agent orchestration | Subagents, forks, workflow engine, presets, teams | Fanning work across contexts with structured results |
-| L9 | Automation and triggers | Headless, SDK/ACP, schedules, webhooks, API gateway | Running DSH unattended and letting other systems drive it |
+| L9 | Automation and triggers | Headless, SDK/ACP, schedules, webhooks, hook adapters | Running DSH unattended and letting other systems drive it |
 
 ## Dependency graph
 
 ```
 L1 ──> L2 ──> L3 ──> L4 ──> L5 ──> L6 ──> L7
-                       │             │
-                       └────> L8 <───┘
-                                │
-                                └──> L9
+                                          │
+                                          ▼
+                                         L8 ──> L9
 ```
+
+Read it as the *required* order rather than the only useful one: L8 depends on the whole of
+L1–L7 (its prerequisites say so, and step 4 boots the L7 overlay to read a session log), which
+is why the edge runs from L7. The earlier version of this graph drew L8 off L4 and L6, which
+was wrong in both directions.
 
 - L1 → L2 → L3 is strictly linear: each adds one lifecycle concept the next assumes.
 - L4 depends on L1–L3 only for the mechanics of mounting a listener.
@@ -67,8 +71,10 @@ L1 ──> L2 ──> L3 ──> L4 ──> L5 ──> L6 ──> L7
   distinguish observing a request from rewriting it.
 - L6's projection work assumes L5, because the cheapest place to *observe* a
   session event is a context hook you already built.
-- L8 is reachable after L4 but is scheduled after L7 so that you can measure the
-  orchestration instead of guessing. It depends on L6 for forked-session seeding.
+- L8 requires L1–L7. It uses L6's projection to *observe* what a forked child inherits, and
+  L7's overlay to read the parent's log for the seed, so the edge runs from L7 — but the
+  deeper reason it is scheduled late is that orchestration should be measured before it is
+  trusted, and L7 is where the measuring is taught.
 - L9 closes the loop: it depends on L2 (a bundle to ship), L3 (HMR awareness),
   and L8 (work worth automating).
 
@@ -97,7 +103,7 @@ assumes L5's "the log is the source of truth".
 |---|---|---|
 | C1 | L3 | Explain what happens, step by step, when a plugin's `apply` throws |
 | C2 | L4 | Write a waterfall listener that denies one tool call and delegates the rest |
-| C3 | L6 | Add a durable session event and render it again after a restart |
+| C3 | L6 | Fold a known first-party session event into a projection and read it again after a restart |
 | C4 | L7 | Produce a cost and trajectory report for one multi-turn task |
 | C5 | L9 | Run DSH unattended from another program, triggered by a schedule |
 
@@ -109,9 +115,9 @@ expensive to debug from a weak base.
 
 - **Model provider authoring** (`ctx.llm` adapters). Covered by the repository's
   [adding-an-llm-adapter cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-an-llm-adapter.md);
-  the [openrouter integration](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md) concept covers
-  the configuration-level version. L4's provider-free policy work is the
-  prerequisite.
+  the [providers guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md) covers
+  the configuration-level version. The prerequisite is L2's `ctx.tools` registration: an
+  adapter is registered on a `ctx.*` seam the same way, which is the transferable part.
 - **Client/UI plugin authoring.** L3 touches the browser half through the Cordis
   client runner, but building a React conversation node is out of scope; see the
   repository's `docs/subsystems/conversation.md`.
