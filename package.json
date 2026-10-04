@@ -40,7 +40,7 @@
     "sync:examples": "node scripts/sync-examples.mjs",
     "check:examples": "node scripts/sync-examples.mjs --check",
     "check:decisions": "node scripts/check-decisions.mjs",
-    "check:units": "cd kit-plugins && node --test l6/fold.test.mjs",
+    "check:units": "cd kit-plugins && node --test l6/fold.test.mjs l8/audit-workflow.test.mjs",
     "check:kit": "node scripts/check-kit.mjs"
   },
   "devDependencies": {

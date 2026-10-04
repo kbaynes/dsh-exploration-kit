@@ -26,7 +26,8 @@ most likely to be over-applied, so it is scheduled *after* you can measure it.
 | Providers | `spawn` and `fork` in-process, plus ACP/Claude Code/Codex/dsh-sdk alternatives |
 | `workflow` | A JS script with `agent()`, `pipeline()`, `parallel()`, `phase()`, `log()`, `args` |
 | Schema-validated results | `opts.schema` turning a child's prose into a checked object |
-| Session forking | `ctx.agents.create({ seed, meta })` at a turn boundary |
+| Session forking | `ctx.agents.create({ seed, inheritedEventCount, meta })` at a turn boundary |
+| Testable orchestration | Parametrising the engine hooks so the pipeline is testable with fakes |
 | Agent presets | Per-session capability sets; a service row there needs an `isolate` realm |
 | Agent teams | Roster, task board, mailbox — opt-in, and it displaces the legacy control names |
 
@@ -49,7 +50,7 @@ provider with model selection omitted so provider/model stay equal to the parent
 
 Use it on a real task in your exploration workspace, for example:
 
-> *Ask the agent to delegate: "Read `doc/exploration/feature-map.md` and report
+> *Ask the agent to delegate: "Read `<kit>/content/feature-map.md` and report
 > every capability in section 5 as a compact table."*
 
 Then ask the follow-up question that matters: **what did the child not know?**
@@ -64,48 +65,50 @@ task description is a common and expensive mistake.
 
 ## Step 2 — Fan out with a workflow
 
-The `workflow` tool takes a JavaScript script and runs agents from it. Learn the
-shape by using every hook once:
+The `workflow` tool takes a JavaScript script and runs agents from it. **Neither the
+tool nor its engine needs installing** — the base bundle mounts `tool-workflow`,
+`workflow-ptc`, `tool-subagent`, and the fork row, so this lesson adds no plugin to the
+kit. Confirm that before writing anything:
+
+```sh
+dsh --profile kitdemo --dump-config | grep -E 'id: (tool-workflow|tool-subagent|workflow-ptc)'
+```
+
+The kit ships the workflow at `<kit>/kit-plugins/l8/audit-workflow.js`. It is split in
+two **deliberately**, and the split is the lesson's most transferable idea:
 
 ```js
-const sections = ['1. Plugin core', '2. Extension seams', '3. Agent runtime']
+// audit-workflow.js — the PURE half, unit-tested without an agent
+export const capabilityRowsSchema = { /* object root, additionalProperties: false */ }
 
-phase('audit')
+export function normalizeResults(results) {
+  return results.filter(r => r != null && Array.isArray(r.rows))
+}
 
-const results = await pipeline(
-  sections,
-  async (section, _item, index) => {
+export function flattenSections(results) {
+  return normalizeResults(results).flatMap((r, index) =>
+    r.rows.map(row => ({ ...row, sectionIndex: index })),
+  )
+}
+
+// audit-workflow.js — the half that needs a model
+export async function runWorkflow({ agent, pipeline, phase, log }, sections) {
+  phase('audit')
+  const results = await pipeline(sections, async (section, _item, index) => {
     log(`auditing ${section}`)
-    return agent(
-      `Read doc/exploration/feature-map.md and return the rows under "${section}" ` +
-      `as a JSON array of {capability, providedBy}.`,
-      {
-        label: `audit-${index}`,
-        schema: {
-          type: 'object',
-          properties: {
-            rows: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  capability: { type: 'string' },
-                  providedBy: { type: 'string' },
-                },
-                required: ['capability', 'providedBy'],
-                additionalProperties: false,
-              },
-            },
-          },
-          required: ['rows'],
-          additionalProperties: false,
-        },
-      },
-    )
-  },
-)
+    return agent(sectionPrompt(section), { label: `audit-${index}`, schema: capabilityRowsSchema })
+  })
+  return flattenSections(results)
+}
+```
 
-return results.filter(Boolean)
+The engine injects `agent`, `pipeline`, `phase`, and `log` into the script, so a
+function taking them as parameters is testable with fakes. That is exactly what
+`audit-workflow.test.mjs` does — **seven tests, no model** — and it is what lets you
+trust the orchestration before spending tokens on it:
+
+```sh
+pnpm run check:units
 ```
 
 The mechanics worth internalizing:
@@ -113,18 +116,18 @@ The mechanics worth internalizing:
 - **`pipeline(items, ...stages)` has no barrier between stages.** Each item flows
   independently, so a slow item does not hold up the rest. Prefer it over
   `parallel()` unless a stage genuinely needs every prior result together.
-- **A schema turns prose into a checked object.** Without one you get text back and
-  you will write a fragile regex to parse it.
-- **A throwing stage drops that item to `null`** and skips its remaining stages —
-  which is why the script filters `Boolean` at the end rather than assuming a
-  dense array.
-- **`phase()` and `log()` are real API, not decoration.** They drive the progress
-  a human sees, and they are the difference between a five-minute fan-out and an
-  opaque one.
+- **A schema turns prose into a checked object.** Without one you get text back and you
+  write a fragile regex to parse it. Note the schema shape: an object root, and
+  `additionalProperties: false` on every object node.
+- **A throwing stage drops that item to `null`** and skips its remaining stages — it
+  does not reject the whole run. That is why the normalization step exists, and why the
+  test asserting it is the most valuable one in the file.
+- **`phase()` and `log()` are real API, not decoration.** They drive the progress a
+  human sees, and they are the difference between a five-minute fan-out and an opaque
+  one.
 
-Misusing a hook — bad arguments, an unsupported schema keyword, a tripped cap —
-ends the whole script rather than yielding `null`. Read the failure; it names the
-offending argument.
+Misusing a hook — bad arguments, an unsupported schema keyword, a tripped cap — ends
+the whole script rather than yielding `null`. Read the failure; it names the argument.
 
 ## Step 3 — Compare decomposition to a monolithic run
 
@@ -166,8 +169,7 @@ confirm it uses the cut it was given. If it guesses, forks will misreport state.
 ## Step 5 — Opt into agent teams (optional, deeper)
 
 Teams layer a durable roster, task board, and mailbox over continuable subagents on
-`ctx.agentTeams`. They are **not** enabled in the base bundle. The shipped
-`agent-team-profile` patch is the documented way in, and it is instructive to read
+`ctx.agentTeams`. They are **not** enabled in the base bundle. The shipped `agent-team` profile patch is the documented way in, and it is instructive to read
 before applying, because it disables the legacy continuable-child control names
 (`tool-subagent-control`, `tool-subagent-list-agents`, `tool-subagent`) while
 inserting the team plugins with explicit caps:
@@ -198,11 +200,35 @@ explicitly experimental, and the lesson is the mechanism, not the feature.
 
 ## Verification
 
-1. A spawned child completes a task while demonstrating it lacks the parent's context.
-2. Your workflow returns a dense, schema-validated array — or a filtered one you can explain.
-3. `send_message` reaches a live child and `interrupt_agent` stops it.
-4. You can produce the four-part audit for a monolithic run *and* a decomposed run of the same task.
-5. Your L6 projection consumes the fork-inherited cut rather than inferring it.
+```sh
+bash <kit>/solutions/verify-l8.sh <path/to/deepseek-harness>
+```
+
+Observable without a model:
+
+1. `tool-workflow`, `tool-subagent`, `tool-subagent-fork`, and `workflow-ptc` are
+   mounted by the base bundle and compose — **this lesson adds no plugin**, which is
+   itself the finding: orchestration is capability the harness already provides.
+2. The workflow's pure core passes seven unit tests with a **fake engine**
+   (`pnpm run check:units`): the pipeline drives every item, logs each one, passes the
+   schema through, and a partially failed fan-out still yields a dense array.
+3. The result schema has an object root and declares `additionalProperties: false` on
+   every object node.
+
+Requires a provider:
+
+4. A spawned child completes a task while demonstrating it lacks the parent's context.
+5. A forked child inherits the cut, and your L6 projection consumes it rather than
+   inferring it.
+6. `send_message` reaches a live child and `interrupt_agent` stops it.
+7. A real fan-out returns schema-validated rows.
+8. You can produce the four-part audit for a monolithic run *and* a decomposed run of
+   the same task.
+
+Items 4–8 are recorded as unverified in
+[VERIFIED.md](https://github.com/REPLACE_OWNER/dsh-exploration-kit/blob/main/VERIFIED.md).
+Item 2 is the reason this lesson is worth more than its prose: the orchestration
+*contract* is tested even though the agents are not.
 
 ## Exit check — you should now be able to explain
 

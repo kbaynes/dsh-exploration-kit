@@ -42,7 +42,7 @@ become incidents.
 ## Step 1 — One-shot from the shell
 
 ```sh
-dsh --profile headless "summarize doc/exploration/learning-path.md in five bullets"
+dsh --profile headless "summarize <kit>/content/learning-path.md in five bullets"
 ```
 
 The task comes from the positional argument, or from stdin when the argument is
@@ -152,7 +152,7 @@ The tool accepts `after_seconds`, an explicit absolute `at`, a bounded fixed-rat
 as a five-field expression. Management uses the Host storage domain, and a due
 message resumes the original Session.
 
-Practical exercise: schedule a recurring check of the `doc/` bundle's validation
+Practical exercise: schedule a recurring check of the kit's own validation
 (`~/.local/bin/okflint validate --manifest doc/okf-base.yaml ./doc/`), let it fire
 once, then delete it. Notice what "resumes the original Session" gives you — the
 run has your earlier context, which is both the feature and the risk. A reminder

@@ -100,7 +100,7 @@ row that admits it has not been checked yet.
 | L5 — Assemble context deliberately | **Partly executed** | Executed: all three plugins activate on the real composition, `agent.inject()` is built from `createUserMessage` with a producer-owned source kind, and the skills overlay composes onto the base `skill-filesystem` row. **Not** executed: the `pre-step` payload, injected-text durability, the model's skill catalog, and `/l5-facts` — each needs a session. |
 | L6 — Give the session durable state | **Partly executed** | Executed: both plugins load on the real composition; the projection's fold is **unit-tested** (`kit-plugins/l6/fold.test.mjs`, 4 tests, in CI) including the same-reference contract and the delta-corruption hazard. **Not** executed: appending to a real session, JSONL inspection, and restart replay — each needs a session. |
 | L7 — Operate the harness | **Partly executed** | Executed: the overlay composes as one override plus three inserts, and a boot applies it with **zero activation warnings**; the optional tool package is installed pinned to the dsh version. **Not** executed: any query, the authority refusal, token deltas, `/compact`, and the invariant findings — each needs a session. |
-| L8 — Orchestrate multiple agents | **Documented** | Subagent provider rows verified against `packages/bundle/base/cordis.patch.yml`; agent-team caps verified against `packages/experimental/agent-team-profile/cordis.patch.yml`. Needs a model. |
+| L8 — Orchestrate multiple agents | **Partly executed** | Executed: the orchestration primitives are confirmed mounted by the base bundle (no kit plugin needed), and the workflow's pure core passes **7 unit tests with a fake engine** — pipeline drives every item, the schema passes through, and a partially failed fan-out still yields a dense array. **Not** executed: any real delegation, fork, or fan-out — each needs a provider. |
 | L9 — Automate the harness | **Documented** | Headless CLI contract, SDK usage, schedule and webhook contracts read from package READMEs. **The Python snippet in step 3 is a placeholder** and must be replaced or removed before publication. Needs a model. |
 
 ## Design pivot: plugins must be a bundle, not a `--patch` overlay
@@ -198,6 +198,35 @@ l1-hello (dsh-exploration-kit-plugins/l1/hello.ts): pending (waiting for service
 **Two draft assumptions were wrong and are corrected in the lesson:** the boot
 warns and continues rather than exiting non-zero, and `PENDING` is *not* silent —
 the startup summary names the missing service.
+
+## Evidence: L8 orchestration primitives are mounted, and its logic is unit-tested
+
+**This lesson adds no plugin.** `tool-subagent`, `tool-subagent-fork`,
+`tool-subagent-control`, `tool-workflow`, and `workflow-ptc` are all mounted by the
+base bundle, so orchestration is capability the harness already provides rather than
+something the kit installs. Worth recording because it is the opposite of L6's
+expectation.
+
+**The workflow's pure core is unit-tested without a model.** The engine injects
+`agent`, `pipeline`, `phase`, and `log` into a workflow script, so a function that
+takes them as parameters is testable with fakes. `kit-plugins/l8/audit-workflow.test.mjs`
+runs seven tests, all passing, covering:
+
+- the result schema has an object root with `additionalProperties: false`
+- a throwing stage drops **that item** to `null` — it does not reject the run
+- a malformed result is dropped rather than crashing the flatten
+- flattening keeps order and tags each row's section
+- a partially failed fan-out still yields a dense array
+- the prompt names the section verbatim
+- `runWorkflow` drives `pipeline`, logs each item, passes the schema through, and
+  returns a dense result
+
+**A stale path was found and fixed.** L8 and L9 still pointed readers at
+`doc/exploration/...`, the workspace location the curriculum left when it became a
+standalone repository. Both now use `<kit>/content/...`.
+
+**Deliberately unverified:** any real delegation, fork, or fan-out, and the
+monolith-versus-fan-out cost comparison. Every one needs a provider.
 
 ## Evidence: L7 composes and activates
 
