@@ -25,7 +25,7 @@ timestamp: 2026-09-30
 | Skills | A `SKILL.md` catalog discovered from scanned roots, body loaded on demand |
 | Human commands | `ctx.commands.register()` — dispatches without a model turn |
 
-Reference: [workspace instruction loading](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md), the repository's [skill filesystem README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/skill/skill-filesystem/README.md) and [commands README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/interaction/commands/README.md).
+Reference: [workspace instruction loading](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/context/agent-instructions/README.md), the repository's [skill filesystem README](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/skill/skill-filesystem/README.md) and [commands README](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/interaction/commands/README.md).
 
 ## Prerequisites
 
@@ -243,7 +243,7 @@ You now have four delivery mechanisms, and choosing correctly is most of the ski
 | Skills | Procedures and reference too large to inject | Catalog always, body on demand |
 | Commands | Deterministic actions with no reasoning needed | No model turn at all |
 
-Placement has a correctness dimension, not just a cost one. The [agent-instructions concept](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/context/agent-instructions/README.md) records the rule and a real mistake from this very bundle: `~/.dsh/AGENTS.md` loads in **every** dsh session on the machine, so anything workspace-specific placed there bleeds into unrelated projects. Workspace-root `AGENTS.md` is correct for workspace-specific knowledge even though it is less guaranteed to fire. Correctness of scope beats the convenience of "always loads".
+Placement has a correctness dimension, not just a cost one. The [agent-instructions concept](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/context/agent-instructions/README.md) records the rule and a real mistake from this very bundle: `~/.dsh/AGENTS.md` loads in **every** dsh session on the machine, so anything workspace-specific placed there bleeds into unrelated projects. Workspace-root `AGENTS.md` is correct for workspace-specific knowledge even though it is less guaranteed to fire. Correctness of scope beats the convenience of "always loads".
 
 ## Verification
 

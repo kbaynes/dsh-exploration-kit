@@ -13,7 +13,7 @@ The reference inventory behind the [exploration lesson plan](index.md). Every ro
 
 **Reading that column.** A link means the lesson teaches or exercises the capability. An em dash (`—`) means it ships in the harness but **no lesson here covers it** — this is a path through the harness, not a survey of it, and saying so is more useful than a link that does not deliver.
 
-Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md), the architecture doc's "where new behavior goes" table (`docs/architecture.md`), the tool schema catalog (`docs/tool-catalog.md`), and the shipped bundle patches (`packages/bundle/base/cordis.patch.yml`, `packages/bundle/web-app/cordis.patch.yml`).
+Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/framework/index.md), the architecture doc's "where new behavior goes" table (`docs/architecture.md`), the tool schema catalog (`docs/tool-catalog.md`), and the shipped bundle patches (`packages/bundle/base/cordis.patch.yml`, `packages/bundle/web-app/cordis.patch.yml`).
 
 ## 1. Plugin core — the defining capability
 
@@ -38,7 +38,7 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 
 | Seam | `ctx` key / event | Lesson |
 |---|---|---|
-| Model provider | register adapter on `ctx.llm` | — (see [cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-an-llm-adapter.md)) |
+| Model provider | register adapter on `ctx.llm` | — (see [cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/adding-an-llm-adapter.md)) |
 | Model-facing capability | `ctx.tools.register(...)` | [L2](./lessons/02-tool-and-effects.md) |
 | Per-session capability set | agent preset (a service row there needs an `isolate` realm) | [L9](./lessons/09-automation-and-triggers.md) |
 | Shell execution backend | `ctx.shell` (`bash-local`, `bash-sandbox`, `pwsh-*`) | — (swap providers, not author) |
@@ -160,7 +160,7 @@ Sources: the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob
 | Retry and fallback policy | `llm-retry` |
 | Sandboxed execution backends | `sandbox-local`, `e2b`, `sandbox-windows-acl` |
 
-See [OpenRouter integration & reasoning error hardening](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md) for the verified provider-configuration recipe.
+See [OpenRouter integration & reasoning error hardening](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/guide/providers.md) for the verified provider-configuration recipe.
 
 ## 11. Observability and operations
 
@@ -176,7 +176,7 @@ Deploy-time hardening guidance is **not** published by DSH as documentation; it 
 ## Related Concepts
 
 - [Exploration lesson plan](index.md) — the ordered path through this map
-- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) — the mechanism behind every row in section 1
-- [Plugin discovery](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md) — finding third-party plugins that add rows
-- [Headless integration model](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/bundle/headless/README.md) — deploying section 9
-- [Observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/otel.md) — deploying section 11
+- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/framework/index.md) — the mechanism behind every row in section 1
+- [Plugin discovery](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md) — finding third-party plugins that add rows
+- [Headless integration model](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/bundle/headless/README.md) — deploying section 9
+- [Observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/otel.md) — deploying section 11

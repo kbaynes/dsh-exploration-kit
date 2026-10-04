@@ -30,7 +30,7 @@ Highest-value starting points:
 
 - **Path convention:** `<kit>` means this repository's root. The lesson exercise plugins live in the bundle at `<kit>/kit-plugins/`; `<kit>/plugins/` is the learner's own scratch space.
 - **Plugins ship as a bundle, never as loose files reached by a `--patch` overlay.** A row in an overlay resolves relative to the patch file, and a loose source file cannot import `@deepseek-ai/*` (pnpm symlinks only declared dependencies), so the entry fails to activate. Rows are named by package and installed with `dsh plugin ... add link:<kit>/kit-plugins`. Evidence is in `VERIFIED.md` under "Design pivot".
-- **Upstream references** to DSH's own docs use absolute `https://github.com/deepseek-ai/deepseek-harness/blob/main/...` URLs so this repo works standalone. Links *within* the kit are relative markdown links.
+- **Upstream references** to DSH's own docs use absolute `https://github.com/deepseek-ai/deepseek-harness/blob/master/...` URLs so this repo works standalone. Links *within* the kit are relative markdown links.
 - **Every lesson has the same shape:** goal → concepts → steps → verification → exit check → next. Keep it.
 - **Say when a step is unverified.** A lesson that admits uncertainty is more useful than one that overstates.
 - **Prose is one line per paragraph or list item — never column-wrap it.** A single newline inside a paragraph is a *soft* break: strict renderers flow it, but editors' previews, note apps and chat pastes turn it into a mid-sentence break, so a wrapped file renders differently depending on where it is read. `pnpm run reflow` fixes a file; `pnpm run check:wrapping` enforces it and is part of `pnpm run check:kit` ([ADR-0031](decisions/0031-prose-is-not-column-wrapped.md)).

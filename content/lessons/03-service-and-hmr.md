@@ -25,7 +25,7 @@ timestamp: 2026-09-30
 | Hot module replacement | `dsh-hmr` unloads and reloads a changed plugin in place |
 | Live tree inspection | Plugin inventory, the registry API, and `plugin_manager` |
 
-Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) and the repository's [services tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cordis-tutorial/03-services.md).
+Reference: [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/framework/index.md) and the repository's [services tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cordis-tutorial/03-services.md).
 
 ## Prerequisites
 

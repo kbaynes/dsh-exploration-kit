@@ -25,7 +25,7 @@ timestamp: 2026-09-30
 | Config override | Patch an already-installed row in place, whole-`config` replacement |
 | `!!js` | Compute config or `disabled` at load time |
 
-Reference: the repository's [adding-a-tool cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-a-tool.md) and its [build-a-tool guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/tool.md). Production-grade reference implementation: `packages/shell/tool-bash`.
+Reference: the repository's [adding-a-tool cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/adding-a-tool.md) and its [build-a-tool guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/tool.md). Production-grade reference implementation: `packages/shell/tool-bash`.
 
 ## Prerequisites
 

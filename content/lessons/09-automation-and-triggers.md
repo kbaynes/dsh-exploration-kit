@@ -27,7 +27,7 @@ timestamp: 2026-09-30
 | Hook adapters | Claude Code and Codex hook protocols |
 | The operating bar | What must be true before any of this ships unattended |
 
-Reference: the [headless bundle](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/bundle/headless/README.md) and the [SDK family](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/sdk/README.md).
+Reference: the [headless bundle](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/bundle/headless/README.md) and the [SDK family](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/sdk/README.md).
 
 ## Prerequisites
 
@@ -292,6 +292,6 @@ Items 6 and 8 are not executed: item 6 needs the SDK to invoke a tool rather tha
 
 ## Where to go next
 
-- **Find plugins before writing them.** The community registry and the npm `deepseek-harness` keyword are better starting points than a bare GitHub topic filter, which matches the ambiguous token `dsh` and returns many unrelated projects. See the [publish guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/basic/publish.md) for how a plugin is packaged, so you can judge what you find.
+- **Find plugins before writing them.** The community registry and the npm `deepseek-harness` keyword are better starting points than a bare GitHub topic filter, which matches the ambiguous token `dsh` and returns many unrelated projects. See the [publish guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/basic/publish.md) for how a plugin is packaged, so you can judge what you find.
 - **Publish your work.** Bundle your plugins into a package that declares its role under a `dsh` field in `package.json` (`dsh.bundle`, `dsh.profile`) so others can stack it in a profile.
 - **Re-read the [capability map](../feature-map.md)** now that every row means something concrete. The rows you can explain are the ones you have earned.

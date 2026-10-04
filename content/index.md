@@ -39,7 +39,7 @@ Each lesson has the same shape: **goal → concepts → steps → verification �
 Every lesson assumes:
 
 - A **DeepSeek Harness source checkout** with `pnpm run build` already run.
-- `dsh` on your `PATH` (see [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md)).
+- `dsh` on your `PATH` (see [installing the dsh CLI](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md)).
 - The path convention `<kit>` meaning this repository's root.
 - The kit's exercise plugins installed as a **bundle**. Lesson 1 does this once:
 

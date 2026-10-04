@@ -25,7 +25,7 @@ timestamp: 2026-09-30
 | Complete-state events | A state-carrying event carries the post-change state, never a bare delta |
 | Restart as the test | In-process behaviour cannot distinguish durable state from a cache |
 
-Reference: the repository's [session subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/session.md), [session projection README](https://github.com/deepseek-ai/deepseek-harness/blob/main/packages/session/session-projection/README.md), and the [persistence catalog](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/persistence-catalog.md).
+Reference: the repository's [session subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/session.md), [session projection README](https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/session/session-projection/README.md), and the [persistence catalog](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/persistence-catalog.md).
 
 ## Prerequisites
 

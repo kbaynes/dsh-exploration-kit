@@ -25,7 +25,7 @@ timestamp: 2026-09-30
 | Invariants | `runtime-diagnostics/invariants` as a self-check |
 | Cost auditing | Turning a trajectory into a defensible number |
 
-Reference: [observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/otel.md) and the [telemetry pipeline checklist](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/session-telemetry.md).
+Reference: [observability & auditing](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/otel.md) and the [telemetry pipeline checklist](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/session-telemetry.md).
 
 ## Prerequisites
 

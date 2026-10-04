@@ -25,12 +25,12 @@ timestamp: 2026-09-30
 | Lifecycle | The six fiber states, including `FAILED` and the silent `PENDING` |
 | Effects | A registration that is undone when the plugin unloads |
 
-Reference: the [plugin framework guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) and the repository's [first-plugin tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cordis-tutorial/01-first-plugin.md).
+Reference: the [plugin framework guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/framework/index.md) and the repository's [first-plugin tutorial](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cordis-tutorial/01-first-plugin.md).
 
 ## Prerequisites
 
 - The `deepseek-harness` source checkout, `pnpm run build` already run.
-- `dsh` on `PATH`. See DSH's [development guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md).
+- `dsh` on `PATH`. See DSH's [development guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md).
 - A terminal. **Do not** use a sandboxed agent's bash tool for the boot steps: the default file sandbox blocks `dsh` from writing its composed profile under `~/.dsh`, and the boot fails with `EPERM`. Run these commands in your own shell.
 
 ## Step 1 — Install the kit's plugin bundle

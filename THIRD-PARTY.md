@@ -50,7 +50,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-The authoritative text is [the upstream LICENSE](https://github.com/deepseek-ai/deepseek-harness/blob/main/LICENSE). That URL is intentionally not path-checked by `scripts/check-upstream-links.mjs`, which validates `blob/main/` documentation paths against a checkout.
+The authoritative text is [the upstream LICENSE](https://github.com/deepseek-ai/deepseek-harness/blob/master/LICENSE). That URL is intentionally not path-checked by `scripts/check-upstream-links.mjs`, which validates `blob/main/` documentation paths against a checkout.
 
 ### Upstream citations
 

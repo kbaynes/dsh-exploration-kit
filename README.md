@@ -49,7 +49,7 @@ cd kit-plugins && pnpm install && cd ..
 dsh plugin --profile kitdemo add link:$PWD/kit-plugins
 ```
 
-See [kit-plugins/README.md](kit-plugins/README.md) for why plugins must be shipped as a bundle rather than loaded as loose files. The lessons create and boot real plugins against that checkout, so the curriculum cannot be completed without it. See DSH's [development guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/development.md) for the checkout and CLI setup.
+See [kit-plugins/README.md](kit-plugins/README.md) for why plugins must be shipped as a bundle rather than loaded as loose files. The lessons create and boot real plugins against that checkout, so the curriculum cannot be completed without it. See DSH's [development guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/development.md) for the checkout and CLI setup.
 
 **To build this site** you need Node.js ≥20 and pnpm ≥10. Development is verified on Node 22.23.1 with pnpm 11.7.0, which is pinned in `packageManager`.
 

@@ -80,7 +80,7 @@ If a checkpoint fails, repeat the lesson — do not proceed. The later lessons a
 
 ## What this path deliberately does not cover
 
-- **Model provider authoring** (`ctx.llm` adapters). Covered by the repository's [adding-an-llm-adapter cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/adding-an-llm-adapter.md); the [providers guide](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/guide/providers.md) covers the configuration-level version. The prerequisite is L2's `ctx.tools` registration: an adapter is registered on a `ctx.*` seam the same way, which is the transferable part.
+- **Model provider authoring** (`ctx.llm` adapters). Covered by the repository's [adding-an-llm-adapter cookbook](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/adding-an-llm-adapter.md); the [providers guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/guide/providers.md) covers the configuration-level version. The prerequisite is L2's `ctx.tools` registration: an adapter is registered on a `ctx.*` seam the same way, which is the transferable part.
 - **Client/UI plugin authoring.** L3 touches the browser half through the Cordis client runner, but building a React conversation node is out of scope; see the repository's `docs/subsystems/conversation.md`.
 - **Production deployment.** L9 stops at the local container boundary. DSH does not publish deployment checklists, so hardening a multi-tenant pool from these lessons is explicitly out of scope.
 
@@ -88,4 +88,4 @@ If a checkpoint fails, repeat the lesson — do not proceed. The later lessons a
 
 - [Exploration lesson plan index](index.md) — the lessons themselves
 - [Capability map](feature-map.md) — what each lesson is exercising
-- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) — the mechanism all nine lessons share
+- [Plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/framework/index.md) — the mechanism all nine lessons share

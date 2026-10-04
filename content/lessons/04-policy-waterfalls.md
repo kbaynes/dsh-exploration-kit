@@ -28,7 +28,7 @@ timestamp: 2026-09-30
 | Sandbox seam | `ctx.sandbox` confines spawned processes; providers are swappable |
 | Credential redaction | Context-level redaction rather than tool-level string matching |
 
-Reference: the repository's [extension cookbook permission-gate example](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/cookbook/extension-cookbook.md), `packages/core/tools/README.md`, and the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/user/develop/framework/index.md) for waterfall semantics.
+Reference: the repository's [extension cookbook permission-gate example](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/cookbook/extension-cookbook.md), `packages/core/tools/README.md`, and the [plugin model](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/develop/framework/index.md) for waterfall semantics.
 
 ## Prerequisites
 

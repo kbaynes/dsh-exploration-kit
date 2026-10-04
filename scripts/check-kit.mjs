@@ -96,7 +96,7 @@ const checks = [
   { name: 'OKF conformance', cmd: ['pnpm', 'run', '-s', 'validate'], optional: true },
   { name: 'site build', cmd: ['pnpm', 'run', '-s', 'build'] },
   {
-    name: 'upstream DSH links',
+    name: 'GitHub links resolve on the right branch',
     cmd: ['node', 'scripts/check-upstream-links.mjs', checkout],
     needs: 'a DSH checkout (pass one as an argument or set DSH_CHECKOUT)',
     skip: checkout === '',

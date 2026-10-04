@@ -60,7 +60,7 @@ Rules for the body:
 ## Links
 
 - **Inside the kit:** relative markdown links (`./lessons/03-....md`). These are link-checked in CI and a broken one is an error.
-- **To DSH's own docs:** absolute URLs to `https://github.com/deepseek-ai/deepseek-harness/blob/main/...`, so the kit works when cloned on its own.
+- **To DSH's own docs:** absolute URLs to `https://github.com/deepseek-ai/deepseek-harness/blob/master/...`, so the kit works when cloned on its own.
 
 ## When to add a decision record
 

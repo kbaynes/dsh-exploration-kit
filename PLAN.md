@@ -329,6 +329,8 @@ An independent editorial review of all nine lessons was run as a separate review
 
 10. **Prose was column-wrapped in every markdown file.** A reader reported the files as having "weird hardcoded carriage returns". There were none — no CR bytes, no hard breaks — and this repository's own site flowed the wraps into spaces. The artifact was the *soft* break: a renderer that shows raw text or honours single newlines turns each wrap into a visible break, so the same file looked different depending on where it was read. Prose is now one line per paragraph, with `pnpm run reflow` as the formatter and `check:wrapping` as the gate ([ADR-0031](decisions/0031-prose-is-not-column-wrapped.md)).
 
+11. **Every upstream link named the wrong branch.** All 42 links to `deepseek-ai/deepseek-harness` said `blob/main/`; the repository's default branch is `master`, so every one of them 404'd. The link checker could not catch it because it hardcoded the expected prefix as a literal — links naming another branch never matched and were never checked. `kit.target.json` had said `"branch": "master"` all along and nothing read the field. The checker now takes the branch from the pin, cross-checks it against the checkout, reads this repository's own branch from git, scans every markdown file including fenced URLs, and reports a wrong branch as a named failure ([ADR-0033](decisions/0033-a-checker-must-not-hardcode-what-it-checks.md)).
+
 **Left open deliberately:**
 
 - [x] L7: confirmed by experiment that `@deepseek-ai/dsh-invariants` **does** resolve in

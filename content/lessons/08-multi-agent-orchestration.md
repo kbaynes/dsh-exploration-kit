@@ -28,7 +28,7 @@ timestamp: 2026-09-30
 | Agent presets | Per-session capability sets (met properly in L9's webhook request) |
 | Agent teams | Roster, task board, mailbox — opt-in, and it displaces the legacy control names |
 
-Reference: the repository's [subagent subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/subagent.md), [workflow package](https://github.com/deepseek-ai/deepseek-harness/tree/main/packages/workflow), and [agent-team subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/main/docs/subsystems/agent-team.md).
+Reference: the repository's [subagent subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/subagent.md), [workflow package](https://github.com/deepseek-ai/deepseek-harness/tree/master/packages/workflow), and [agent-team subsystem](https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/subsystems/agent-team.md).
 
 ## Prerequisites
 
