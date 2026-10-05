@@ -101,6 +101,8 @@ Settings → Pages → Build and deployment → **Source: GitHub Actions**. The 
 
 **This is the step that needs the repository owner's account, and it blocks the site.** The first push ran the `site` workflow and every check passed, then it failed at `actions/configure-pages@v5` because Pages was not enabled — so the deploy job, not the build, is what fails. `gh` in this workspace authenticates as a different account than the repository's owner, and the API answers `404` for edits to it, so enable Pages in the web UI (or from an authenticated session for the owning account) and re-run the workflow.
 
+**Do not try to make the workflow enable Pages for you.** `actions/configure-pages@v5` takes an `enablement: true` input, and this workflow already grants `pages: write` — but the workflow's `GITHUB_TOKEN` cannot *create* a Pages site, which needs repository admin. With `enablement: true` the step fails as `HttpError: Resource not accessible by integration`; without it, it fails with `Get Pages site failed. Please verify that the repository has Pages enabled`, which at least names the action to take. The experiment was run on this repository's first push, so nobody has to repeat it.
+
 ## 7. Tag the release against its harness state
 
 See [VERIFIED.md](VERIFIED.md#harness-state-this-kit-targets) and [PLAN.md](PLAN.md) Phase 4.5. The tag records which DeepSeek Harness commit the lessons were verified against:
