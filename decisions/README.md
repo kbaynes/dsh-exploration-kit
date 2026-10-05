@@ -57,3 +57,4 @@ An ADR is not a task and not a test result. It states a decision, the evidence t
 - [ADR-0034 — A retry must report itself, or it hides the intermittency it exists for](0034-a-retry-must-report-itself.md)
 - [ADR-0035 — A background launch is killed by the pid you started, so make that pid the thing you care about](0035-a-background-launch-is-killed-by-the-pid-you-started.md)
 - [ADR-0036 — Never wait unboundedly on a process you no longer need](0036-never-wait-unboundedly-on-a-process-you-no-longer-need.md)
+- [ADR-0037 — A wait is bounded by the wall clock, not by a count of polls](0037-a-wait-is-bounded-by-the-wall-clock.md)

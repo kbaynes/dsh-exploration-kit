@@ -69,6 +69,10 @@ fi
 - A residual, invisible cost remains: such a process may still hold the harness home. The suite cannot fix that, so the rule stands that the home is owned by one run at a time and a survivor must be found by hand.
 - The cause of the uninterruptible stall is **not** established. It has been seen once, on a resumed-session boot, in a nested-sandboxed environment. What is fixed is the consequence; the cause is recorded here as open.
 
+## Sibling
+
+[ADR-0037](0037-a-wait-is-bounded-by-the-wall-clock.md) removes the other half of the same defect: this record bounds a `wait` on a process, and that one bounds a *sleeping poll*, which was counted in iterations and therefore inherited whatever `sleep` cost on the host.
+
 ## Follow-up — a survivor answers the NEXT run, which is worse than a port error
 
 A verification that had been aborted mid-phase left a harness holding a fixed port. The next run failed with `EADDRINUSE`, which at least names the problem. Then the same thing happened again and the symptom changed: the POSTs **were answered**, by the stray, which had its own session baseline — so the new run's delivery count lagged by exactly one delivery and the phase looked like it was measuring asynchronously.

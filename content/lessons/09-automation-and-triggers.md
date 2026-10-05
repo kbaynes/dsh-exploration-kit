@@ -208,6 +208,17 @@ schedule_delete  { ... }
 
 The tool accepts `after_seconds`, an explicit absolute `at`, a bounded fixed-rate `every_seconds`, daily and weekly local times in an explicit IANA zone, and cron as a five-field expression. Management uses the Host storage domain, and a due message resumes the original Session.
 
+**When your automation waits for something, bound the wait by the wall clock.** Everything on this page is asynchronous — a due task, a delivery receipt, a webhook arriving — so code that waits for one needs a deadline, not a count of attempts. A count inherits whatever each pause costs: on one host this project measured a single `sleep 1` taking **1,021 seconds** during a system stall, which turns a 60-second budget into hours of silence while every check still passes. Compute the deadline once and compare against it:
+
+```js
+const deadline = Date.now() + waitMs
+while (!delivered() && Date.now() < deadline) {
+  await new Promise(resolve => setTimeout(resolve, 1000))
+}
+```
+
+`solutions/l9.fire-probe.js` is the worked example — it schedules a task and then polls the delivery history that way — and [ADR-0037](https://github.com/kbaynes/dsh-exploration-kit/blob/main/decisions/0037-a-wait-is-bounded-by-the-wall-clock.md) records why this is a rule rather than a preference. The same applies to a shell loop: `while (( waited < 60 ))` counts attempts, so `while (( $(date +%s) < deadline ))` is the one that means what it says.
+
 Note where those tools are registered: in a **live root Agent's scope**, so they do not appear in `--dump-config`. Composing cleanly proves the service loaded; seeing the tools needs a session.
 
 Practical exercise: schedule a recurring check of the kit's own validation (`okflint validate --manifest okf-base.yaml`), let it fire once, then delete it. Notice what "resumes the original Session" gives you — the run has your earlier context, which is both the feature and the risk. A reminder that inherits a long conversation inherits its cost.
