@@ -33,11 +33,12 @@ boot_and_wait() {
   ( cd "$checkout" && exec dsh --profile "$profile" "${args[@]}" --port 0 --no-open ) >>"$log" 2>&1 &
   local pid=$!
 
-  local waited=0
-  while (( waited < timeout )); do
+  # Wall-clock deadline, not an iteration count: `sleep 1` can take minutes on a stalled host, and
+  # a nominal 60-second timeout must not become hours (see PLAN's performance notes).
+  local deadline=$(( $(date +%s) + timeout ))
+  while (( $(date +%s) < deadline )); do
     grep -qE "$pattern" "$log" 2>/dev/null && break
     sleep 1
-    waited=$((waited + 1))
   done
 
   # Ask politely, then insist, then STOP WAITING.

@@ -224,10 +224,11 @@ if start_mock_llm "$DSH_CHECKOUT" 8132 success; then
       --patch "$MODEL_PATCH" --patch "$KIT/solutions/l7.turn.patch.yml" \
       --port 0 --no-open ) >"$TURN_LOG" 2>&1 &
   turnpid=$!
-  waited=0
-  while (( waited < 90 )); do
+  # Wall-clock deadline: an iteration count inherits whatever `sleep` costs on the host.
+  deadline=$(( $(date +%s) + 90 ))
+  while (( $(date +%s) < deadline )); do
     grep -q '\[l7-turn\] done' "$TURN_LOG" 2>/dev/null && break
-    sleep 1; waited=$((waited + 1))
+    sleep 1
   done
   kill "$turnpid" 2>/dev/null
   grace=0

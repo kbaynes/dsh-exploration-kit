@@ -133,7 +133,7 @@ fanout_once() {
 
 # Count parent-linked child sessions before, so the assertion is about THIS run. The session log
 # is compressed, so this decompresses recent sessions rather than grepping them.
-BEFORE="$(count_recent_parent_linked_sessions 5)"
+BEFORE="$(count_recent_parent_linked_sessions 2)"
 
 FAN_OUT="$(mktemp)"; FAN_ERR="$(mktemp)"
 # `--json` as well as the human answer: the stream carries the parent's per-step token usage,
@@ -141,7 +141,7 @@ FAN_OUT="$(mktemp)"; FAN_ERR="$(mktemp)"
 fanout_once 8133 "$FAN_OUT"
 fan_status=$?
 if [[ "$fan_status" -eq 0 || -s "$FAN_OUT" ]]; then
-  AFTER="$(count_recent_parent_linked_sessions 5)"
+  AFTER="$(count_recent_parent_linked_sessions 2)"
 
   check_exit "the delegating turn exits 0" 0 "$fan_status"
   check "the parent prints the model's answer" 'mock response recovered' "$(cat "$FAN_OUT")"

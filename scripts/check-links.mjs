@@ -79,9 +79,26 @@ let checked = 0
 const broken = []
 const external = []
 
+/**
+ * `AGENTS.md`, the decision records, and the GitHub templates are reader-facing too, and none of
+ * them was scanned — which is how a relative `../../blob/main/...` link in an issue template
+ * survived until a reviewer found it by hand. Issue templates are YAML carrying markdown, so
+ * `.github/ISSUE_TEMPLATE/*.yml` is scanned as well; the WORKFLOW files are not, because their
+ * `run:` blocks contain shell URLs that are not links a reader follows.
+ */
+const issueTemplates = (() => {
+  const dir = resolve(repo, '.github', 'ISSUE_TEMPLATE')
+  if (!existsSync(dir)) return []
+  return readdirSync(dir).filter(f => f.endsWith('.yml') || f.endsWith('.yaml')).map(f => join(dir, f))
+})()
+
 const scanFiles = [
   ...markdownFiles(root),
   ...rootDocs.map(f => resolve(repo, f)).filter(existsSync),
+  ...markdownFiles(resolve(repo, 'decisions')),
+  ...markdownFiles(resolve(repo, '.github')),
+  ...(existsSync(resolve(repo, 'AGENTS.md')) ? [resolve(repo, 'AGENTS.md')] : []),
+  ...issueTemplates,
 ]
 
 for (const file of scanFiles) {

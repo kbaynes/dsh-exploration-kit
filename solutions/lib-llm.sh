@@ -31,11 +31,11 @@ start_mock_llm() { # start_mock_llm <checkout> <port> <sequence> [extra mock fla
   # bash print "Terminated: 15" over the check output. The process is still controlled by pid.
   disown "$MOCK_LLM_PID" 2>/dev/null || true
 
-  local waited=0
-  while (( waited < 40 )); do
+  # Wall-clock deadline: see boot_and_wait in lib.sh for why.
+  local deadline=$(( $(date +%s) + 40 ))
+  while (( $(date +%s) < deadline )); do
     grep -q '"type":"ready"' "$log" 2>/dev/null && break
     sleep 1
-    waited=$((waited + 1))
   done
 
   MOCK_LLM_BASE_URL="$(grep -o '"baseURL":"[^"]*"' "$log" 2>/dev/null | head -1 | cut -d'"' -f4)"
@@ -176,9 +176,18 @@ FINDCHILD
 # Prints "<tokens><TAB><log-path>", with 0 tokens on timeout.
 #   await_child_usage <parent-session-id> [timeout-seconds]
 await_child_usage() {
-  local parent="$1" timeout="${2:-25}" waited=0 log="" tokens=0
-  while (( waited < timeout )); do
-    log="$(find_child_log "$parent" 5)"
+  local parent="$1" timeout="${2:-25}" log="" tokens=0
+  # Wall-clock deadline: see boot_and_wait in lib.sh for why.
+  local deadline=$(( $(date +%s) + timeout ))
+  while (( $(date +%s) < deadline )); do
+    # FIND ONCE, THEN REUSE THE PATH. `find_child_log` walks every session directory in the home
+    # and decompresses each recently-touched one, so calling it once per second amplifies a scan
+    # over a large disposable home into minutes of work: with ~1300 accumulated sessions this
+    # turned a two-minute lesson check into THIRTY-ONE minutes, all of it passing. Once the child's
+    # log is known, only its usage is re-read.
+    if [[ -z "$log" || ! -f "$log" ]]; then
+      log="$(find_child_log "$parent" 5)"
+    fi
     if [[ -n "$log" ]]; then
       tokens="$(sum_log_usage "$log")"
       if (( tokens > 0 )); then
@@ -186,8 +195,8 @@ await_child_usage() {
         return
       fi
     fi
-    sleep 1
-    waited=$((waited + 1))
+    # Polling every two seconds costs nothing (a child flushes in ~2s) and halves the work.
+    sleep 2
   done
   printf '0\t%s\n' "$log"
 }

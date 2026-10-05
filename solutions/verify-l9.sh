@@ -407,12 +407,13 @@ webhook_count() {
 # appears. In this composition the first Session took ~35s to become visible while later ones took
 # under 5s, so the first wait is given a longer bound than the rest.
 webhook_wait_for_count() { # webhook_wait_for_count <log> <expected> <timeout-seconds>
-  local log="$1" expected="$2" timeout="${3:-30}" waited=0 count=""
-  while (( waited < timeout )); do
+  local log="$1" expected="$2" timeout="${3:-30}" count=""
+  # Wall-clock deadline: an iteration count inherits whatever `sleep` costs on the host.
+  local deadline=$(( $(date +%s) + timeout ))
+  while (( $(date +%s) < deadline )); do
     count="$(webhook_count "$log")"
     [[ "$count" == "$expected" ]] && break
     sleep 1
-    waited=$((waited + 1))
   done
   echo "${count:-}"
 }
@@ -460,10 +461,10 @@ if start_mock_llm "$DSH_CHECKOUT" 8146 success; then
 
   # Let the host finish initialising before the first delivery: the route is registered before the
   # workspace and storage services are ready, and a delivery arriving too early waits on all of it.
-  settle=0
-  while (( settle < 60 )); do
+  settle_deadline=$(( $(date +%s) + 60 ))
+  while (( $(date +%s) < settle_deadline )); do
     [[ "$(grep -c 'created since the probe started' "$WH_LOG" 2>/dev/null)" -ge 3 ]] && break
-    sleep 1; settle=$((settle + 1))
+    sleep 1
   done
 
   first_status="$(post_delivery "$SIG" 'l9-delivery-1' /dev/null)"
