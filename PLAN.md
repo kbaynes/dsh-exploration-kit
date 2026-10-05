@@ -432,9 +432,10 @@ Neither is blocking publication. Both matter because a suite that takes eleven m
       versions all match that release (see
       [ADR-0013](decisions/0013-pin-optional-package-versions.md)).
 - [ ] Decide the kit version for the release and record it in `package.json`.
-- [ ] Create the annotated tag in the agreed format:
+- [x] Create the annotated tag in the agreed format:
       `v<kit-version>+dsh.<dsh-version>.g<short-dsh-sha>` — for the state verified
-      here, `v0.1.0+dsh.0.2.0-rc.2.g639ed01539`.
+      here, `v0.1.0+dsh.0.2.0-rc.2.g639ed01539`. Created and pushed; the values were
+      read out of `kit.target.json` rather than transcribed.
 - [ ] Put the harness commit, tag, and capture date in the tag message, so the claim
       travels with the tag rather than only living in a file.
 - [ ] Add the harness state to the release notes and to `README.md`'s compatibility
@@ -453,10 +454,17 @@ Neither is blocking publication. Both matter because a suite that takes eleven m
 
 ## Phase 5 — Publish and promote
 
-- [ ] Create the GitHub repository and push `main`
-- [ ] Enable Pages (Settings → Pages → Source: GitHub Actions) and confirm the URL
-- [ ] Set the repository description to include the unambiguous phrase
-      "DeepSeek Harness" and add the `dsh-plugin` topic
+- [x] Create the GitHub repository and push `main` — `git@github.com:kbaynes/dsh-exploration-kit.git`,
+      pushed as an initial branch of 78 commits with the annotated tag above; every CI check in the
+      `site` workflow passed (placeholders, configs, lessons, links, examples, decisions, harness
+      state, site build).
+- [ ] Enable Pages (Settings → Pages → Source: GitHub Actions) and confirm the URL — **this is the
+      one step that needs the repository owner's account**: the workflow fails at
+      `actions/configure-pages@v5` until it is enabled, and `gh` from this machine authenticates as a
+      different account, so the API returns 404 for edits.
+- [x] Set the repository description to include the unambiguous phrase "DeepSeek Harness" — already
+      present. Add the `dsh-plugin` topic: still open, for the same account reason as Pages; the full
+      intended set is in `.github/topics.txt`.
 - [ ] Publish the site and verify the live URL renders and links work
 - [ ] Announce in the DSH GitHub Discussions
 - [ ] Announce in the DSH Discord

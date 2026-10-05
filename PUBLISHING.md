@@ -88,6 +88,8 @@ These decide whether anyone finds it, and they are not carried by the files. Set
 
 ## 5. Create the repository and push
 
+**Already done for this repository:** `git@github.com:kbaynes/dsh-exploration-kit.git` carries the full history on `main` with the annotated tag from step 7. Keep this for a fork or a re-release.
+
 ```sh
 git remote add origin git@github.com:<owner>/dsh-exploration-kit.git
 git push -u origin main
@@ -96,6 +98,8 @@ git push -u origin main
 ## 6. Enable GitHub Pages
 
 Settings → Pages → Build and deployment → **Source: GitHub Actions**. The workflow is already committed and needs no secrets. Then confirm the run succeeded and that the published URL matches the `base` path from step 1.
+
+**This is the step that needs the repository owner's account, and it blocks the site.** The first push ran the `site` workflow and every check passed, then it failed at `actions/configure-pages@v5` because Pages was not enabled — so the deploy job, not the build, is what fails. `gh` in this workspace authenticates as a different account than the repository's owner, and the API answers `404` for edits to it, so enable Pages in the web UI (or from an authenticated session for the owning account) and re-run the workflow.
 
 ## 7. Tag the release against its harness state
 
