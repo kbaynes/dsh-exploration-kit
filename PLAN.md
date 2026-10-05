@@ -458,13 +458,14 @@ Neither is blocking publication. Both matter because a suite that takes eleven m
       pushed as an initial branch of 78 commits with the annotated tag above; every CI check in the
       `site` workflow passed (placeholders, configs, lessons, links, examples, decisions, harness
       state, site build).
-- [ ] Enable Pages (Settings → Pages → Source: GitHub Actions) and confirm the URL — **this is the
-      one step that needs the repository owner's account**: the workflow fails at
-      `actions/configure-pages@v5` until it is enabled, and `gh` from this machine authenticates as a
-      different account, so the API returns 404 for edits.
-- [x] Set the repository description to include the unambiguous phrase "DeepSeek Harness" — already
-      present. Add the `dsh-plugin` topic: still open, for the same account reason as Pages; the full
-      intended set is in `.github/topics.txt`.
+- [x] Enable Pages and confirm the URL — done through the API (`POST /repos/…/pages` with
+      `build_type=workflow`, which needs no custom domain even though the web UI asked for one),
+      using a fine-grained token holding **Pages: Read and write** plus admin. `has_pages` is true
+      and the site builds to `https://kbaynes.github.io/dsh-exploration-kit/`.
+- [x] Set the repository description to include the unambiguous phrase "DeepSeek Harness" and add
+      the `dsh-plugin` topic — done: the description is set and all nine intended topics are on the
+      repository (`deepseek-harness`, `dsh`, `dsh-plugin`, `cordis`, `agents`, `curriculum`,
+      `tutorial`, `okf`, `vitepress`).
 - [ ] Publish the site and verify the live URL renders and links work
 - [ ] Announce in the DSH GitHub Discussions
 - [ ] Announce in the DSH Discord
