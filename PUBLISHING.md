@@ -29,8 +29,12 @@ grep -rl 'REPLACE_OWNER' --exclude-dir=node_modules --exclude-dir=.git . \
   | grep -vE '^\./scripts/check-(placeholders|publication)\.mjs$' \
   | grep -vE '^\./decisions/0026-' \
   | grep -vE '^\./website/\.vitepress/' \
-  | xargs sed -i '' 's/REPLACE_OWNER/<your-github-owner>/g'
+  | while IFS= read -r f; do
+      sed -i.bak 's/REPLACE_OWNER/<your-github-owner>/g' "$f" && rm -f "$f.bak"
+    done
 ```
+
+**Why not `sed -i ''`.** BSD `sed` (macOS) takes `-i ''` — an empty backup suffix — while GNU `sed` (Linux) reads that empty string as the *script*, so the same line either edits nothing or errors depending on the platform. `-i.bak` is the one form both accept, and the backup is removed immediately so no `.bak` file can be committed. The rule and the verification behind it are [ADR-0038](decisions/0038-commands-must-run-on-linux-too.md). The `while read` loop replaces `xargs` for a second portability reason: `xargs` would splice every path into one command line, and the loop keeps one edit per file with its own cleanup. (The ADR below quotes the original macOS `sed -i ''` form, which is a transcript of the incident, not a command to re-run.)
 
 **The exclusions are not tidiness — they are required, and the list has grown twice.** This document, `PLAN.md`, and `scripts/check-(placeholders|publication).mjs` are where the token is *defined*: a blanket substitution rewrites the checker's own token list, after which it reports the real owner as a placeholder and the gate can never pass. Two more definition sites were found after the original test:
 
